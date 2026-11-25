@@ -138,7 +138,10 @@ export async function searchCoversOnline(
     if (apiBaseUrl) {
       try {
         const cleanBase = apiBaseUrl.replace(/\/+$/, '');
-        const r = await fetch(`${cleanBase}/api/covers/steam?q=${encodeURIComponent(q)}`);
+        const steamEndpoint = cleanBase.includes('functions.yandexcloud.net')
+          ? `${cleanBase}?action=steam&q=${encodeURIComponent(q)}`
+          : `${cleanBase}/api/covers/steam?q=${encodeURIComponent(q)}`;
+        const r = await fetch(steamEndpoint);
         if (r.ok) {
           const d = await r.json();
           if (Array.isArray(d.items)) {

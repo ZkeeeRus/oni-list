@@ -183,6 +183,14 @@ export function getUserRole(
   return 'viewer';
 }
 
+export function buildStateEndpoint(apiBaseUrl: string): string {
+  const cleanBase = apiBaseUrl.replace(/\/+$/, '');
+  if (cleanBase.includes('functions.yandexcloud.net')) {
+    return `${cleanBase}?action=state`;
+  }
+  return `${cleanBase}/api/state`;
+}
+
 export async function loadInitialSiteData(apiBaseUrl: string): Promise<{
   data: SiteData;
   source: 'remote' | 'local' | 'seed';
@@ -192,8 +200,7 @@ export async function loadInitialSiteData(apiBaseUrl: string): Promise<{
 
   if (apiBaseUrl) {
     try {
-      const cleanBase = apiBaseUrl.replace(/\/+$/, '');
-      const res = await fetch(`${cleanBase}/api/state`, { cache: 'no-store' });
+      const res = await fetch(buildStateEndpoint(apiBaseUrl), { cache: 'no-store' });
       if (res.ok) {
         const remote = await res.json();
         if (
@@ -269,8 +276,7 @@ export async function persistSiteData(
   }
 
   try {
-    const cleanBase = apiBaseUrl.replace(/\/+$/, '');
-    const res = await fetch(`${cleanBase}/api/state`, {
+    const res = await fetch(buildStateEndpoint(apiBaseUrl), {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',

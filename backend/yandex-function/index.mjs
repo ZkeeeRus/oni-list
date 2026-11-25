@@ -48,8 +48,9 @@ export async function handler(event) {
   }
 
   const path = event.path || event.url || '';
+  const action = event.queryStringParameters?.action || '';
 
-  if (method === 'GET' && path.includes('/covers/steam')) {
+  if (method === 'GET' && (action === 'steam' || path.includes('/covers/steam'))) {
     const q = event.queryStringParameters?.q || '';
     if (!q) return { statusCode: 200, headers: CORS, body: '{"items":[]}' };
     const r = await fetch(
