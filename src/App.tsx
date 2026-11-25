@@ -665,6 +665,9 @@ export const App: React.FC = () => {
           onImportJson={(imported) =>
             commitData(imported, 'Резервная копия успешно загружена!')
           }
+          onForceCloudPush={() =>
+            commitData(data, 'Все текущие данные отправлены в облако Яндекс!')
+          }
         />
       )}
 

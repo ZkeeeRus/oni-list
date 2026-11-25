@@ -882,6 +882,7 @@ export const AdminSettingsModal: React.FC<{
   onSaveConfig: (nextCfg: Partial<RuntimeConfig>) => void;
   onUpdateModerators: (mods: string[]) => void;
   onImportJson: (imported: SiteData) => void;
+  onForceCloudPush: () => void;
 }> = ({
   user,
   role,
@@ -895,6 +896,7 @@ export const AdminSettingsModal: React.FC<{
   onSaveConfig,
   onUpdateModerators,
   onImportJson,
+  onForceCloudPush,
 }) => {
   const [clientIdInput, setClientIdInput] = useState(cfg.twitchClientId);
   const [apiUrlInput, setApiUrlInput] = useState(cfg.apiBaseUrl);
@@ -1143,7 +1145,7 @@ export const AdminSettingsModal: React.FC<{
               </div>
 
               <div className="row-between wrap">
-                <div className="row-gap-sm">
+                <div className="row-gap-sm wrap">
                   <button
                     type="button"
                     className="btn btn-primary btn-sm"
@@ -1157,6 +1159,15 @@ export const AdminSettingsModal: React.FC<{
                   >
                     Сохранить подключение
                   </button>
+                  {canManageMods && (
+                    <button
+                      type="button"
+                      className="btn btn-twitch btn-sm"
+                      onClick={onForceCloudPush}
+                    >
+                      <Upload size={14} /> Отправить базу в облако сейчас
+                    </button>
+                  )}
                 </div>
 
                 <div className="row-gap-sm">
