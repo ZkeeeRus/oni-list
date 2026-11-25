@@ -276,13 +276,21 @@ export async function persistSiteData(
   }
 
   try {
+    const isYandexFn = apiBaseUrl.includes('functions.yandexcloud.net');
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
+    if (!isYandexFn) {
+      headers.Authorization = `Bearer ${user.accessToken}`;
+    }
+    const payloadObj = isYandexFn
+      ? { ...stamped, _twitchToken: user.accessToken }
+      : stamped;
+
     const res = await fetch(buildStateEndpoint(apiBaseUrl), {
       method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${user.accessToken}`,
-      },
-      body: JSON.stringify(stamped),
+      headers,
+      body: JSON.stringify(payloadObj),
     });
     if (!res.ok) {
       const errBody = await res.text();
