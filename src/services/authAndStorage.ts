@@ -5,6 +5,8 @@ const LOCAL_USER_KEY = 'onized_hub_twitch_user_v1';
 const LOCAL_CONFIG_KEY = 'onized_hub_runtime_cfg_v1';
 
 export const PERMANENT_ADMINS = ['onized', 'zkeeerus'];
+export const DEFAULT_API_BASE_URL = 'https://functions.yandexcloud.net/d4ehsd85qrdehg8058ue';
+export const DEFAULT_TWITCH_CLIENT_ID = 'v78wuh35wmptpayuqj81a7y55y6l8s';
 
 export async function loadRuntimeConfig(): Promise<RuntimeConfig> {
   let fileCfg: Partial<RuntimeConfig> = {};
@@ -17,10 +19,8 @@ export async function loadRuntimeConfig(): Promise<RuntimeConfig> {
     // Ignore
   }
 
-  let savedCfg: Partial<RuntimeConfig> = {};
   try {
-    const raw = localStorage.getItem(LOCAL_CONFIG_KEY);
-    if (raw) savedCfg = JSON.parse(raw);
+    localStorage.removeItem(LOCAL_CONFIG_KEY);
   } catch {
     // Ignore
   }
@@ -31,20 +31,10 @@ export async function loadRuntimeConfig(): Promise<RuntimeConfig> {
   ]);
 
   return {
-    apiBaseUrl: (savedCfg.apiBaseUrl || fileCfg.apiBaseUrl || '').trim(),
-    twitchClientId: (savedCfg.twitchClientId || fileCfg.twitchClientId || '').trim(),
+    apiBaseUrl: (fileCfg.apiBaseUrl || DEFAULT_API_BASE_URL).trim(),
+    twitchClientId: (fileCfg.twitchClientId || DEFAULT_TWITCH_CLIENT_ID).trim(),
     rootAdmins: Array.from(adminsSet),
   };
-}
-
-export function saveLocalRuntimeConfig(partial: Partial<RuntimeConfig>): void {
-  try {
-    const prevRaw = localStorage.getItem(LOCAL_CONFIG_KEY);
-    const prev = prevRaw ? JSON.parse(prevRaw) : {};
-    localStorage.setItem(LOCAL_CONFIG_KEY, JSON.stringify({ ...prev, ...partial }));
-  } catch {
-    // Ignore
-  }
 }
 
 export function getRedirectUri(): string {
@@ -117,7 +107,10 @@ export async function validateTwitchToken(
   }
 }
 
-export async function initTwitchSession(clientId?: string): Promise<TwitchUser | null> {
+export async function initTwitchSession(clientId?: string): Promise<{
+  user: TwitchUser | null;
+  justLoggedIn: boolean;
+}> {
   // 1. Check URL hash after redirect from id.twitch.tv
   if (window.location.hash && window.location.hash.includes('access_token=')) {
     const params = new URLSearchParams(window.location.hash.slice(1));
@@ -125,40 +118,28 @@ export async function initTwitchSession(clientId?: string): Promise<TwitchUser |
     window.history.replaceState(null, '', window.location.pathname + window.location.search);
     if (token) {
       const verified = await validateTwitchToken(token, clientId);
-      if (verified) return verified;
+      if (verified) return { user: verified, justLoggedIn: true };
     }
   }
 
   // 2. Check stored session
   try {
     const raw = localStorage.getItem(LOCAL_USER_KEY);
-    if (!raw) return null;
+    if (!raw) return { user: null, justLoggedIn: false };
     const parsed = JSON.parse(raw) as TwitchUser;
     if (parsed.isPreview) {
-      return parsed;
+      localStorage.removeItem(LOCAL_USER_KEY);
+      return { user: null, justLoggedIn: false };
     }
     if (parsed.accessToken) {
       const verified = await validateTwitchToken(parsed.accessToken, clientId);
-      if (verified) return verified;
+      if (verified) return { user: verified, justLoggedIn: false };
       localStorage.removeItem(LOCAL_USER_KEY);
     }
   } catch {
     localStorage.removeItem(LOCAL_USER_KEY);
   }
-  return null;
-}
-
-export function setPreviewEditorSession(login: 'onized' | 'zkeeerus'): TwitchUser {
-  const u: TwitchUser = {
-    userId: `preview-${login}`,
-    login,
-    displayName: login === 'onized' ? 'OniZeD' : 'ZkeeeRus',
-    avatarUrl: '',
-    accessToken: '',
-    isPreview: true,
-  };
-  localStorage.setItem(LOCAL_USER_KEY, JSON.stringify(u));
-  return u;
+  return { user: null, justLoggedIn: false };
 }
 
 export function clearTwitchSession(): void {

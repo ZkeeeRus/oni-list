@@ -1,14 +1,10 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
-  Check,
-  Copy,
   Download,
   ImagePlus,
-  LogIn,
   LogOut,
   Search,
   Shield,
-  Sparkles,
   Trash2,
   Upload,
   UserPlus,
@@ -18,7 +14,6 @@ import {
   BacklogItem,
   GameItem,
   MemeItem,
-  RuntimeConfig,
   SiteData,
   TwitchUser,
   UserRole,
@@ -40,7 +35,7 @@ import {
 } from '../utils/covers';
 import { compressImageToWebpDataUrl } from '../utils/imageCompress';
 import { CoverImage } from './CoverImage';
-import { getRedirectUri, PERMANENT_ADMINS } from '../services/authAndStorage';
+import { PERMANENT_ADMINS } from '../services/authAndStorage';
 
 /* ---------- Cover Picker Block ---------- */
 const CoverPicker: React.FC<{
@@ -868,18 +863,14 @@ export const BacklogModal: React.FC<{
   );
 };
 
-/* ---------- Twitch Auth & Moderator / DB Settings Modal ---------- */
+/* ---------- Account / Admin Panel Modal ---------- */
 export const AdminSettingsModal: React.FC<{
-  user: TwitchUser | null;
+  user: TwitchUser;
   role: UserRole;
   data: SiteData;
-  cfg: RuntimeConfig;
   dataSource: 'remote' | 'local' | 'seed';
   onClose: () => void;
-  onTwitchLogin: (clientId: string) => void;
-  onPreviewLogin: (login: 'onized' | 'zkeeerus') => void;
   onLogout: () => void;
-  onSaveConfig: (nextCfg: Partial<RuntimeConfig>) => void;
   onUpdateModerators: (mods: string[]) => void;
   onImportJson: (imported: SiteData) => void;
   onForceCloudPush: () => void;
@@ -887,31 +878,17 @@ export const AdminSettingsModal: React.FC<{
   user,
   role,
   data,
-  cfg,
   dataSource,
   onClose,
-  onTwitchLogin,
-  onPreviewLogin,
   onLogout,
-  onSaveConfig,
   onUpdateModerators,
   onImportJson,
   onForceCloudPush,
 }) => {
-  const [clientIdInput, setClientIdInput] = useState(cfg.twitchClientId);
-  const [apiUrlInput, setApiUrlInput] = useState(cfg.apiBaseUrl);
   const [newMod, setNewMod] = useState('');
-  const [copiedUri, setCopiedUri] = useState(false);
   const importRef = useRef<HTMLInputElement | null>(null);
-  const redirectUri = getRedirectUri();
 
-  const canManageMods = role === 'admin' || role === 'moderator';
-
-  const handleCopyUri = () => {
-    navigator.clipboard.writeText(redirectUri);
-    setCopiedUri(true);
-    setTimeout(() => setCopiedUri(false), 2000);
-  };
+  const isEditor = role === 'admin' || role === 'moderator';
 
   const handleExport = () => {
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
@@ -936,13 +913,73 @@ export const AdminSettingsModal: React.FC<{
     }
   };
 
+  // Обычный зритель: компактное окно с предложением выйти из аккаунта
+  if (!isEditor) {
+    return (
+      <div className="modal-backdrop" onClick={onClose}>
+        <div
+          className="modal-card"
+          style={{ maxWidth: 420 }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="modal-header">
+            <h3>Аккаунт Twitch</h3>
+            <button className="icon-btn" onClick={onClose}>
+              <X size={18} />
+            </button>
+          </div>
+
+          <div className="modal-body form-grid">
+            <div className="user-status-row">
+              <div className="row-gap-sm">
+                {user.avatarUrl ? (
+                  <img src={user.avatarUrl} alt={user.displayName} className="avatar-md" />
+                ) : (
+                  <div className="avatar-placeholder">{user.displayName[0]?.toUpperCase()}</div>
+                )}
+                <div>
+                  <div>
+                    <strong>{user.displayName}</strong>{' '}
+                    <span className="muted">(@{user.login})</span>
+                  </div>
+                  <div className="muted-sm">Зритель канала</div>
+                </div>
+              </div>
+            </div>
+
+            <p className="muted-sm">
+              Пока вы в аккаунте, в разделах «Игры» и «Просмотровое» доступен фильтр «Мои заказы».
+            </p>
+
+            <div className="modal-footer">
+              <button type="button" className="btn btn-ghost" onClick={onClose}>
+                Остаться
+              </button>
+              <button
+                type="button"
+                className="btn btn-twitch"
+                onClick={() => {
+                  onLogout();
+                  onClose();
+                }}
+              >
+                <LogOut size={15} /> Выйти из аккаунта
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Панель админа / модератора (без технических настроек подключения)
   return (
     <div className="modal-backdrop" onClick={onClose}>
       <div className="modal-card modal-lg" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <h3>
             <Shield size={18} style={{ verticalAlign: 'middle', marginRight: 8 }} />
-            Доступ Twitch, модераторы и база данных
+            {role === 'admin' ? 'Панель админа' : 'Панель модератора'}
           </h3>
           <button className="icon-btn" onClick={onClose}>
             <X size={18} />
@@ -950,95 +987,43 @@ export const AdminSettingsModal: React.FC<{
         </div>
 
         <div className="modal-body form-grid">
-          {/* Current User Status */}
           <div className="settings-section">
-            <h4>Ваш профиль и роль</h4>
-            {user ? (
-              <div className="user-status-row">
-                <div className="row-gap-sm">
-                  {user.avatarUrl ? (
-                    <img src={user.avatarUrl} alt={user.displayName} className="avatar-md" />
-                  ) : (
-                    <div className="avatar-placeholder">{user.displayName[0]?.toUpperCase()}</div>
-                  )}
+            <div className="user-status-row">
+              <div className="row-gap-sm">
+                {user.avatarUrl ? (
+                  <img src={user.avatarUrl} alt={user.displayName} className="avatar-md" />
+                ) : (
+                  <div className="avatar-placeholder">{user.displayName[0]?.toUpperCase()}</div>
+                )}
+                <div>
                   <div>
-                    <div>
-                      <strong>{user.displayName}</strong>{' '}
-                      <span className="muted">(@{user.login})</span>
-                      {user.isPreview && (
-                        <span className="badge prio-mid" style={{ marginLeft: 8 }}>
-                          Локальный тест-режим
-                        </span>
-                      )}
-                    </div>
-                    <div className="muted-sm">
-                      Роль:{' '}
-                      <strong>
-                        {role === 'admin'
-                          ? 'Админ (Стример / Владелец)'
-                          : role === 'moderator'
-                          ? 'Модератор (полный доступ редактора)'
-                          : 'Зритель (просмотр)'}
-                      </strong>
-                    </div>
+                    <strong>{user.displayName}</strong>{' '}
+                    <span className="muted">(@{user.login})</span>
+                  </div>
+                  <div className="muted-sm">
+                    Роль:{' '}
+                    <strong>
+                      {role === 'admin'
+                        ? 'Админ (Стример / Владелец)'
+                        : 'Модератор (полный доступ редактора)'}
+                    </strong>
                   </div>
                 </div>
-                <button className="btn btn-ghost btn-sm" onClick={onLogout}>
-                  <LogOut size={14} /> Выйти
-                </button>
               </div>
-            ) : (
-              <div className="login-box">
-                <p className="muted-sm">
-                  Зрителям вход не обязателен. Стример (<strong>onized</strong>), создатель (
-                  <strong>zkeeerus</strong>) и добавленные модераторы входят через Twitch и получают
-                  полный доступ к редактированию.
-                </p>
-                <div className="row-gap-sm wrap">
-                  <button
-                    type="button"
-                    className="btn btn-twitch"
-                    onClick={() => {
-                      if (!clientIdInput.trim()) {
-                        alert(
-                          'Сначала вставьте Client ID вашего бесплатного приложения Twitch в поле ниже (занимает 1 минуту на dev.twitch.tv).'
-                        );
-                        return;
-                      }
-                      onSaveConfig({ twitchClientId: clientIdInput.trim() });
-                      onTwitchLogin(clientIdInput.trim());
-                    }}
-                  >
-                    <LogIn size={16} /> Войти через Twitch
-                  </button>
-
-                  {!cfg.apiBaseUrl && (
-                    <>
-                      <button
-                        type="button"
-                        className="btn btn-secondary btn-sm"
-                        onClick={() => onPreviewLogin('zkeeerus')}
-                        title="Быстрый локальный тест интерфейса редактора до подключения сервера БД"
-                      >
-                        <Sparkles size={14} /> Тест от ZkeeeRus
-                      </button>
-                      <button
-                        type="button"
-                        className="btn btn-secondary btn-sm"
-                        onClick={() => onPreviewLogin('onized')}
-                      >
-                        <Sparkles size={14} /> Тест от OniZeD
-                      </button>
-                    </>
-                  )}
-                </div>
-              </div>
-            )}
+              <button
+                className="btn btn-ghost btn-sm"
+                onClick={() => {
+                  onLogout();
+                  onClose();
+                }}
+              >
+                <LogOut size={14} /> Выйти из аккаунта
+              </button>
+            </div>
           </div>
 
-          {/* Admins & Moderators */}
           <div className="settings-section">
-            <h4>Админы и модераторы (единый доступ к правкам)</h4>
+            <h4>Админы и модераторы</h4>
             <div className="chips-wrap">
               {PERMANENT_ADMINS.map((adm) => (
                 <span key={adm} className="mod-chip owner-chip">
@@ -1048,151 +1033,84 @@ export const AdminSettingsModal: React.FC<{
               {data.moderators.map((mod) => (
                 <span key={mod} className="mod-chip">
                   ⚔️ {mod}
-                  {canManageMods && (
-                    <button
-                      type="button"
-                      className="chip-del"
-                      onClick={() =>
-                        onUpdateModerators(data.moderators.filter((m) => m !== mod))
-                      }
-                      title="Убрать модератора"
-                    >
-                      <X size={12} />
-                    </button>
-                  )}
+                  <button
+                    type="button"
+                    className="chip-del"
+                    onClick={() =>
+                      onUpdateModerators(data.moderators.filter((m) => m !== mod))
+                    }
+                    title="Убрать модератора"
+                  >
+                    <X size={12} />
+                  </button>
                 </span>
               ))}
             </div>
 
-            {canManageMods && (
-              <div className="inline-search-row" style={{ marginTop: 10 }}>
-                <input
-                  className="input input-sm"
-                  placeholder="Ник модератора на Twitch (напр. samarhik, s1men5)"
-                  value={newMod}
-                  onChange={(e) => setNewMod(e.target.value)}
-                />
-                <button
-                  type="button"
-                  className="btn btn-secondary btn-sm"
-                  onClick={() => {
-                    const clean = newMod.toLowerCase().trim().replace(/^@/, '');
-                    if (
-                      clean &&
-                      !PERMANENT_ADMINS.includes(clean) &&
-                      !data.moderators.includes(clean)
-                    ) {
-                      onUpdateModerators([...data.moderators, clean]);
-                      setNewMod('');
-                    }
-                  }}
-                >
-                  <UserPlus size={14} /> Добавить модератора
-                </button>
-              </div>
-            )}
+            <div className="inline-search-row" style={{ marginTop: 10 }}>
+              <input
+                className="input input-sm"
+                placeholder="Ник модератора на Twitch (напр. samarhik, s1men5)"
+                value={newMod}
+                onChange={(e) => setNewMod(e.target.value)}
+              />
+              <button
+                type="button"
+                className="btn btn-secondary btn-sm"
+                onClick={() => {
+                  const clean = newMod.toLowerCase().trim().replace(/^@/, '');
+                  if (
+                    clean &&
+                    !PERMANENT_ADMINS.includes(clean) &&
+                    !data.moderators.includes(clean)
+                  ) {
+                    onUpdateModerators([...data.moderators, clean]);
+                    setNewMod('');
+                  }
+                }}
+              >
+                <UserPlus size={14} /> Добавить модератора
+              </button>
+            </div>
           </div>
 
-          {/* Connection Config */}
           <div className="settings-section">
-            <h4>Подключение Twitch OAuth и бесплатной облачной БД (работает в РФ без VPN)</h4>
-            <p className="muted-sm">
-              Источник данных сейчас:{' '}
+            <h4>База данных и резервные копии</h4>
+            <p className="muted-sm" style={{ marginBottom: 10 }}>
+              Статус:{' '}
               <strong>
                 {dataSource === 'remote'
                   ? 'Облачная БД (синхронизировано для всех)'
-                  : dataSource === 'local'
-                  ? 'Локальный черновик браузера + база из Excel'
-                  : 'База из Excel (369 игр, 34 тайтла, 6 мемов, 24 идеи бэклога)'}
+                  : 'Локальный черновик браузера'}
               </strong>
             </p>
+            <div className="row-between wrap">
+              <button
+                type="button"
+                className="btn btn-twitch btn-sm"
+                onClick={onForceCloudPush}
+              >
+                <Upload size={14} /> Синхронизировать с облаком
+              </button>
 
-            <div className="form-grid" style={{ marginTop: 10 }}>
-              <div>
-                <label className="field-label">
-                  1. OAuth Redirect URL для консоли dev.twitch.tv/console/apps
-                </label>
-                <div className="inline-search-row">
-                  <input className="input input-sm" readOnly value={redirectUri} />
-                  <button type="button" className="btn btn-secondary btn-sm" onClick={handleCopyUri}>
-                    {copiedUri ? <Check size={14} /> : <Copy size={14} />}
-                    {copiedUri ? 'Скопировано' : 'Копировать'}
-                  </button>
-                </div>
-              </div>
-
-              <div className="form-row-2">
-                <div>
-                  <label className="field-label">2. Публичный Twitch Client ID</label>
-                  <input
-                    className="input input-sm"
-                    value={clientIdInput}
-                    onChange={(e) => setClientIdInput(e.target.value)}
-                    placeholder="Client ID из dev.twitch.tv"
-                  />
-                </div>
-                <div>
-                  <label className="field-label">
-                    3. URL бэкенда БД (Yandex Cloud Serverless / SQLite API)
-                  </label>
-                  <input
-                    className="input input-sm"
-                    value={apiUrlInput}
-                    onChange={(e) => setApiUrlInput(e.target.value)}
-                    placeholder="https://functions.yandexcloud.net/..."
-                  />
-                </div>
-              </div>
-
-              <div className="row-between wrap">
-                <div className="row-gap-sm wrap">
-                  <button
-                    type="button"
-                    className="btn btn-primary btn-sm"
-                    onClick={() => {
-                      onSaveConfig({
-                        twitchClientId: clientIdInput.trim(),
-                        apiBaseUrl: apiUrlInput.trim(),
-                      });
-                      alert('Настройки подключения сохранены!');
-                    }}
-                  >
-                    Сохранить подключение
-                  </button>
-                  {canManageMods && (
-                    <button
-                      type="button"
-                      className="btn btn-twitch btn-sm"
-                      onClick={onForceCloudPush}
-                    >
-                      <Upload size={14} /> Отправить базу в облако сейчас
-                    </button>
-                  )}
-                </div>
-
-                <div className="row-gap-sm">
-                  <button type="button" className="btn btn-secondary btn-sm" onClick={handleExport}>
-                    <Download size={14} /> Скачать JSON бэкап
-                  </button>
-                  {canManageMods && (
-                    <>
-                      <button
-                        type="button"
-                        className="btn btn-secondary btn-sm"
-                        onClick={() => importRef.current?.click()}
-                      >
-                        <Upload size={14} /> Импорт JSON
-                      </button>
-                      <input
-                        ref={importRef}
-                        type="file"
-                        accept="application/json"
-                        hidden
-                        onChange={handleFileImport}
-                      />
-                    </>
-                  )}
-                </div>
+              <div className="row-gap-sm wrap">
+                <button type="button" className="btn btn-secondary btn-sm" onClick={handleExport}>
+                  <Download size={14} /> Скачать JSON бэкап
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-secondary btn-sm"
+                  onClick={() => importRef.current?.click()}
+                >
+                  <Upload size={14} /> Импорт JSON
+                </button>
+                <input
+                  ref={importRef}
+                  type="file"
+                  accept="application/json"
+                  hidden
+                  onChange={handleFileImport}
+                />
               </div>
             </div>
           </div>

@@ -160,6 +160,14 @@ a {
   background: rgba(16, 185, 129, 0.12);
 }
 
+.auth-twitch-btn {
+  border-radius: 999px;
+  padding: 7px 14px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
 .role-tag {
   font-size: 0.68rem;
   padding: 2px 6px;

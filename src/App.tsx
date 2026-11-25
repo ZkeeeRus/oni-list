@@ -21,14 +21,14 @@ import {
 } from './types';
 import {
   clearTwitchSession,
+  DEFAULT_API_BASE_URL,
+  DEFAULT_TWITCH_CLIENT_ID,
   getUserRole,
   initTwitchSession,
   loadInitialSiteData,
   loadRuntimeConfig,
   PERMANENT_ADMINS,
   persistSiteData,
-  saveLocalRuntimeConfig,
-  setPreviewEditorSession,
   startTwitchOAuth,
 } from './services/authAndStorage';
 import { HubView, NavTab } from './views/HubView';
@@ -54,8 +54,8 @@ import {
 
 export const App: React.FC = () => {
   const [cfg, setCfg] = useState<RuntimeConfig>({
-    apiBaseUrl: '',
-    twitchClientId: '',
+    apiBaseUrl: DEFAULT_API_BASE_URL,
+    twitchClientId: DEFAULT_TWITCH_CLIENT_ID,
     rootAdmins: PERMANENT_ADMINS,
   });
   const [data, setData] = useState<SiteData | null>(null);
@@ -103,7 +103,10 @@ export const App: React.FC = () => {
       ]);
       setData(loadedData.data);
       setDataSource(loadedData.source);
-      setUser(twitchSession);
+      setUser(twitchSession.user);
+      if (twitchSession.justLoggedIn && twitchSession.user) {
+        setSettingsOpen(true);
+      }
     })();
   }, []);
 
@@ -270,32 +273,34 @@ export const App: React.FC = () => {
           </nav>
 
           <div className="nav-right">
-            <button
-              type="button"
-              className={`auth-pill ${canEdit ? 'is-mod' : ''}`}
-              onClick={() => setSettingsOpen(true)}
-            >
-              {user ? (
-                <>
-                  {user.avatarUrl ? (
-                    <img src={user.avatarUrl} alt={user.displayName} className="avatar-xs" />
-                  ) : (
-                    <ShieldCheck size={15} />
-                  )}
-                  <span>{user.displayName}</span>
-                  {canEdit && (
-                    <small className="role-tag">
-                      {role === 'admin' ? 'АДМИН' : 'МОДЕР'}
-                    </small>
-                  )}
-                </>
-              ) : (
-                <>
-                  <LogIn size={15} />
-                  <span>Twitch / Модер</span>
-                </>
-              )}
-            </button>
+            {user ? (
+              <button
+                type="button"
+                className={`auth-pill ${canEdit ? 'is-mod' : ''}`}
+                onClick={() => setSettingsOpen(true)}
+              >
+                {user.avatarUrl ? (
+                  <img src={user.avatarUrl} alt={user.displayName} className="avatar-xs" />
+                ) : (
+                  <ShieldCheck size={15} />
+                )}
+                <span>{user.displayName}</span>
+                {canEdit && (
+                  <small className="role-tag">
+                    {role === 'admin' ? 'АДМИН' : 'МОДЕР'}
+                  </small>
+                )}
+              </button>
+            ) : (
+              <button
+                type="button"
+                className="btn btn-twitch auth-twitch-btn"
+                onClick={() => startTwitchOAuth(cfg.twitchClientId || DEFAULT_TWITCH_CLIENT_ID)}
+              >
+                <LogIn size={15} />
+                <span>Войти через Twitch</span>
+              </button>
+            )}
           </div>
         </div>
       </header>
@@ -630,34 +635,17 @@ export const App: React.FC = () => {
         />
       )}
 
-      {settingsOpen && (
+      {settingsOpen && user && (
         <AdminSettingsModal
           user={user}
           role={role}
           data={data}
-          cfg={cfg}
           dataSource={dataSource}
           onClose={() => setSettingsOpen(false)}
-          onTwitchLogin={(cid) => startTwitchOAuth(cid)}
-          onPreviewLogin={(login) => {
-            const u = setPreviewEditorSession(login);
-            setUser(u);
-            showToast(`Включён локальный тест-режим редактора (@${login})`);
-          }}
           onLogout={() => {
             clearTwitchSession();
             setUser(null);
             showToast('Вы вышли из аккаунта');
-          }}
-          onSaveConfig={async (partial) => {
-            saveLocalRuntimeConfig(partial);
-            const merged = { ...cfg, ...partial };
-            setCfg(merged);
-            if (partial.apiBaseUrl) {
-              const refreshed = await loadInitialSiteData(partial.apiBaseUrl);
-              setData(refreshed.data);
-              setDataSource(refreshed.source);
-            }
           }}
           onUpdateModerators={(moderators) =>
             commitData({ ...data, moderators }, 'Список модераторов обновлён')
@@ -666,7 +654,7 @@ export const App: React.FC = () => {
             commitData(imported, 'Резервная копия успешно загружена!')
           }
           onForceCloudPush={() =>
-            commitData(data, 'Все текущие данные отправлены в облако Яндекс!')
+            commitData(data, 'Все текущие данные отправлены в облако!')
           }
         />
       )}
