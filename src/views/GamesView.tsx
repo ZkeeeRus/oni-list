@@ -31,6 +31,7 @@ interface GamesViewProps {
   initialOrdererFilter?: string;
   onClearInitialOrderer?: () => void;
   onAddGame: () => void;
+  onInspectGame: (id: string) => void;
   onEditGame: (game: GameItem) => void;
   onDeleteGame: (id: string) => void;
   onQuickUpdateGame: (game: GameItem) => void;
@@ -46,6 +47,7 @@ export const GamesView: React.FC<GamesViewProps> = ({
   initialOrdererFilter,
   onClearInitialOrderer,
   onAddGame,
+  onInspectGame,
   onEditGame,
   onDeleteGame,
   onQuickUpdateGame,
@@ -61,7 +63,6 @@ export const GamesView: React.FC<GamesViewProps> = ({
   const [ordererFilter, setOrdererFilter] = useState(initialOrdererFilter || '');
   const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
   const [sortBy, setSortBy] = useState<'default' | 'title' | 'rating'>('default');
-  const [selectedDetailId, setSelectedDetailId] = useState<string | null>(null);
 
   React.useEffect(() => {
     if (initialOrdererFilter !== undefined) {
@@ -146,11 +147,6 @@ export const GamesView: React.FC<GamesViewProps> = ({
     }
     return c;
   }, [games]);
-
-  const selectedDetail = useMemo(
-    () => (selectedDetailId ? games.find((x) => x.id === selectedDetailId) || null : null),
-    [games, selectedDetailId]
-  );
 
   return (
     <div className="view-stack">
@@ -299,7 +295,7 @@ export const GamesView: React.FC<GamesViewProps> = ({
               <article
                 key={g.id}
                 className="media-card"
-                onClick={() => setSelectedDetailId(g.id)}
+                onClick={() => onInspectGame(g.id)}
               >
                 <div className="media-card-poster">
                   <CoverImage
@@ -434,7 +430,7 @@ export const GamesView: React.FC<GamesViewProps> = ({
             </thead>
             <tbody>
               {filtered.map((g) => (
-                <tr key={g.id} onClick={() => setSelectedDetailId(g.id)}>
+                <tr key={g.id} onClick={() => onInspectGame(g.id)}>
                   <td>
                     <div className="table-title-cell">
                       <CoverImage
@@ -561,120 +557,6 @@ export const GamesView: React.FC<GamesViewProps> = ({
               ))}
             </tbody>
           </table>
-        </div>
-      )}
-
-      {/* Detail Modal on Card Click */}
-      {selectedDetail && (
-        <div className="modal-backdrop" onClick={() => setSelectedDetailId(null)}>
-          <div className="modal-card modal-lg" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h3>{selectedDetail.title}</h3>
-              <button className="icon-btn" onClick={() => setSelectedDetailId(null)}>
-                <X size={18} />
-              </button>
-            </div>
-            <div className="modal-body detail-modal-grid">
-              <CoverImage
-                title={selectedDetail.title}
-                coverUrl={selectedDetail.coverUrl}
-                steamAppId={selectedDetail.steamAppId}
-                className="detail-modal-cover"
-              />
-              <div className="detail-modal-info">
-                <div className="row-gap-xs wrap">
-                  <StatusBadge status={selectedDetail.status} />
-                  <RatingBadge rating={selectedDetail.rating} />
-                  <DropPriceBadge price={selectedDetail.dropPrice} />
-                  <ReturnPriceBadge price={selectedDetail.returnPrice} />
-                  {selectedDetail.hours && (
-                    <span className="badge">{selectedDetail.hours} ч.</span>
-                  )}
-                </div>
-                <p>
-                  <strong>Кто заказал:</strong> {selectedDetail.orderedBy}
-                </p>
-                {selectedDetail.conditions && (
-                  <div className="detail-box">
-                    <strong>Условия прохождения:</strong>
-                    <p>{selectedDetail.conditions}</p>
-                  </div>
-                )}
-                {selectedDetail.comment && (
-                  <div className="detail-box">
-                    <strong>Комментарий / мнение стримера и чата:</strong>
-                    <p style={{ whiteSpace: 'pre-line' }}>{selectedDetail.comment}</p>
-                  </div>
-                )}
-
-                {(memesByGame.get(selectedDetail.id) || []).length > 0 && (
-                  <div className="detail-box">
-                    <strong>Мемы с этого прохождения:</strong>
-                    <div className="detail-memes-grid">
-                      {(memesByGame.get(selectedDetail.id) || []).map((m) => (
-                        <button
-                          key={m.id}
-                          type="button"
-                          className="detail-meme-card"
-                          onClick={() => onViewMeme(m)}
-                        >
-                          <img
-                            src={m.imageUrl}
-                            alt={m.caption}
-                            referrerPolicy="no-referrer"
-                          />
-                          <span>{m.caption}</span>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                <div className="row-gap-sm wrap" style={{ marginTop: 12 }}>
-                  {selectedDetail.vodUrl && (
-                    <a
-                      href={selectedDetail.vodUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="btn btn-primary btn-sm"
-                    >
-                      <Video size={14} /> Запись стрима (VOD)
-                    </a>
-                  )}
-                  {selectedDetail.link && (
-                    <a
-                      href={selectedDetail.link}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="btn btn-secondary btn-sm"
-                    >
-                      <ExternalLink size={14} /> Ссылка / страница
-                    </a>
-                  )}
-                  {canEdit && (
-                    <>
-                      <button
-                        className="btn btn-secondary btn-sm"
-                        onClick={() => onAddMemeForGame(selectedDetail)}
-                      >
-                        <ImagePlus size={14} /> + Мем (Ctrl+V)
-                      </button>
-                      <button
-                        className="btn btn-secondary btn-sm"
-                        onClick={() => {
-                          const g = selectedDetail;
-                          setSelectedDetailId(null);
-                          onEditGame(g);
-                        }}
-                      >
-                        <Edit3 size={14} /> Редактировать
-                      </button>
-                    </>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
         </div>
       )}
     </div>

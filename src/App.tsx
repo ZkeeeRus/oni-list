@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   BookOpen,
   Dices,
@@ -46,6 +46,11 @@ import {
   MemeModal,
   WatchModal,
 } from './components/Modals';
+import {
+  BacklogDetailModal,
+  GameDetailModal,
+  WatchDetailModal,
+} from './components/DetailModals';
 
 export const App: React.FC = () => {
   const [cfg, setCfg] = useState<RuntimeConfig>({
@@ -60,7 +65,12 @@ export const App: React.FC = () => {
   const [gamesOrdererPreset, setGamesOrdererPreset] = useState<string>('');
   const [toast, setToast] = useState<string | null>(null);
 
-  // Modals state
+  // Global Detail Inspection Modals (openable from ANY page!)
+  const [inspectGameId, setInspectGameId] = useState<string | null>(null);
+  const [inspectWatchId, setInspectWatchId] = useState<string | null>(null);
+  const [inspectBacklogId, setInspectBacklogId] = useState<string | null>(null);
+
+  // Add/Edit Modals state
   const [gameModalItem, setGameModalItem] = useState<GameItem | null | undefined>(
     undefined
   );
@@ -114,6 +124,27 @@ export const App: React.FC = () => {
     }
   };
 
+  const inspectedGame = useMemo(
+    () => (inspectGameId && data ? data.games.find((g) => g.id === inspectGameId) || null : null),
+    [inspectGameId, data]
+  );
+
+  const inspectedWatch = useMemo(
+    () =>
+      inspectWatchId && data
+        ? data.watchlist.find((w) => w.id === inspectWatchId) || null
+        : null,
+    [inspectWatchId, data]
+  );
+
+  const inspectedBacklog = useMemo(
+    () =>
+      inspectBacklogId && data
+        ? data.backlog.find((b) => b.id === inspectBacklogId) || null
+        : null,
+    [inspectBacklogId, data]
+  );
+
   if (!data) {
     return (
       <div className="loading-screen">
@@ -126,6 +157,33 @@ export const App: React.FC = () => {
   const handleNavigate = (tab: NavTab) => {
     setActiveTab(tab);
     window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handlePromoteBacklog = (b: BacklogItem) => {
+    const promoted: GameItem = {
+      id: `game-${Date.now()}`,
+      title: b.title,
+      orderedBy: 'OniZeD (бэклог)',
+      status: 'В процессе',
+      rating: '',
+      conditions: b.idea,
+      comment: b.notes,
+      dropPrice: '',
+      returnPrice: '',
+      link: b.link,
+      vodUrl: '',
+      hours: '',
+      coverUrl: b.coverUrl,
+      steamAppId: b.steamAppId ?? null,
+    };
+    commitData(
+      {
+        ...data,
+        games: [promoted, ...data.games],
+        backlog: data.backlog.filter((x) => x.id !== b.id),
+      },
+      `«${b.title}» перенесена в Список игр («В процессе»)!`
+    );
   };
 
   return (
@@ -239,8 +297,9 @@ export const App: React.FC = () => {
             }
             onOpenAddGame={() => setGameModalItem(null)}
             onOpenAddWatch={() => setWatchModalItem(null)}
-            onEditGame={(g) => setGameModalItem(g)}
-            onEditWatch={(w) => setWatchModalItem(w)}
+            onInspectGame={(id) => setInspectGameId(id)}
+            onInspectWatch={(id) => setInspectWatchId(id)}
+            onInspectBacklog={(id) => setInspectBacklogId(id)}
           />
         )}
 
@@ -253,6 +312,7 @@ export const App: React.FC = () => {
             initialOrdererFilter={gamesOrdererPreset}
             onClearInitialOrderer={() => setGamesOrdererPreset('')}
             onAddGame={() => setGameModalItem(null)}
+            onInspectGame={(id) => setInspectGameId(id)}
             onEditGame={(g) => setGameModalItem(g)}
             onDeleteGame={(id) =>
               commitData(
@@ -281,7 +341,9 @@ export const App: React.FC = () => {
             watchlist={data.watchlist}
             memes={data.memes}
             canEdit={canEdit}
+            currentUser={user}
             onAddWatch={() => setWatchModalItem(null)}
+            onInspectWatch={(id) => setInspectWatchId(id)}
             onEditWatch={(w) => setWatchModalItem(w)}
             onDeleteWatch={(id) =>
               commitData(
@@ -306,6 +368,8 @@ export const App: React.FC = () => {
             onSaveCustomTierLists={(lists) =>
               commitData({ ...data, customTierLists: lists }, 'Тир-лист сохранён')
             }
+            onInspectGame={(id) => setInspectGameId(id)}
+            onInspectWatch={(id) => setInspectWatchId(id)}
           />
         )}
 
@@ -314,6 +378,7 @@ export const App: React.FC = () => {
             backlog={data.backlog}
             canEdit={canEdit}
             onAddBacklog={() => setBacklogModalItem(null)}
+            onInspectBacklog={(id) => setInspectBacklogId(id)}
             onEditBacklog={(b) => setBacklogModalItem(b)}
             onDeleteBacklog={(id) =>
               commitData(
@@ -321,30 +386,7 @@ export const App: React.FC = () => {
                 'Идея удалена из бэклога'
               )
             }
-            onPromoteToGame={(b) => {
-              const promoted: GameItem = {
-                id: `game-${Date.now()}`,
-                title: b.title,
-                orderedBy: 'OniZeD (бэклог)',
-                status: 'В процессе',
-                rating: '',
-                conditions: b.idea,
-                comment: b.notes,
-                link: b.link,
-                vodUrl: '',
-                hours: '',
-                coverUrl: b.coverUrl,
-                steamAppId: b.steamAppId ?? null,
-              };
-              commitData(
-                {
-                  ...data,
-                  games: [promoted, ...data.games],
-                  backlog: data.backlog.filter((x) => x.id !== b.id),
-                },
-                `«${b.title}» перенесена в Список игр!`
-              );
-            }}
+            onPromoteToGame={handlePromoteBacklog}
           />
         )}
 
@@ -352,17 +394,43 @@ export const App: React.FC = () => {
           <StatsRandomizerView
             data={data}
             canEdit={canEdit}
-            onStartRolledGame={(gameId) => {
+            onUpdateGameStatus={(gameId, status) => {
               commitData(
                 {
                   ...data,
                   games: data.games.map((g) =>
-                    g.id === gameId ? { ...g, status: 'В процессе' } : g
+                    g.id === gameId ? { ...g, status } : g
                   ),
                 },
-                'Игра переведена в статус «В процессе»!'
+                `Статус игры изменён на «${status}»`
               );
             }}
+            onUpdateWatchStatus={(watchId, status) => {
+              commitData(
+                {
+                  ...data,
+                  watchlist: data.watchlist.map((w) =>
+                    w.id === watchId ? { ...w, status } : w
+                  ),
+                },
+                `Статус тайтла изменён на «${status}»`
+              );
+            }}
+            onUpdateBacklogStatus={(backlogId, status) => {
+              commitData(
+                {
+                  ...data,
+                  backlog: data.backlog.map((b) =>
+                    b.id === backlogId ? { ...b, status } : b
+                  ),
+                },
+                `Статус бэклога изменён на «${status}»`
+              );
+            }}
+            onPromoteBacklogToGame={handlePromoteBacklog}
+            onInspectGame={(id) => setInspectGameId(id)}
+            onInspectWatch={(id) => setInspectWatchId(id)}
+            onInspectBacklog={(id) => setInspectBacklogId(id)}
             onFilterByOrderer={(orderer) => {
               setGamesOrdererPreset(orderer);
               setActiveTab('games');
@@ -383,7 +451,86 @@ export const App: React.FC = () => {
         )}
       </main>
 
-      {/* Modals */}
+      {/* Global Detail Inspection Popups */}
+      {inspectedGame && (
+        <GameDetailModal
+          game={inspectedGame}
+          memes={data.memes.filter(
+            (m) => m.targetType === 'game' && m.targetId === inspectedGame.id
+          )}
+          canEdit={canEdit}
+          onClose={() => setInspectGameId(null)}
+          onEdit={(g) => setGameModalItem(g)}
+          onQuickUpdate={(updated) =>
+            commitData(
+              {
+                ...data,
+                games: data.games.map((x) => (x.id === updated.id ? updated : x)),
+              },
+              'Игра обновлена'
+            )
+          }
+          onAddMeme={(g) =>
+            setMemeModalTarget({ type: 'game', id: g.id, title: g.title })
+          }
+          onViewMeme={(m) => setLightboxMeme(m)}
+          onFilterByOrderer={(orderer) => {
+            setGamesOrdererPreset(orderer);
+            setActiveTab('games');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          }}
+        />
+      )}
+
+      {inspectedWatch && (
+        <WatchDetailModal
+          item={inspectedWatch}
+          memes={data.memes.filter(
+            (m) => m.targetType === 'watch' && m.targetId === inspectedWatch.id
+          )}
+          canEdit={canEdit}
+          onClose={() => setInspectWatchId(null)}
+          onEdit={(w) => setWatchModalItem(w)}
+          onQuickUpdate={(updated) =>
+            commitData(
+              {
+                ...data,
+                watchlist: data.watchlist.map((x) =>
+                  x.id === updated.id ? updated : x
+                ),
+              },
+              'Тайтл обновлён'
+            )
+          }
+          onAddMeme={(w) =>
+            setMemeModalTarget({ type: 'watch', id: w.id, title: w.title })
+          }
+          onViewMeme={(m) => setLightboxMeme(m)}
+        />
+      )}
+
+      {inspectedBacklog && (
+        <BacklogDetailModal
+          item={inspectedBacklog}
+          canEdit={canEdit}
+          onClose={() => setInspectBacklogId(null)}
+          onEdit={(b) => setBacklogModalItem(b)}
+          onQuickUpdate={(updated) =>
+            commitData(
+              {
+                ...data,
+                backlog: data.backlog.map((x) =>
+                  x.id === updated.id ? updated : x
+                ),
+              },
+              'Идея бэклога обновлена'
+            )
+          }
+          onPromoteToGame={handlePromoteBacklog}
+        />
+      )}
+
+      {/* Add/Edit Modals */}
       {gameModalItem !== undefined && (
         <GameModal
           initial={gameModalItem}
@@ -442,7 +589,7 @@ export const App: React.FC = () => {
           onSave={(meme) => {
             commitData(
               { ...data, memes: [meme, ...data.memes] },
-              'Мем добавлен в галерею!'
+              'Мем прикреплён!'
             );
             setMemeModalTarget(undefined);
           }}

@@ -22,6 +22,7 @@ interface BacklogViewProps {
   backlog: BacklogItem[];
   canEdit: boolean;
   onAddBacklog: () => void;
+  onInspectBacklog: (id: string) => void;
   onEditBacklog: (item: BacklogItem) => void;
   onDeleteBacklog: (id: string) => void;
   onPromoteToGame: (item: BacklogItem) => void;
@@ -31,6 +32,7 @@ export const BacklogView: React.FC<BacklogViewProps> = ({
   backlog,
   canEdit,
   onAddBacklog,
+  onInspectBacklog,
   onEditBacklog,
   onDeleteBacklog,
   onPromoteToGame,
@@ -57,7 +59,7 @@ export const BacklogView: React.FC<BacklogViewProps> = ({
         <div>
           <h1>Бэклог идей для будущих стримов ({filtered.length})</h1>
           <p className="muted-sm">
-            Личные задумки стримера, челленджи, ремейки и марафоны на будущее
+            Нажми на любую карточку, чтобы открыть полное описание идеи
           </p>
         </div>
         {canEdit && (
@@ -120,7 +122,11 @@ export const BacklogView: React.FC<BacklogViewProps> = ({
 
       <div className="media-cards-grid">
         {filtered.map((b) => (
-          <article key={b.id} className="media-card">
+          <article
+            key={b.id}
+            className="media-card"
+            onClick={() => onInspectBacklog(b.id)}
+          >
             <div className="media-card-poster">
               <CoverImage
                 title={b.title}
@@ -139,11 +145,11 @@ export const BacklogView: React.FC<BacklogViewProps> = ({
               <h3 className="media-card-title">{b.title}</h3>
 
               {b.idea && (
-                <div className="card-note conditions-note">
+                <div className="card-note conditions-note clamp-2">
                   <strong>Идея:</strong> {b.idea}
                 </div>
               )}
-              {b.notes && <p className="card-comment">{b.notes}</p>}
+              {b.notes && <p className="card-comment clamp-3">{b.notes}</p>}
 
               {b.link && (
                 <a
@@ -152,13 +158,17 @@ export const BacklogView: React.FC<BacklogViewProps> = ({
                   rel="noreferrer"
                   className="btn btn-secondary btn-xs"
                   style={{ alignSelf: 'flex-start', marginTop: 4 }}
+                  onClick={(e) => e.stopPropagation()}
                 >
                   <ExternalLink size={12} /> Источник / мод <ArrowUpRight size={12} />
                 </a>
               )}
 
               {canEdit && (
-                <div className="card-mod-actions">
+                <div
+                  className="card-mod-actions"
+                  onClick={(e) => e.stopPropagation()}
+                >
                   <button
                     className="btn btn-ghost btn-xs"
                     onClick={() => onPromoteToGame(b)}

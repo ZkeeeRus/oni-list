@@ -7,7 +7,7 @@ import {
   Trash2,
   X,
 } from 'lucide-react';
-import { MemeItem, WatchItem } from '../types';
+import { MemeItem, TwitchUser, WatchItem } from '../types';
 import { CoverImage } from '../components/CoverImage';
 import {
   RATINGS_ORDER,
@@ -21,7 +21,9 @@ interface WatchlistViewProps {
   watchlist: WatchItem[];
   memes: MemeItem[];
   canEdit: boolean;
+  currentUser: TwitchUser | null;
   onAddWatch: () => void;
+  onInspectWatch: (id: string) => void;
   onEditWatch: (item: WatchItem) => void;
   onDeleteWatch: (id: string) => void;
   onAddMeme: (target: { type: 'watch'; id: string; title: string }) => void;
@@ -32,7 +34,9 @@ export const WatchlistView: React.FC<WatchlistViewProps> = ({
   watchlist,
   memes,
   canEdit,
+  currentUser,
   onAddWatch,
+  onInspectWatch,
   onEditWatch,
   onDeleteWatch,
   onAddMeme,
@@ -42,7 +46,8 @@ export const WatchlistView: React.FC<WatchlistViewProps> = ({
   const [catFilter, setCatFilter] = useState('ALL');
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [ratingFilter, setRatingFilter] = useState('ALL');
-  const [selectedDetailId, setSelectedDetailId] = useState<string | null>(null);
+  const [onlyMine, setOnlyMine] = useState(false);
+  const [ordererFilter, setOrdererFilter] = useState('');
 
   const memesByWatchId = useMemo(() => {
     const map = new Map<string, MemeItem[]>();
@@ -58,27 +63,35 @@ export const WatchlistView: React.FC<WatchlistViewProps> = ({
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
+    const ordQ = ordererFilter.trim().toLowerCase();
+    const myLogin = currentUser?.login.toLowerCase() || '';
+
     return watchlist.filter((w) => {
       if (catFilter !== 'ALL' && w.category !== catFilter) return false;
       if (statusFilter !== 'ALL' && w.status !== statusFilter) return false;
       if (ratingFilter !== 'ALL' && w.rating !== ratingFilter) return false;
+      if (onlyMine && myLogin && !w.orderedBy.toLowerCase().includes(myLogin)) {
+        return false;
+      }
+      if (ordQ && !w.orderedBy.toLowerCase().includes(ordQ)) {
+        return false;
+      }
       if (q) {
         const hay = `${w.title} ${w.orderedBy} ${w.comment} ${w.conditions}`.toLowerCase();
         if (!hay.includes(q)) return false;
       }
       return true;
     });
-  }, [watchlist, search, catFilter, statusFilter, ratingFilter]);
-
-  const selectedDetail = useMemo(
-    () =>
-      selectedDetailId ? watchlist.find((w) => w.id === selectedDetailId) || null : null,
-    [watchlist, selectedDetailId]
-  );
-
-  const selectedMemes = selectedDetail
-    ? memesByWatchId.get(selectedDetail.id) || []
-    : [];
+  }, [
+    watchlist,
+    search,
+    catFilter,
+    statusFilter,
+    ratingFilter,
+    onlyMine,
+    ordererFilter,
+    currentUser,
+  ]);
 
   return (
     <div className="view-stack">
@@ -140,6 +153,26 @@ export const WatchlistView: React.FC<WatchlistViewProps> = ({
             </option>
           ))}
         </select>
+
+        {currentUser && (
+          <label className="check-pill">
+            <input
+              type="checkbox"
+              checked={onlyMine}
+              onChange={(e) => setOnlyMine(e.target.checked)}
+            />
+            <span>Мои заказы (@{currentUser.login})</span>
+          </label>
+        )}
+
+        {ordererFilter && (
+          <span className="active-filter-tag">
+            Заказчик: <strong>{ordererFilter}</strong>
+            <button onClick={() => setOrdererFilter('')}>
+              <X size={12} />
+            </button>
+          </span>
+        )}
       </div>
 
       <div className="status-pills-row">
@@ -170,7 +203,7 @@ export const WatchlistView: React.FC<WatchlistViewProps> = ({
             <article
               key={w.id}
               className="media-card"
-              onClick={() => setSelectedDetailId(w.id)}
+              onClick={() => onInspectWatch(w.id)}
             >
               <div className="media-card-poster">
                 <CoverImage
@@ -192,7 +225,21 @@ export const WatchlistView: React.FC<WatchlistViewProps> = ({
                 </div>
                 <h3 className="media-card-title">{w.title}</h3>
                 <div className="media-card-orderer">
-                  Заказал: <strong>{w.orderedBy}</strong>
+                  Заказал:{' '}
+                  {w.orderedBy && w.orderedBy !== '-' ? (
+                    <button
+                      type="button"
+                      className="link-inline"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setOrdererFilter(w.orderedBy);
+                      }}
+                    >
+                      {w.orderedBy}
+                    </button>
+                  ) : (
+                    <strong>{w.orderedBy}</strong>
+                  )}
                 </div>
 
                 {w.conditions && (
@@ -261,103 +308,6 @@ export const WatchlistView: React.FC<WatchlistViewProps> = ({
           );
         })}
       </div>
-
-      {/* Detailed Popup Modal when clicking a Watchlist Card */}
-      {selectedDetail && (
-        <div className="modal-backdrop" onClick={() => setSelectedDetailId(null)}>
-          <div className="modal-card modal-lg" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h3>{selectedDetail.title}</h3>
-              <button className="icon-btn" onClick={() => setSelectedDetailId(null)}>
-                <X size={18} />
-              </button>
-            </div>
-            <div className="modal-body detail-modal-grid">
-              <CoverImage
-                title={selectedDetail.title}
-                coverUrl={selectedDetail.coverUrl}
-                badgeText={selectedDetail.category}
-                className="detail-modal-cover"
-              />
-              <div className="detail-modal-info">
-                <div className="row-gap-xs wrap">
-                  <span className="pill-type watch">{selectedDetail.category}</span>
-                  <StatusBadge status={selectedDetail.status} />
-                  <RatingBadge rating={selectedDetail.rating} />
-                </div>
-
-                <p>
-                  <strong>Кто заказал:</strong> {selectedDetail.orderedBy}
-                </p>
-
-                {selectedDetail.conditions && (
-                  <div className="detail-box">
-                    <strong>Условия / описание:</strong>
-                    <p style={{ whiteSpace: 'pre-line' }}>{selectedDetail.conditions}</p>
-                  </div>
-                )}
-
-                {selectedDetail.comment && (
-                  <div className="detail-box">
-                    <strong>Комментарий / прогресс просмотра:</strong>
-                    <p style={{ whiteSpace: 'pre-line' }}>{selectedDetail.comment}</p>
-                  </div>
-                )}
-
-                {selectedMemes.length > 0 && (
-                  <div className="detail-box">
-                    <strong>Мемы с этого стрима ({selectedMemes.length}):</strong>
-                    <div className="detail-memes-grid">
-                      {selectedMemes.map((m) => (
-                        <button
-                          key={m.id}
-                          type="button"
-                          className="detail-meme-card"
-                          onClick={() => onViewMeme(m)}
-                        >
-                          <img
-                            src={m.imageUrl}
-                            alt={m.caption}
-                            referrerPolicy="no-referrer"
-                          />
-                          <span>{m.caption}</span>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {canEdit && (
-                  <div className="row-gap-sm wrap" style={{ marginTop: 12 }}>
-                    <button
-                      className="btn btn-secondary btn-sm"
-                      onClick={() =>
-                        onAddMeme({
-                          type: 'watch',
-                          id: selectedDetail.id,
-                          title: selectedDetail.title,
-                        })
-                      }
-                    >
-                      <ImagePlus size={14} /> + Прикрепить мем (Ctrl+V)
-                    </button>
-                    <button
-                      className="btn btn-secondary btn-sm"
-                      onClick={() => {
-                        const item = selectedDetail;
-                        setSelectedDetailId(null);
-                        onEditWatch(item);
-                      }}
-                    >
-                      <Edit3 size={14} /> Редактировать тайтл
-                    </button>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

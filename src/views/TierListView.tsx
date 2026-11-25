@@ -27,6 +27,8 @@ interface TierListViewProps {
   authorName: string;
   apiBaseUrl: string;
   onSaveCustomTierLists: (lists: CustomTierList[]) => void;
+  onInspectGame: (id: string) => void;
+  onInspectWatch: (id: string) => void;
 }
 
 const DEFAULT_NEW_TIERS = [
@@ -46,12 +48,13 @@ export const TierListView: React.FC<TierListViewProps> = ({
   authorName,
   apiBaseUrl,
   onSaveCustomTierLists,
+  onInspectGame,
+  onInspectWatch,
 }) => {
   const [selectedBoardId, setSelectedBoardId] = useState<string>('AUTO_GAMES');
   const [autoFilter, setAutoFilter] = useState('');
   const [statusScope, setStatusScope] = useState<'ALL' | 'COMPLETED'>('ALL');
 
-  // Custom Tier List Builder states
   const [dragItem, setDragItem] = useState<{
     card: TierCardItem;
     fromContainerId: string;
@@ -66,7 +69,19 @@ export const TierListView: React.FC<TierListViewProps> = ({
     [customTierLists, selectedBoardId]
   );
 
-  // Build Auto Tier List rows
+  const openByTitleOrId = (card: TierCardItem) => {
+    const tLow = card.title.trim().toLowerCase();
+    const matchedGame = games.find((g) => g.title.trim().toLowerCase() === tLow);
+    if (matchedGame) {
+      onInspectGame(matchedGame.id);
+      return;
+    }
+    const matchedWatch = watchlist.find((w) => w.title.trim().toLowerCase() === tLow);
+    if (matchedWatch) {
+      onInspectWatch(matchedWatch.id);
+    }
+  };
+
   const autoRows = useMemo(() => {
     const q = autoFilter.trim().toLowerCase();
     const tiers = ['Шедевр', 'Великолепно', 'Похвально', 'Проходняк', 'Полный кал'];
@@ -75,6 +90,7 @@ export const TierListView: React.FC<TierListViewProps> = ({
       const color = getRatingColor(tierName);
       const items: Array<{
         id: string;
+        kind: 'game' | 'watch';
         title: string;
         coverUrl: string;
         steamAppId?: number | null;
@@ -94,6 +110,7 @@ export const TierListView: React.FC<TierListViewProps> = ({
           }
           items.push({
             id: g.id,
+            kind: 'game',
             title: g.title,
             coverUrl: g.coverUrl,
             steamAppId: g.steamAppId,
@@ -111,6 +128,7 @@ export const TierListView: React.FC<TierListViewProps> = ({
           }
           items.push({
             id: w.id,
+            kind: 'watch',
             title: w.title,
             coverUrl: w.coverUrl,
             sub: `${w.category} • ${w.orderedBy}`,
@@ -254,7 +272,7 @@ export const TierListView: React.FC<TierListViewProps> = ({
         <div>
           <h1>Тир-листы канала</h1>
           <p className="muted-sm">
-            Общий тир-лист всех оценённых игр и фильмов + конструктор своих тир-листов для стримов
+            Нажми на любую карточку в тир-листе, чтобы открыть подробности игры или тайтла
           </p>
         </div>
 
@@ -356,12 +374,13 @@ export const TierListView: React.FC<TierListViewProps> = ({
                     {row.items.map((item) => (
                       <div
                         key={item.id}
-                        className="tier-tile"
-                        title={
-                          item.comment
-                            ? `${item.title} (${item.sub})\n\n${item.comment}`
-                            : `${item.title} (${item.sub})`
+                        className="tier-tile clickable-tile"
+                        onClick={() =>
+                          item.kind === 'game'
+                            ? onInspectGame(item.id)
+                            : onInspectWatch(item.id)
                         }
+                        title={`${item.title} (${item.sub}) - нажми, чтобы открыть`}
                       >
                         <CoverImage
                           title={item.title}
@@ -385,7 +404,7 @@ export const TierListView: React.FC<TierListViewProps> = ({
               <h2>{activeCustomList.title}</h2>
               <p className="muted-sm">
                 Автор: {activeCustomList.createdBy} • {activeCustomList.createdAt}
-                {canEdit && ' • Перетаскивайте карточки мышкой между тирами!'}
+                {canEdit && ' • Перетаскивай карточки мышкой или кликай для просмотра!'}
               </p>
             </div>
             {canEdit && (
@@ -473,8 +492,9 @@ export const TierListView: React.FC<TierListViewProps> = ({
                   {tier.items.map((card) => (
                     <div
                       key={card.id}
-                      className={`tier-tile ${canEdit ? 'draggable' : ''}`}
+                      className={`tier-tile clickable-tile ${canEdit ? 'draggable' : ''}`}
                       draggable={canEdit}
+                      onClick={() => openByTitleOrId(card)}
                       onDragStart={() =>
                         canEdit && setDragItem({ card, fromContainerId: tier.id })
                       }
@@ -488,7 +508,10 @@ export const TierListView: React.FC<TierListViewProps> = ({
                       {canEdit && (
                         <button
                           className="tile-remove-btn"
-                          onClick={() => removeCardFromBoard(card.id)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            removeCardFromBoard(card.id);
+                          }}
                           title="Убрать из тир-листа"
                         >
                           <X size={11} />
@@ -501,7 +524,6 @@ export const TierListView: React.FC<TierListViewProps> = ({
             ))}
           </div>
 
-          {/* Unranked Pool + Card Adder for Streamer/Mods */}
           {canEdit && (
             <div
               className="section-block"
@@ -524,8 +546,9 @@ export const TierListView: React.FC<TierListViewProps> = ({
                   activeCustomList.pool.map((card) => (
                     <div
                       key={card.id}
-                      className="tier-tile draggable"
+                      className="tier-tile clickable-tile draggable"
                       draggable
+                      onClick={() => openByTitleOrId(card)}
                       onDragStart={() =>
                         setDragItem({ card, fromContainerId: 'POOL' })
                       }
@@ -538,7 +561,10 @@ export const TierListView: React.FC<TierListViewProps> = ({
                       <div className="tier-tile-caption">{card.title}</div>
                       <button
                         className="tile-remove-btn"
-                        onClick={() => removeCardFromBoard(card.id)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          removeCardFromBoard(card.id);
+                        }}
                       >
                         <X size={11} />
                       </button>

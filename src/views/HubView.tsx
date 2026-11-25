@@ -15,7 +15,7 @@ import {
   Trophy,
   Users,
 } from 'lucide-react';
-import { GameItem, HubConfig, SiteData, WatchItem } from '../types';
+import { HubConfig, SiteData } from '../types';
 import { CoverImage } from '../components/CoverImage';
 import {
   DropPriceBadge,
@@ -42,8 +42,9 @@ interface HubViewProps {
   onUpdateHubConfig: (cfg: HubConfig) => void;
   onOpenAddGame: () => void;
   onOpenAddWatch: () => void;
-  onEditGame: (g: GameItem) => void;
-  onEditWatch: (w: WatchItem) => void;
+  onInspectGame: (gameId: string) => void;
+  onInspectWatch: (watchId: string) => void;
+  onInspectBacklog: (backlogId: string) => void;
 }
 
 export const HubView: React.FC<HubViewProps> = ({
@@ -54,8 +55,9 @@ export const HubView: React.FC<HubViewProps> = ({
   onUpdateHubConfig,
   onOpenAddGame,
   onOpenAddWatch,
-  onEditGame,
-  onEditWatch,
+  onInspectGame,
+  onInspectWatch,
+  onInspectBacklog,
 }) => {
   const { hubConfig, games, watchlist, backlog, customTierLists } = data;
   const [editingPlan, setEditingPlan] = useState(false);
@@ -245,7 +247,7 @@ export const HubView: React.FC<HubViewProps> = ({
         <div className="section-head">
           <div>
             <h2>Сейчас в процессе</h2>
-            <p className="muted-sm">Текущие игры и тайтлы на стримах</p>
+            <p className="muted-sm">Нажми на любую карточку, чтобы открыть подробности</p>
           </div>
           <div className="row-gap-sm">
             <button className="btn btn-ghost btn-sm" onClick={() => onNavigate('games')}>
@@ -259,7 +261,7 @@ export const HubView: React.FC<HubViewProps> = ({
             <div
               key={g.id}
               className="spotlight-card"
-              onClick={() => (canEdit ? onEditGame(g) : onNavigate('games'))}
+              onClick={() => onInspectGame(g.id)}
             >
               <CoverImage
                 title={g.title}
@@ -289,7 +291,7 @@ export const HubView: React.FC<HubViewProps> = ({
             <div
               key={w.id}
               className="spotlight-card"
-              onClick={() => (canEdit ? onEditWatch(w) : onNavigate('watchlist'))}
+              onClick={() => onInspectWatch(w.id)}
             >
               <CoverImage
                 title={w.title}
@@ -319,7 +321,7 @@ export const HubView: React.FC<HubViewProps> = ({
           <div className="section-head">
             <div>
               <h2>Ближайшие идеи из бэклога</h2>
-              <p className="muted-sm">Планы и заготовки под будущие стримы</p>
+              <p className="muted-sm">Нажми на идею, чтобы посмотреть описание</p>
             </div>
             <button className="btn btn-ghost btn-sm" onClick={() => onNavigate('backlog')}>
               Весь бэклог ({backlog.length}) <ArrowRight size={14} />
@@ -330,7 +332,7 @@ export const HubView: React.FC<HubViewProps> = ({
               <div
                 key={b.id}
                 className="compact-row"
-                onClick={() => onNavigate('backlog')}
+                onClick={() => onInspectBacklog(b.id)}
               >
                 <CoverImage
                   title={b.title}
@@ -375,7 +377,7 @@ export const HubView: React.FC<HubViewProps> = ({
                 onClick={() => onFilterByOrderer(ord.display)}
               >
                 <div className="rank-badge-circle">#{idx + 1}</div>
-                <div className="compact-row-body" style={{ textAlign: 'left' }}>
+                <div className="compact-row-body orderer-name-cell">
                   <strong>{ord.display}</strong>
                 </div>
                 <span className="badge tone-queued">{ord.count} игр</span>
@@ -390,7 +392,7 @@ export const HubView: React.FC<HubViewProps> = ({
         <div className="section-head">
           <div>
             <h2>Развёрнутые отзывы и мнения из чата</h2>
-            <p className="muted-sm">Из последних оценённых прохождений</p>
+            <p className="muted-sm">Нажми на отзыв, чтобы открыть карточку игры целиком</p>
           </div>
           <button className="btn btn-ghost btn-sm" onClick={() => onNavigate('tierlist')}>
             <Trophy size={14} /> Открыть тир-лист
@@ -398,7 +400,11 @@ export const HubView: React.FC<HubViewProps> = ({
         </div>
         <div className="reviews-grid">
           {recentReviewed.map((g) => (
-            <div key={g.id} className="review-card">
+            <div
+              key={g.id}
+              className="review-card clickable-card"
+              onClick={() => onInspectGame(g.id)}
+            >
               <CoverImage
                 title={g.title}
                 coverUrl={g.coverUrl}
@@ -411,7 +417,7 @@ export const HubView: React.FC<HubViewProps> = ({
                   <RatingBadge rating={g.rating} />
                 </div>
                 <div className="muted-xs">Заказал: {g.orderedBy}</div>
-                <p className="review-quote">{g.comment}</p>
+                <p className="review-quote clamp-3">{g.comment}</p>
               </div>
             </div>
           ))}
