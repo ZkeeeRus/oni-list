@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   ArrowRight,
   BookOpen,
@@ -8,18 +8,22 @@ import {
   ExternalLink,
   Film,
   Gamepad2,
-  ImagePlus,
   Layers,
   ListTodo,
-  Lock,
   PlayCircle,
   Plus,
   Trophy,
-  Unlock,
+  Users,
 } from 'lucide-react';
-import { GameItem, HubConfig, MemeItem, SiteData, WatchItem } from '../types';
+import { GameItem, HubConfig, SiteData, WatchItem } from '../types';
 import { CoverImage } from '../components/CoverImage';
-import { PriorityBadge, RatingBadge, StatusBadge } from '../components/Badges';
+import {
+  DropPriceBadge,
+  PriorityBadge,
+  RatingBadge,
+  ReturnPriceBadge,
+  StatusBadge,
+} from '../components/Badges';
 
 export type NavTab =
   | 'hub'
@@ -33,32 +37,29 @@ export type NavTab =
 interface HubViewProps {
   data: SiteData;
   canEdit: boolean;
-  onNavigate: (tab: NavTab, filterPreset?: string) => void;
+  onNavigate: (tab: NavTab) => void;
+  onFilterByOrderer: (orderer: string) => void;
   onUpdateHubConfig: (cfg: HubConfig) => void;
   onOpenAddGame: () => void;
   onOpenAddWatch: () => void;
-  onOpenAddMeme: () => void;
   onEditGame: (g: GameItem) => void;
   onEditWatch: (w: WatchItem) => void;
-  onViewMeme: (m: MemeItem) => void;
 }
 
 export const HubView: React.FC<HubViewProps> = ({
   data,
   canEdit,
   onNavigate,
+  onFilterByOrderer,
   onUpdateHubConfig,
   onOpenAddGame,
   onOpenAddWatch,
-  onOpenAddMeme,
   onEditGame,
   onEditWatch,
-  onViewMeme,
 }) => {
-  const { hubConfig, games, watchlist, memes, backlog, customTierLists } = data;
+  const { hubConfig, games, watchlist, backlog, customTierLists } = data;
   const [editingPlan, setEditingPlan] = useState(false);
   const [planDraft, setPlanDraft] = useState(hubConfig.currentPlanNote);
-  const [bannerDraft, setBannerDraft] = useState(hubConfig.freezeBannerText);
 
   const activeGames = games.filter(
     (g) => g.status === 'В процессе' || g.status === 'Проходится'
@@ -72,44 +73,31 @@ export const HubView: React.FC<HubViewProps> = ({
     .filter((g) => g.comment && g.comment.length > 35 && g.rating)
     .slice(0, 6);
 
+  const topOrderers = useMemo(() => {
+    const counts = new Map<string, { display: string; count: number }>();
+    for (const g of games) {
+      const raw = (g.orderedBy || '').trim();
+      if (!raw || raw === '-' || raw === '?') continue;
+      const key = raw.toLowerCase();
+      const entry = counts.get(key) || { display: raw, count: 0 };
+      entry.count += 1;
+      counts.set(key, entry);
+    }
+    return Array.from(counts.values())
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 6);
+  }, [games]);
+
   const handleSavePlan = () => {
     onUpdateHubConfig({
       ...hubConfig,
       currentPlanNote: planDraft.trim(),
-      freezeBannerText: bannerDraft.trim(),
     });
     setEditingPlan(false);
   };
 
   return (
     <div className="view-stack">
-      {/* Status Banner */}
-      {(hubConfig.isListFrozen || canEdit) && (
-        <div className={`freeze-banner ${hubConfig.isListFrozen ? 'frozen' : 'open'}`}>
-          <div className="row-gap-sm">
-            {hubConfig.isListFrozen ? <Lock size={18} /> : <Unlock size={18} />}
-            <span>
-              {hubConfig.isListFrozen
-                ? hubConfig.freezeBannerText
-                : 'Заказ игр в общий список сейчас открыт!'}
-            </span>
-          </div>
-          {canEdit && (
-            <button
-              className="btn btn-secondary btn-sm"
-              onClick={() =>
-                onUpdateHubConfig({
-                  ...hubConfig,
-                  isListFrozen: !hubConfig.isListFrozen,
-                })
-              }
-            >
-              {hubConfig.isListFrozen ? 'Открыть заказы' : 'Заморозить список'}
-            </button>
-          )}
-        </div>
-      )}
-
       {/* Hero + Current Plan */}
       <section className="hub-hero">
         <div className="hub-hero-main">
@@ -125,7 +113,6 @@ export const HubView: React.FC<HubViewProps> = ({
                   className="btn btn-ghost btn-xs"
                   onClick={() => {
                     setPlanDraft(hubConfig.currentPlanNote);
-                    setBannerDraft(hubConfig.freezeBannerText);
                     setEditingPlan(true);
                   }}
                 >
@@ -141,12 +128,6 @@ export const HubView: React.FC<HubViewProps> = ({
                   value={planDraft}
                   onChange={(e) => setPlanDraft(e.target.value)}
                   placeholder="Что проходим и смотрим в ближайшее время..."
-                />
-                <input
-                  className="input input-sm"
-                  value={bannerDraft}
-                  onChange={(e) => setBannerDraft(e.target.value)}
-                  placeholder="Текст плашки заморозки списка..."
                 />
                 <div className="row-gap-sm">
                   <button className="btn btn-primary btn-sm" onClick={handleSavePlan}>
@@ -190,9 +171,6 @@ export const HubView: React.FC<HubViewProps> = ({
                 <button className="btn btn-secondary" onClick={onOpenAddWatch}>
                   <Plus size={16} /> + Просмотровое
                 </button>
-                <button className="btn btn-secondary" onClick={onOpenAddMeme}>
-                  <ImagePlus size={16} /> + Мем
-                </button>
               </>
             )}
           </div>
@@ -217,7 +195,7 @@ export const HubView: React.FC<HubViewProps> = ({
             </div>
             <div className="kpi-num">{watchlist.length}</div>
             <div className="kpi-title">Просмотровый список</div>
-            <div className="kpi-sub">{memes.length} мемов на память со стримов</div>
+            <div className="kpi-sub">Фильмы, сериалы, аниме и манга</div>
           </button>
 
           <button className="kpi-card" onClick={() => onNavigate('tierlist')}>
@@ -294,6 +272,8 @@ export const HubView: React.FC<HubViewProps> = ({
                   <span className="pill-type game">Игра</span>
                   <StatusBadge status={g.status} />
                   <RatingBadge rating={g.rating} />
+                  <DropPriceBadge price={g.dropPrice} />
+                  <ReturnPriceBadge price={g.returnPrice} />
                 </div>
                 <h3>{g.title}</h3>
                 <div className="muted-sm">
@@ -333,7 +313,7 @@ export const HubView: React.FC<HubViewProps> = ({
         </div>
       </section>
 
-      {/* Backlog Plans + Stream Memes */}
+      {/* Backlog Plans + Top Orderers */}
       <div className="two-col-hub">
         <section className="section-block">
           <div className="section-head">
@@ -375,36 +355,30 @@ export const HubView: React.FC<HubViewProps> = ({
         <section className="section-block">
           <div className="section-head">
             <div>
-              <h2>Мемы со стримов</h2>
-              <p className="muted-sm">Памятные картинки из просмотрового и игр</p>
+              <h2>
+                <Users size={18} style={{ verticalAlign: 'middle', marginRight: 8 }} />
+                Топ заказчиков канала
+              </h2>
+              <p className="muted-sm">Кликни на зрителя, чтобы открыть все его заказы</p>
             </div>
-            <div className="row-gap-xs">
-              {canEdit && (
-                <button className="btn btn-secondary btn-sm" onClick={onOpenAddMeme}>
-                  <ImagePlus size={14} /> + Мем
-                </button>
-              )}
-              <button
-                className="btn btn-ghost btn-sm"
-                onClick={() => onNavigate('watchlist', 'memes')}
-              >
-                Все ({memes.length}) <ArrowRight size={14} />
-              </button>
-            </div>
+            <button className="btn btn-ghost btn-sm" onClick={() => onNavigate('stats')}>
+              Вся статистика <ArrowRight size={14} />
+            </button>
           </div>
 
-          <div className="hub-memes-grid">
-            {memes.slice(0, 6).map((m) => (
+          <div className="compact-list">
+            {topOrderers.map((ord, idx) => (
               <button
-                key={m.id}
+                key={ord.display}
                 type="button"
-                className="meme-card-mini"
-                onClick={() => onViewMeme(m)}
+                className="compact-row orderer-hub-row"
+                onClick={() => onFilterByOrderer(ord.display)}
               >
-                <img src={m.imageUrl} alt={m.caption} referrerPolicy="no-referrer" />
-                <div className="meme-card-overlay">
-                  <span>{m.caption}</span>
+                <div className="rank-badge-circle">#{idx + 1}</div>
+                <div className="compact-row-body" style={{ textAlign: 'left' }}>
+                  <strong>{ord.display}</strong>
                 </div>
+                <span className="badge tone-queued">{ord.count} игр</span>
               </button>
             ))}
           </div>

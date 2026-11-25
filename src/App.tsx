@@ -57,7 +57,6 @@ export const App: React.FC = () => {
   const [dataSource, setDataSource] = useState<'remote' | 'local' | 'seed'>('seed');
   const [user, setUser] = useState<TwitchUser | null>(null);
   const [activeTab, setActiveTab] = useState<NavTab>('hub');
-  const [watchSubPreset, setWatchSubPreset] = useState<'list' | 'memes'>('list');
   const [gamesOrdererPreset, setGamesOrdererPreset] = useState<string>('');
   const [toast, setToast] = useState<string | null>(null);
 
@@ -124,10 +123,7 @@ export const App: React.FC = () => {
     );
   }
 
-  const handleNavigate = (tab: NavTab, preset?: string) => {
-    if (tab === 'watchlist') {
-      setWatchSubPreset(preset === 'memes' ? 'memes' : 'list');
-    }
+  const handleNavigate = (tab: NavTab) => {
     setActiveTab(tab);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -233,15 +229,18 @@ export const App: React.FC = () => {
             data={data}
             canEdit={canEdit}
             onNavigate={handleNavigate}
+            onFilterByOrderer={(orderer) => {
+              setGamesOrdererPreset(orderer);
+              setActiveTab('games');
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
             onUpdateHubConfig={(hubConfig) =>
               commitData({ ...data, hubConfig }, 'Планы хаба обновлены')
             }
             onOpenAddGame={() => setGameModalItem(null)}
             onOpenAddWatch={() => setWatchModalItem(null)}
-            onOpenAddMeme={() => setMemeModalTarget(null)}
             onEditGame={(g) => setGameModalItem(g)}
             onEditWatch={(w) => setWatchModalItem(w)}
-            onViewMeme={(m) => setLightboxMeme(m)}
           />
         )}
 
@@ -282,7 +281,6 @@ export const App: React.FC = () => {
             watchlist={data.watchlist}
             memes={data.memes}
             canEdit={canEdit}
-            initialSubView={watchSubPreset}
             onAddWatch={() => setWatchModalItem(null)}
             onEditWatch={(w) => setWatchModalItem(w)}
             onDeleteWatch={(id) =>
@@ -291,7 +289,7 @@ export const App: React.FC = () => {
                 'Тайтл удалён'
               )
             }
-            onAddMeme={(target) => setMemeModalTarget(target || null)}
+            onAddMeme={(target) => setMemeModalTarget(target)}
             onViewMeme={(m) => setLightboxMeme(m)}
           />
         )}
@@ -377,8 +375,6 @@ export const App: React.FC = () => {
           <RulesView
             rules={data.rules}
             ratingScale={data.ratingScale}
-            isFrozen={data.hubConfig.isListFrozen}
-            freezeText={data.hubConfig.freezeBannerText}
             canEdit={canEdit}
             onSaveRules={(rules) =>
               commitData({ ...data, rules }, 'Свод правил обновлён')

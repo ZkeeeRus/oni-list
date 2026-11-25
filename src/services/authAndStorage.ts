@@ -209,7 +209,11 @@ export async function loadInitialSiteData(apiBaseUrl: string): Promise<{
     const localRaw = localStorage.getItem(LOCAL_DATA_KEY);
     if (localRaw) {
       const localData = JSON.parse(localRaw) as SiteData;
-      if (localData && Array.isArray(localData.games)) {
+      if (
+        localData &&
+        Array.isArray(localData.games) &&
+        (localData.version || 1) >= (seedData.version || 1)
+      ) {
         return { data: ensurePermanentAdmins(localData), source: 'local' };
       }
     }

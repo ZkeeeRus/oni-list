@@ -1,12 +1,10 @@
 import React, { useState } from 'react';
-import { Check, Edit3, Lock, Plus, Trash2 } from 'lucide-react';
+import { Check, Edit3, Plus, Trash2 } from 'lucide-react';
 import { RatingScaleItem, RulesData } from '../types';
 
 interface RulesViewProps {
   rules: RulesData;
   ratingScale: RatingScaleItem[];
-  isFrozen: boolean;
-  freezeText: string;
   canEdit: boolean;
   onSaveRules: (rules: RulesData) => void;
 }
@@ -14,8 +12,6 @@ interface RulesViewProps {
 export const RulesView: React.FC<RulesViewProps> = ({
   rules,
   ratingScale,
-  isFrozen,
-  freezeText,
   canEdit,
   onSaveRules,
 }) => {
@@ -47,15 +43,6 @@ export const RulesView: React.FC<RulesViewProps> = ({
           </button>
         )}
       </div>
-
-      {isFrozen && (
-        <div className="freeze-banner frozen">
-          <div className="row-gap-sm">
-            <Lock size={18} />
-            <strong>{freezeText}</strong>
-          </div>
-        </div>
-      )}
 
       {editing ? (
         <section className="section-block form-grid">

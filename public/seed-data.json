@@ -1,5 +1,5 @@
 {
-  "version": 1,
+  "version": 2,
   "updatedAt": "2026-11-25T21:00:00Z",
   "hubConfig": {
     "channelName": "OniZeD",
@@ -8,8 +8,8 @@
     "headline": "Хаб стримов OniZeD",
     "subheadline": "Текущие прохождения, просмотровый список с мемами, тир-листы и бэклог канала",
     "currentPlanNote": "Сейчас проходим Persona 3 Reload и Red Dead Redemption 2, в просмотровом - Токийский Гуль и Гетто.",
-    "isListFrozen": true,
-    "freezeBannerText": "ВНИМАНИЕ! НА ДАННЫЙ МОМЕНТ СПИСОК ЗАМОРОЖЕН И ДОБАВИТЬ В НЕГО ИГРУ МОЖНО ТОЛЬКО ЗА ДЕНЬГИ!"
+    "isListFrozen": false,
+    "freezeBannerText": ""
   },
   "admins": [
     "onized",
@@ -100,7 +100,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/2161700/library_600x900.jpg",
-      "steamAppId": 2161700
+      "steamAppId": 2161700,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-2",
@@ -114,7 +116,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1174180/library_600x900.jpg",
-      "steamAppId": 1174180
+      "steamAppId": 1174180,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-3",
@@ -128,7 +132,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/e14cb0a1d3dd1c64ff909b79eaef7f68.png",
-      "steamAppId": 261640
+      "steamAppId": 261640,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-4",
@@ -142,7 +148,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/7251d011c6ae822cb14b4c4c89e2601e.png",
-      "steamAppId": 3886520
+      "steamAppId": 3886520,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-5",
@@ -156,7 +164,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/5b23077b16d0623100496becc0951c2b.png",
-      "steamAppId": 371020
+      "steamAppId": 371020,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-6",
@@ -170,7 +180,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR1N0y6oQ3Il6_7cd1Y5Z0in50UjR1ZcAwttH-oYPemQA&s=10",
-      "steamAppId": 1755830
+      "steamAppId": 1755830,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-7",
@@ -184,7 +196,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/124fc8b2650a942f2b52466be00fdcc3.png",
-      "steamAppId": 821250
+      "steamAppId": 821250,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-8",
@@ -198,7 +212,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/f7b51590510fad421d0efbccf2ea5598.png",
-      "steamAppId": 1796580
+      "steamAppId": 1796580,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-9",
@@ -212,7 +228,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/11b465ec6e2e00fbe0397fc8f78230d0.jpg",
-      "steamAppId": 617290
+      "steamAppId": 617290,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-10",
@@ -226,7 +244,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/41f23026ac93e502391d327966d5a70a.png",
-      "steamAppId": 331870
+      "steamAppId": 331870,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-11",
@@ -240,7 +260,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQcf_qeSH1eynFG6FE-omK0LbhOBReZc6An9eFPy2OW9f17cM8dJv13pK4&s=10",
-      "steamAppId": 433550
+      "steamAppId": 433550,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-12",
@@ -254,7 +276,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/381acaac1ecdc5186595416544bde8bb.png",
-      "steamAppId": 1206060
+      "steamAppId": 1206060,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-13",
@@ -268,7 +292,9 @@
       "hours": "14",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/eaf686eb29341fa99d452a595f35714d.jpg",
-      "steamAppId": 1196590
+      "steamAppId": 1196590,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-14",
@@ -282,7 +308,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/46cc597bae1fee3cd19314f32c6cb4f0.png",
-      "steamAppId": 2050650
+      "steamAppId": 2050650,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-15",
@@ -291,12 +319,14 @@
       "status": "Игра дропнута зрителями",
       "rating": "Великолепно",
       "conditions": "",
-      "comment": "дропнута за 250",
+      "comment": "",
       "link": "",
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/23001e3a611e9d9ffc05cfb06c4dfc3f.png",
-      "steamAppId": 736260
+      "steamAppId": 736260,
+      "dropPrice": "250 ₽",
+      "returnPrice": ""
     },
     {
       "id": "game-16",
@@ -305,12 +335,14 @@
       "status": "Игра дропнута зрителями",
       "rating": "Великолепно",
       "conditions": "",
-      "comment": "дроп за 250",
+      "comment": "",
       "link": "",
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/9dd3759c9ab81b8e84def142a991a412.jpg",
-      "steamAppId": 49520
+      "steamAppId": 49520,
+      "dropPrice": "250 ₽",
+      "returnPrice": ""
     },
     {
       "id": "game-17",
@@ -319,12 +351,14 @@
       "status": "Игра дропнута зрителями",
       "rating": "Великолепно",
       "conditions": "",
-      "comment": "дропнута за 250",
+      "comment": "",
       "link": "",
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRrtOwVryHa9cIR-LAd-lTiWJ2D_f29VzbXQbZN8ujHLmrrdNlG3lOlB0Lx&s=10",
-      "steamAppId": 3240220
+      "steamAppId": 3240220,
+      "dropPrice": "250 ₽",
+      "returnPrice": ""
     },
     {
       "id": "game-18",
@@ -333,12 +367,14 @@
       "status": "Игра дропнута зрителями",
       "rating": "Великолепно",
       "conditions": "",
-      "comment": "pals выкупил за оники",
+      "comment": "",
       "link": "",
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/12f4db557d4f9ab0c8f23bc53f0a58a2.png",
-      "steamAppId": 235460
+      "steamAppId": 235460,
+      "dropPrice": "оники (pals)",
+      "returnPrice": ""
     },
     {
       "id": "game-19",
@@ -347,12 +383,14 @@
       "status": "Игра дропнута зрителями",
       "rating": "Великолепно",
       "conditions": "",
-      "comment": "дропнута за 250",
+      "comment": "",
       "link": "",
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/e22bdaac9f690d6179a2da0c0d549f21.png",
-      "steamAppId": null
+      "steamAppId": null,
+      "dropPrice": "250 ₽",
+      "returnPrice": ""
     },
     {
       "id": "game-20",
@@ -361,12 +399,14 @@
       "status": "Игра дропнута зрителями",
       "rating": "Великолепно",
       "conditions": "",
-      "comment": "дропнута за 250",
+      "comment": "",
       "link": "",
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/bc8b834c9902258c0ae7064f68219552.jpg",
-      "steamAppId": 2623190
+      "steamAppId": 2623190,
+      "dropPrice": "250 ₽",
+      "returnPrice": ""
     },
     {
       "id": "game-21",
@@ -375,12 +415,14 @@
       "status": "Игра дропнута зрителями",
       "rating": "Великолепно",
       "conditions": "",
-      "comment": "дропнута за 250",
+      "comment": "",
       "link": "",
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://m.media-amazon.com/images/M/MV5BOTk3NzMxNmEtNzQ2ZS00NjM0LTkzNzItYTRmZTIyMTU5OTM0XkEyXkFqcGc@._V1_.jpg",
-      "steamAppId": null
+      "steamAppId": null,
+      "dropPrice": "250 ₽",
+      "returnPrice": ""
     },
     {
       "id": "game-22",
@@ -389,12 +431,14 @@
       "status": "Игра дропнута зрителями",
       "rating": "Великолепно",
       "conditions": "",
-      "comment": "дропнута за 250",
+      "comment": "",
       "link": "",
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/df827da31d664707840bc6c221f22d72.png",
-      "steamAppId": 447040
+      "steamAppId": 447040,
+      "dropPrice": "250 ₽",
+      "returnPrice": ""
     },
     {
       "id": "game-23",
@@ -403,12 +447,14 @@
       "status": "Игра пройдена",
       "rating": "Шедевр",
       "conditions": "",
-      "comment": "Дропнуто за 250",
+      "comment": "",
       "link": "",
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/202712c96eef8d96aefae885bd6f20ea.png",
-      "steamAppId": 47810
+      "steamAppId": 47810,
+      "dropPrice": "250 ₽",
+      "returnPrice": ""
     },
     {
       "id": "game-24",
@@ -417,12 +463,14 @@
       "status": "Игра дропнута зрителями",
       "rating": "Похвально",
       "conditions": "",
-      "comment": "Замена beat cop/дропнули за 250 механически прикольная мб допройду потом",
+      "comment": "Замена beat cop. Механически прикольная, мб допройду потом",
       "link": "",
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/706a5fd6f8206d284b9a86e76476845d.png",
-      "steamAppId": 1281040
+      "steamAppId": 1281040,
+      "dropPrice": "250 ₽",
+      "returnPrice": ""
     },
     {
       "id": "game-25",
@@ -431,12 +479,14 @@
       "status": "Игра дропнута зрителями",
       "rating": "",
       "conditions": "",
-      "comment": "Палс дроп 250",
+      "comment": "",
       "link": "",
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/720250/library_600x900.jpg",
-      "steamAppId": 720250
+      "steamAppId": 720250,
+      "dropPrice": "250 ₽ (Палс)",
+      "returnPrice": ""
     },
     {
       "id": "game-26",
@@ -445,12 +495,14 @@
       "status": "Игра дропнута зрителями",
       "rating": "",
       "conditions": "",
-      "comment": "Дроп за 250",
+      "comment": "",
       "link": "",
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/785740/library_600x900.jpg",
-      "steamAppId": 785740
+      "steamAppId": 785740,
+      "dropPrice": "250 ₽",
+      "returnPrice": ""
     },
     {
       "id": "game-27",
@@ -459,12 +511,14 @@
       "status": "Игра дропнута зрителями",
       "rating": "",
       "conditions": "Ванила или с модами по вкусу",
-      "comment": "Дроп за 250",
+      "comment": "",
       "link": "",
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1229320/library_600x900.jpg",
-      "steamAppId": 1229320
+      "steamAppId": 1229320,
+      "dropPrice": "250 ₽",
+      "returnPrice": ""
     },
     {
       "id": "game-28",
@@ -473,12 +527,14 @@
       "status": "Игра дропнута зрителями",
       "rating": "",
       "conditions": "Лёгкая сложность1",
-      "comment": "250 + ТЕХДРОП",
+      "comment": "Техдроп",
       "link": "",
       "hours": "",
       "vodUrl": "",
       "coverUrl": "",
-      "steamAppId": null
+      "steamAppId": null,
+      "dropPrice": "250 ₽",
+      "returnPrice": ""
     },
     {
       "id": "game-29",
@@ -487,12 +543,14 @@
       "status": "Игра дропнута зрителями",
       "rating": "Нет мнения",
       "conditions": "",
-      "comment": "дропнута за 250",
+      "comment": "",
       "link": "",
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/c/c0/Emblem_of_the_Brazilian_Armed_Forces.svg/960px-Emblem_of_the_Brazilian_Armed_Forces.svg.png?utm_source=ru.wikipedia.org&utm_campaign=api&utm_content=thumbnail",
-      "steamAppId": null
+      "steamAppId": null,
+      "dropPrice": "250 ₽",
+      "returnPrice": ""
     },
     {
       "id": "game-30",
@@ -501,12 +559,14 @@
       "status": "Игра дропнута зрителями",
       "rating": "Нет мнения",
       "conditions": "",
-      "comment": "дропнута за 250",
+      "comment": "",
       "link": "",
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1179080/library_600x900.jpg",
-      "steamAppId": 1179080
+      "steamAppId": 1179080,
+      "dropPrice": "250 ₽",
+      "returnPrice": ""
     },
     {
       "id": "game-31",
@@ -515,12 +575,14 @@
       "status": "Игра дропнута зрителями",
       "rating": "Нет мнения",
       "conditions": "",
-      "comment": "дропнута за 250",
+      "comment": "",
       "link": "",
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1092790/library_600x900.jpg",
-      "steamAppId": 1092790
+      "steamAppId": 1092790,
+      "dropPrice": "250 ₽",
+      "returnPrice": ""
     },
     {
       "id": "game-32",
@@ -529,12 +591,14 @@
       "status": "Игра дропнута зрителями",
       "rating": "Нет мнения",
       "conditions": "",
-      "comment": "дропнута за 250",
+      "comment": "",
       "link": "https://steamcommunity.com/sharedfiles/filedetails/?id=3037608338",
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/233860/library_600x900.jpg",
-      "steamAppId": 233860
+      "steamAppId": 233860,
+      "dropPrice": "250 ₽",
+      "returnPrice": ""
     },
     {
       "id": "game-33",
@@ -543,12 +607,14 @@
       "status": "Игра дропнута зрителями",
       "rating": "Нет мнения",
       "conditions": "",
-      "comment": "дропнута за 250",
+      "comment": "",
       "link": "",
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/532210/library_600x900.jpg",
-      "steamAppId": 532210
+      "steamAppId": 532210,
+      "dropPrice": "250 ₽",
+      "returnPrice": ""
     },
     {
       "id": "game-34",
@@ -557,12 +623,14 @@
       "status": "Игра дропнута зрителями",
       "rating": "Нет мнения",
       "conditions": "",
-      "comment": "Дроп за 250",
+      "comment": "",
       "link": "",
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/532210/library_600x900.jpg",
-      "steamAppId": 532210
+      "steamAppId": 532210,
+      "dropPrice": "250 ₽",
+      "returnPrice": ""
     },
     {
       "id": "game-35",
@@ -571,12 +639,14 @@
       "status": "Игра дропнута зрителями",
       "rating": "Нет мнения",
       "conditions": "",
-      "comment": "дропнута за 250",
+      "comment": "",
       "link": "",
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/607080/library_600x900.jpg",
-      "steamAppId": 607080
+      "steamAppId": 607080,
+      "dropPrice": "250 ₽",
+      "returnPrice": ""
     },
     {
       "id": "game-36",
@@ -585,12 +655,14 @@
       "status": "Игра дропнута зрителями",
       "rating": "Нет мнения",
       "conditions": "",
-      "comment": "дропнута за 250",
+      "comment": "",
       "link": "",
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/46560/library_600x900.jpg",
-      "steamAppId": 46560
+      "steamAppId": 46560,
+      "dropPrice": "250 ₽",
+      "returnPrice": ""
     },
     {
       "id": "game-37",
@@ -599,12 +671,14 @@
       "status": "Игра дропнута зрителями",
       "rating": "Полный кал",
       "conditions": "",
-      "comment": "дропнута за 250",
+      "comment": "",
       "link": "",
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/2cfc960c20c1c07a023f1dbe44d50e7c.jpg",
-      "steamAppId": 1480830
+      "steamAppId": 1480830,
+      "dropPrice": "250 ₽",
+      "returnPrice": ""
     },
     {
       "id": "game-38",
@@ -613,12 +687,14 @@
       "status": "Игра дропнута зрителями",
       "rating": "Полный кал",
       "conditions": "",
-      "comment": "Дроп за 250",
+      "comment": "",
       "link": "",
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/8aaded6542bda3dfd70ec344368ed050.png",
-      "steamAppId": 1657630
+      "steamAppId": 1657630,
+      "dropPrice": "250 ₽",
+      "returnPrice": ""
     },
     {
       "id": "game-39",
@@ -627,12 +703,14 @@
       "status": "Игра дропнута зрителями",
       "rating": "Похвально",
       "conditions": "",
-      "comment": "дропнута за 250",
+      "comment": "",
       "link": "",
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/e14c488d0d9e69d5b4e8314a1c69596a.png",
-      "steamAppId": null
+      "steamAppId": null,
+      "dropPrice": "250 ₽",
+      "returnPrice": ""
     },
     {
       "id": "game-40",
@@ -641,12 +719,14 @@
       "status": "Игра дропнута зрителями",
       "rating": "Похвально",
       "conditions": "на сложном за воина через топоры",
-      "comment": "Дроп за 250",
+      "comment": "",
       "link": "",
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/a661c28041b100e3187b142c4e5b3c9d.jpg",
-      "steamAppId": 214170
+      "steamAppId": 214170,
+      "dropPrice": "250 ₽",
+      "returnPrice": ""
     },
     {
       "id": "game-41",
@@ -655,12 +735,14 @@
       "status": "Игра дропнута зрителями",
       "rating": "Похвально",
       "conditions": "",
-      "comment": "дропнута за 250",
+      "comment": "",
       "link": "",
       "hours": "1,5 часа в игре",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/494b91746c68f85422da0cd89689febc.png",
-      "steamAppId": null
+      "steamAppId": null,
+      "dropPrice": "250 ₽",
+      "returnPrice": ""
     },
     {
       "id": "game-42",
@@ -669,12 +751,14 @@
       "status": "Игра дропнута зрителями",
       "rating": "Похвально",
       "conditions": "",
-      "comment": "дропнута за 250",
+      "comment": "",
       "link": "",
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn1.epicgames.com/offer/87b7846d2eba4bc49eead0854323aba8/EGS_DyingLight2StayHumanReloadedEdition_Techland_S2_1200x1600-76cef594ff94fbac64a8af1ebe4c7590",
-      "steamAppId": 534380
+      "steamAppId": 534380,
+      "dropPrice": "250 ₽",
+      "returnPrice": ""
     },
     {
       "id": "game-43",
@@ -683,12 +767,14 @@
       "status": "Игра дропнута зрителями",
       "rating": "Похвально",
       "conditions": "",
-      "comment": "дропнута за 400",
+      "comment": "",
       "link": "",
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/a0abf0396a718b8982fce0b80181d8cb.png",
-      "steamAppId": 1245620
+      "steamAppId": 1245620,
+      "dropPrice": "400 ₽",
+      "returnPrice": ""
     },
     {
       "id": "game-44",
@@ -697,12 +783,14 @@
       "status": "Игра дропнута зрителями",
       "rating": "Похвально",
       "conditions": "Случайная игра из списка желаемого твоего лучшего друга",
-      "comment": "дропнута за 250",
+      "comment": "",
       "link": "",
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/5afef1e0c45166c5626efe6bb65538af.png",
-      "steamAppId": 1651560
+      "steamAppId": 1651560,
+      "dropPrice": "250 ₽",
+      "returnPrice": ""
     },
     {
       "id": "game-45",
@@ -711,12 +799,14 @@
       "status": "Игра дропнута зрителями",
       "rating": "Похвально",
       "conditions": "",
-      "comment": "Дропнуто за 750",
+      "comment": "",
       "link": "",
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/818d9d1eaede1c656acf1db6a10d9866.png",
-      "steamAppId": 322170
+      "steamAppId": 322170,
+      "dropPrice": "750 ₽",
+      "returnPrice": ""
     },
     {
       "id": "game-46",
@@ -725,12 +815,14 @@
       "status": "Игра дропнута зрителями",
       "rating": "Похвально",
       "conditions": "",
-      "comment": "дропнута за 250",
+      "comment": "",
       "link": "",
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/8da8369525d899e6fa49decd5a80b73f.png",
-      "steamAppId": 39500
+      "steamAppId": 39500,
+      "dropPrice": "250 ₽",
+      "returnPrice": ""
     },
     {
       "id": "game-47",
@@ -739,12 +831,14 @@
       "status": "Игра дропнута зрителями",
       "rating": "Похвально",
       "conditions": "2.0",
-      "comment": "дропнута за 250",
+      "comment": "",
       "link": "",
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/07dcca0f6968158dc99c76f7be848596.jpg",
-      "steamAppId": 15170
+      "steamAppId": 15170,
+      "dropPrice": "250 ₽",
+      "returnPrice": ""
     },
     {
       "id": "game-48",
@@ -753,12 +847,14 @@
       "status": "Игра дропнута зрителями",
       "rating": "Похвально",
       "conditions": "",
-      "comment": "Дроп за 250",
+      "comment": "",
       "link": "",
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/4d516fbc2b9e8863f443f3a58b9da44f.png",
-      "steamAppId": 6850
+      "steamAppId": 6850,
+      "dropPrice": "250 ₽",
+      "returnPrice": ""
     },
     {
       "id": "game-49",
@@ -767,12 +863,14 @@
       "status": "Игра дропнута зрителями",
       "rating": "Похвально",
       "conditions": "Выбирать менее очевидные машины (которые бы ты не взял в прохождении, потому что возможно кал). спиздить машину из салона можно. КОЛХОЗИТЬ МАШИНУ КАК ТОЛЬКО ВОЗМОЖНО СУКА ВСЕ ДЕНЬГИ НА ЭТО ТРАТИТЬ",
-      "comment": "дропнута за 250",
+      "comment": "",
       "link": "",
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTJKRBvIwGGGZ0wxEVGapj74T4o4BeXqJA3v01ouprFjEC3ZRf_l941gRdj&s=10",
-      "steamAppId": null
+      "steamAppId": null,
+      "dropPrice": "250 ₽",
+      "returnPrice": ""
     },
     {
       "id": "game-50",
@@ -781,12 +879,14 @@
       "status": "Игра дропнута зрителями",
       "rating": "Похвально",
       "conditions": "НЕ Хентай игра",
-      "comment": "Дроп за 250",
+      "comment": "",
       "link": "",
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/968e54cb931366be74280608917a9cb5.jpg",
-      "steamAppId": 696170
+      "steamAppId": 696170,
+      "dropPrice": "250 ₽",
+      "returnPrice": ""
     },
     {
       "id": "game-51",
@@ -795,12 +895,14 @@
       "status": "Игра дропнута зрителями",
       "rating": "Похвально",
       "conditions": "Ты можешь спросить у чата и интернета только 3 раза подсказку",
-      "comment": "Дроп 250",
+      "comment": "",
       "link": "",
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/a27ce27d7af9c2e2312c46075c3e4ff0.png",
-      "steamAppId": 210970
+      "steamAppId": 210970,
+      "dropPrice": "250 ₽",
+      "returnPrice": ""
     },
     {
       "id": "game-52",
@@ -809,12 +911,14 @@
       "status": "Игра дропнута зрителями",
       "rating": "Проходняк",
       "conditions": "Главы загадок",
-      "comment": "дропнута за 1000",
+      "comment": "",
       "link": "",
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR38Qme1b1uEh6t1xN3q0tqF-TcJHnO9-rswzH02KhkvY16i6KFfMnO1k1J&s=10",
-      "steamAppId": null
+      "steamAppId": null,
+      "dropPrice": "1000 ₽",
+      "returnPrice": ""
     },
     {
       "id": "game-53",
@@ -823,12 +927,14 @@
       "status": "Игра дропнута зрителями",
       "rating": "Проходняк",
       "conditions": "",
-      "comment": "Дроп за 250",
+      "comment": "",
       "link": "",
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/7e04d32b3e5b1abb149fe517744411bc.png",
-      "steamAppId": null
+      "steamAppId": null,
+      "dropPrice": "250 ₽",
+      "returnPrice": ""
     },
     {
       "id": "game-54",
@@ -837,12 +943,14 @@
       "status": "Игра дропнута зрителями",
       "rating": "Проходняк",
       "conditions": "",
-      "comment": "дропнута за 250",
+      "comment": "",
       "link": "",
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/ba7cc1ae22c9fe2a0b1807ccb58451d3.png",
-      "steamAppId": 678960
+      "steamAppId": 678960,
+      "dropPrice": "250 ₽",
+      "returnPrice": ""
     },
     {
       "id": "game-55",
@@ -851,12 +959,14 @@
       "status": "Игра дропнута зрителями",
       "rating": "Проходняк",
       "conditions": "",
-      "comment": "дропнута за 250",
+      "comment": "",
       "link": "",
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/ec4bc13eae49a9ea0d83deeb4ebd5127.png",
-      "steamAppId": 274520
+      "steamAppId": 274520,
+      "dropPrice": "250 ₽",
+      "returnPrice": ""
     },
     {
       "id": "game-56",
@@ -865,12 +975,14 @@
       "status": "Игра дропнута зрителями",
       "rating": "Проходняк",
       "conditions": "",
-      "comment": "Дроп за 250",
+      "comment": "",
       "link": "",
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSKM5gnZ5cZbgi5MV1ikVQZ-EaMMrCApXPGltJvQP6UqQ&s=10",
-      "steamAppId": null
+      "steamAppId": null,
+      "dropPrice": "250 ₽",
+      "returnPrice": ""
     },
     {
       "id": "game-57",
@@ -879,12 +991,14 @@
       "status": "Игра дропнута зрителями",
       "rating": "Проходняк",
       "conditions": "",
-      "comment": "дропнута за 250",
+      "comment": "",
       "link": "",
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSN6PZen2P3kOsl936Vtfar99OpkL0ZR-5DuzhQUZDw8Q&s",
-      "steamAppId": 22320
+      "steamAppId": 22320,
+      "dropPrice": "250 ₽",
+      "returnPrice": ""
     },
     {
       "id": "game-58",
@@ -898,7 +1012,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/975370/library_600x900.jpg",
-      "steamAppId": 975370
+      "steamAppId": 975370,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-59",
@@ -912,7 +1028,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/78b22a52a1e53b0d2e27e6b40569793a.png",
-      "steamAppId": 1687950
+      "steamAppId": 1687950,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-60",
@@ -921,12 +1039,14 @@
       "status": "Игра пройдена",
       "rating": "Великолепно",
       "conditions": "Афроамериканец с афро прической, сила - 3; восприятие - 4; выносливость - 4; харизма - 8; intelegence - 4; agility - 2; luck - 3, снайперки и т.д + пистолеты 27ч",
-      "comment": "ВЕРНУЛИ ЗА 2700",
+      "comment": "",
       "link": "",
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/2d92b989deeb771206e2f924073f81cd.png",
-      "steamAppId": 377160
+      "steamAppId": 377160,
+      "dropPrice": "",
+      "returnPrice": "2700 ₽"
     },
     {
       "id": "game-61",
@@ -940,7 +1060,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://m.media-amazon.com/images/M/MV5BMzgxZmJjYjYtOTlmMS00OWQ3LThjYTEtZmUwMTA5MTA4ZDI5XkEyXkFqcGc@._V1_.jpg",
-      "steamAppId": 71250
+      "steamAppId": 71250,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-62",
@@ -954,7 +1076,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/000aa02f54c61c18c94096fc563115f8.png",
-      "steamAppId": 2299900
+      "steamAppId": 2299900,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-63",
@@ -968,7 +1092,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/25644b95de790aea9e0cb3d19b17a945.png",
-      "steamAppId": 1304930
+      "steamAppId": 1304930,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-64",
@@ -982,7 +1108,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/6c9f760753ee08d34537c021d26b2da4.png",
-      "steamAppId": 428660
+      "steamAppId": 428660,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-65",
@@ -996,7 +1124,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/c43043335d711ee1590cfcba87ed0009.png",
-      "steamAppId": 2483190
+      "steamAppId": 2483190,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-66",
@@ -1010,7 +1140,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/cf1f4ec239ccde6ee3dd2a0a3f17ece2.png",
-      "steamAppId": 521840
+      "steamAppId": 521840,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-67",
@@ -1024,7 +1156,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://upload.wikimedia.org/wikipedia/ru/2/26/Vangers_coverart.jpg?utm_source=ru.wikipedia.org&utm_campaign=index&utm_content=original",
-      "steamAppId": null
+      "steamAppId": null,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-68",
@@ -1038,7 +1172,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQ4fu3BwJaUhP81eO6LYs7prbhta5hIzS7xYb_N0JZstav4NBo_DkX60chr&s=10",
-      "steamAppId": 1901370
+      "steamAppId": 1901370,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-69",
@@ -1052,7 +1188,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://beta-house.ru/images/detailed/8/Istoriya-igrushek-3-Bolshoj-pobeg-Toy-Story-3-Xbox-360Xbox-One.jpg",
-      "steamAppId": 4049180
+      "steamAppId": 4049180,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-70",
@@ -1066,7 +1204,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTAcMTklZUWX4GRXTTpLP27yvIOC3HSmmxVz0ngOmaponwGk1vAdgd3PuQ&s=10",
-      "steamAppId": null
+      "steamAppId": null,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-71",
@@ -1080,7 +1220,9 @@
       "hours": "",
       "vodUrl": "https://vk.com/videos-85096257?section=album_7",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/39e42960b233b6999d195eae85d7290b.png",
-      "steamAppId": 19680
+      "steamAppId": 19680,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-72",
@@ -1094,7 +1236,9 @@
       "hours": "",
       "vodUrl": "https://vk.com/videos-85096257?z=video-85096257_456239186%2Fclub85096257%2Fpl_-85096257_-2",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/829ceb32fc45152fa6b8f80b82c23954.png",
-      "steamAppId": 395200
+      "steamAppId": 395200,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-73",
@@ -1108,7 +1252,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/9599bdab29c403b39cf3df8634b11b63.jpg",
-      "steamAppId": 2556990
+      "steamAppId": 2556990,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-74",
@@ -1122,7 +1268,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/9130e5ada60abd2e13efb19571cede1d.png",
-      "steamAppId": 2358720
+      "steamAppId": 2358720,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-75",
@@ -1136,7 +1284,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://upload.wikimedia.org/wikipedia/en/7/7a/Dirt_2_box_art.jpg?utm_source=en.wikipedia.org&utm_campaign=index&utm_content=original",
-      "steamAppId": null
+      "steamAppId": null,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-76",
@@ -1150,7 +1300,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/28aa9a7dc657760d51fc6f31b0de2b6c.png",
-      "steamAppId": 223710
+      "steamAppId": 223710,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-77",
@@ -1164,7 +1316,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/171abe4948c9f43e6fdeafc7a7dfe61f.jpg",
-      "steamAppId": 413420
+      "steamAppId": 413420,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-78",
@@ -1178,7 +1332,9 @@
       "hours": "",
       "vodUrl": "https://vk.com/videos-85096257?section=album_4",
       "coverUrl": "https://upload.wikimedia.org/wikipedia/ru/b/bb/Dark_souls_3_cover_art.jpg?utm_source=ru.wikipedia.org&utm_campaign=index&utm_content=original",
-      "steamAppId": null
+      "steamAppId": null,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-79",
@@ -1192,7 +1348,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/bf5c13b2138225938ec63f7ce0694431.png",
-      "steamAppId": 262060
+      "steamAppId": 262060,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-80",
@@ -1206,7 +1364,9 @@
       "hours": "",
       "vodUrl": "https://vk.com/videos-85096257?section=album_35",
       "coverUrl": "https://upload.wikimedia.org/wikipedia/en/5/57/Dead_Space_Box_Art.jpg?utm_source=en.wikipedia.org&utm_campaign=index&utm_content=original",
-      "steamAppId": null
+      "steamAppId": null,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-81",
@@ -1220,7 +1380,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/6e3262beb24c53ca2e4d7bc4b378fa8a.png",
-      "steamAppId": 238010
+      "steamAppId": 238010,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-82",
@@ -1234,7 +1396,9 @@
       "hours": "",
       "vodUrl": "https://vk.com/videos-85096257?section=album_17",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/a297b230c0f9d1354283c802648f6c58.png",
-      "steamAppId": 2973120
+      "steamAppId": 2973120,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-83",
@@ -1248,7 +1412,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/795ced384fdcad15310b46841a6f145c.jpg",
-      "steamAppId": 239140
+      "steamAppId": 239140,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-84",
@@ -1262,7 +1428,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRzAs-PHwE_flnY_oKgHV2qTFh2YTh0RbwcdAdcq7KWnjpLVwZMzTpbn2o&s=10",
-      "steamAppId": 1202520
+      "steamAppId": 1202520,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-85",
@@ -1276,7 +1444,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/6f01b802d982bb258b49cacc2db829bc.png",
-      "steamAppId": 792120
+      "steamAppId": 792120,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-86",
@@ -1290,7 +1460,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/ecc6cf65bdd29eb193c59b32a1bc4a81.png",
-      "steamAppId": 850190
+      "steamAppId": 850190,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-87",
@@ -1304,7 +1476,9 @@
       "hours": "",
       "vodUrl": "https://vk.com/videos-85096257?section=album_23",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/b6648870eb61ee8a7e3419c7ceac9d0e.jpg",
-      "steamAppId": 1297900
+      "steamAppId": 1297900,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-88",
@@ -1318,7 +1492,9 @@
       "hours": "",
       "vodUrl": "https://vk.com/videos-85096257?section=album_18",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/c4e954b93dc03b0f846db4051a1e6d25.png",
-      "steamAppId": 1547000
+      "steamAppId": 1547000,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-89",
@@ -1332,7 +1508,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/85f48ca59a0bc5bea0e8892459d17905.png",
-      "steamAppId": 220
+      "steamAppId": 220,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-90",
@@ -1346,7 +1524,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/692db12cf85a73b210c1854ef3bd385b.png",
-      "steamAppId": 323150
+      "steamAppId": 323150,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-91",
@@ -1360,7 +1540,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/980c9d1c2752a29a8cdc5669b9e22e6f.png",
-      "steamAppId": 546560
+      "steamAppId": 546560,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-92",
@@ -1374,7 +1556,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://upload.wikimedia.org/wikipedia/ru/6/63/Harry_Potter_and_the_Chamber_of_Secrets_%E2%80%94_game.jpg?utm_source=ru.wikipedia.org&utm_campaign=index&utm_content=original",
-      "steamAppId": null
+      "steamAppId": null,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-93",
@@ -1388,7 +1572,9 @@
       "hours": "",
       "vodUrl": "https://vk.com/videos-85096257?z=video-85096257_456239219%2Fpl_-85096257_-2",
       "coverUrl": "https://m.media-amazon.com/images/M/MV5BODg3ZjUxZDAtY2U3Yi00NmYxLTk3NmUtZTIyMGZlZTU1MmRjXkEyXkFqcGc@._V1_.jpg",
-      "steamAppId": null
+      "steamAppId": null,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-94",
@@ -1402,7 +1588,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/43db2b7df1cff247f7efaa0e7e8d7e3c.png",
-      "steamAppId": null
+      "steamAppId": null,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-95",
@@ -1416,7 +1604,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/4d815e0dd3244bf08f3acc60d9498027.png",
-      "steamAppId": 4195600
+      "steamAppId": 4195600,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-96",
@@ -1430,7 +1620,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/a606db731d30029173a3cedca5085ae9.png",
-      "steamAppId": 28000
+      "steamAppId": 28000,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-97",
@@ -1444,7 +1636,9 @@
       "hours": "",
       "vodUrl": "https://vk.com/videos-85096257?z=video-85096257_456239236%2Fclub85096257%2Fpl_-85096257_-2",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/591a7d0dd57009b7cbbeb473b12fa992.jpg",
-      "steamAppId": 460950
+      "steamAppId": 460950,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-98",
@@ -1458,7 +1652,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/4de998d81e951b03e8ec36e76b7128a7.png",
-      "steamAppId": 714120
+      "steamAppId": 714120,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-99",
@@ -1472,7 +1668,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/c39bfb2804dded8db959a0c87d483072.jpg",
-      "steamAppId": 424840
+      "steamAppId": 424840,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-100",
@@ -1486,7 +1684,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://upload.wikimedia.org/wikipedia/en/0/0d/Mafia_II_Boxart.jpg?utm_source=en.wikipedia.org&utm_campaign=index&utm_content=original",
-      "steamAppId": null
+      "steamAppId": null,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-101",
@@ -1500,7 +1700,9 @@
       "hours": "",
       "vodUrl": "https://vk.com/videos-85096257?section=album_21",
       "coverUrl": "https://upload.wikimedia.org/wikipedia/en/2/21/Max_Payne_2.jpg?utm_source=en.wikipedia.org&utm_campaign=index&utm_content=original",
-      "steamAppId": 12150
+      "steamAppId": 12150,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-102",
@@ -1514,7 +1716,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/a82e1f1656c1bbbf26f4ed4c73623589.png",
-      "steamAppId": 17410
+      "steamAppId": 17410,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-103",
@@ -1528,7 +1732,9 @@
       "hours": "",
       "vodUrl": "https://vk.com/videos-85096257?section=album_27",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/bf616ef248ff77290ccff43ce719b79a.png",
-      "steamAppId": 428550
+      "steamAppId": 428550,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-104",
@@ -1542,7 +1748,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTjaxMMODX8qHLi6xQwcjaRDvQlxpdPvqPlHw4G1o5v-joS332OulijrQc&s=10",
-      "steamAppId": 349040
+      "steamAppId": 349040,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-105",
@@ -1556,7 +1764,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/2f37f4b919175a1dd33746edd325e6c1.png",
-      "steamAppId": 1533420
+      "steamAppId": 1533420,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-106",
@@ -1570,7 +1780,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://m.media-amazon.com/images/M/MV5BNDM2NDAwMGEtZTI4NS00OGE3LWI2MjUtOTQzM2Q5ZGIwZjMyXkEyXkFqcGc@._V1_.jpg",
-      "steamAppId": null
+      "steamAppId": null,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-107",
@@ -1584,7 +1796,9 @@
       "hours": "",
       "vodUrl": "https://vk.com/videos-85096257?section=album_1",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/6dc08e2dd57f32063fd0834694003042.png",
-      "steamAppId": 524220
+      "steamAppId": 524220,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-108",
@@ -1598,7 +1812,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://upload.wikimedia.org/wikipedia/en/9/93/No_one_lives_forever_video_game_PC_cover_scan.jpg?utm_source=en.wikipedia.org&utm_campaign=index&utm_content=original",
-      "steamAppId": null
+      "steamAppId": null,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-109",
@@ -1612,7 +1828,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/1bbd187fe4eb0cf618b68f80300b6b13.png",
-      "steamAppId": 242680
+      "steamAppId": 242680,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-110",
@@ -1626,7 +1844,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/b8ee42f6c6733d5db34b17a5aaa5844d.png",
-      "steamAppId": 739630
+      "steamAppId": 739630,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-111",
@@ -1640,7 +1860,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://upload.wikimedia.org/wikipedia/en/9/9f/Portal_standalonebox.jpg?utm_source=en.wikipedia.org&utm_campaign=index&utm_content=original",
-      "steamAppId": null
+      "steamAppId": null,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-112",
@@ -1654,7 +1876,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/7668636048c4fbe8df8ffb388679e933.png",
-      "steamAppId": 620
+      "steamAppId": 620,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-113",
@@ -1668,7 +1892,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/f5caabe1f8251a56ab2de66a1d1a5e44.png",
-      "steamAppId": 317400
+      "steamAppId": 317400,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-114",
@@ -1682,7 +1908,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/3ef66143a4e5311332f23b364425643e.png",
-      "steamAppId": 607080
+      "steamAppId": 607080,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-115",
@@ -1696,7 +1924,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/22fdcb3d0b9def788e11ca18c515568d.png",
-      "steamAppId": 294100
+      "steamAppId": 294100,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-116",
@@ -1710,7 +1940,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/af1c0126de157835dfcf103e83bbe29a.png",
-      "steamAppId": 1466640
+      "steamAppId": 1466640,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-117",
@@ -1724,7 +1956,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/3a7903fcebdcf15c702766488ede0488.png",
-      "steamAppId": 2178380
+      "steamAppId": 2178380,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-118",
@@ -1738,7 +1972,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/d43601e8a1b7a88689e57107367b0d58.png",
-      "steamAppId": 303210
+      "steamAppId": 303210,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-119",
@@ -1752,7 +1988,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/6dc83d2991a673298f4804a5ba075e16.png",
-      "steamAppId": 250900
+      "steamAppId": 250900,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-120",
@@ -1766,7 +2004,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/f711cc70dbdab88f32389ec84e56a242.png",
-      "steamAppId": null
+      "steamAppId": null,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-121",
@@ -1780,7 +2020,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/77830f686ff945a183bf945451139a54.png",
-      "steamAppId": 1237970
+      "steamAppId": 1237970,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-122",
@@ -1794,7 +2036,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/321e1e1c9da6ddb062dbf408b0e247d1.png",
-      "steamAppId": 851100
+      "steamAppId": 851100,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-123",
@@ -1808,7 +2052,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/2daf9584863b39e00f7362dc69aeb4e1.jpg",
-      "steamAppId": 553420
+      "steamAppId": 553420,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-124",
@@ -1822,7 +2068,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/3f1a853f014c11ba9c3e17ab78decaac.png",
-      "steamAppId": 1229490
+      "steamAppId": 1229490,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-125",
@@ -1836,7 +2084,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/029d0f47a2d275a6f6253774712cddd9.png",
-      "steamAppId": 1203710
+      "steamAppId": 1203710,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-126",
@@ -1850,7 +2100,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/df22702ab8f59eac4fa981a5ae651a6b.png",
-      "steamAppId": 837470
+      "steamAppId": 837470,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-127",
@@ -1864,7 +2116,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/b46469c5851be7facec604ceeef9aaaf.jpg",
-      "steamAppId": null
+      "steamAppId": null,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-128",
@@ -1878,7 +2132,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://s.pacn.ws/1/p/mw/warcraft-iii-reign-of-chaos-412255.4.jpg?v=rxqbix",
-      "steamAppId": null
+      "steamAppId": null,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-129",
@@ -1892,7 +2148,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/0e5d486614a4d913abb4c08b07febbd2.png",
-      "steamAppId": 350080
+      "steamAppId": 350080,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-130",
@@ -1906,7 +2164,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/352b19056ce934568b956d68cbcde3b5.png",
-      "steamAppId": 1030300
+      "steamAppId": 1030300,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-131",
@@ -1920,7 +2180,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/972e236a9bac1ea37984c33fef8e3cde.png",
-      "steamAppId": 323160
+      "steamAppId": 323160,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-132",
@@ -1934,7 +2196,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://img.poki-cdn.com/cdn-cgi/image/q=78,scq=50,width=1200,height=1200,fit=cover,f=png/bc07d0e7d1b5b448e0a932537b4ebf80/ultimate-sudoku-logo.png",
-      "steamAppId": 4215050
+      "steamAppId": 4215050,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-133",
@@ -1948,7 +2212,9 @@
       "hours": "",
       "vodUrl": "https://vk.com/videos-85096257?section=album_3",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/f590455e91f4befe8af1307e670ec528.jpg",
-      "steamAppId": 253230
+      "steamAppId": 253230,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-134",
@@ -1962,7 +2228,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://preview.redd.it/new-game-cover-from-larians-website-v0-m2lmw222h0ka1.png?auto=webp&s=ba904ad42906960a96a70ce1c27ee6d3ff5edead",
-      "steamAppId": 1086940
+      "steamAppId": 1086940,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-135",
@@ -1976,7 +2244,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/4689e1fb96a1d00625120f62c1ffb4bd.jpg",
-      "steamAppId": 12200
+      "steamAppId": 12200,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-136",
@@ -1990,7 +2260,9 @@
       "hours": "11",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/84bac0d19371a626d1ec02e402b1496c.png",
-      "steamAppId": 601150
+      "steamAppId": 601150,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-137",
@@ -2004,7 +2276,9 @@
       "hours": "",
       "vodUrl": "https://vk.com/videos-85096257?section=album_37",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/48b9ef5bcb5ede1575779d29b9eeffe7.png",
-      "steamAppId": 403640
+      "steamAppId": 403640,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-138",
@@ -2018,7 +2292,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/35a53eba9befcf53a42be3f0b22a39c2.png",
-      "steamAppId": 782330
+      "steamAppId": 782330,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-139",
@@ -2032,7 +2308,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://images.igdb.com/igdb/image/upload/t_cover_big_2x/co7zj5.jpg",
-      "steamAppId": 2512840
+      "steamAppId": 2512840,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-140",
@@ -2046,7 +2324,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/a2cefe0b65384604c9b0892d0812d55e.png",
-      "steamAppId": 1605220
+      "steamAppId": 1605220,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-141",
@@ -2060,7 +2340,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/46efddfe3f8f060c8d7ef2baf5091c30.png",
-      "steamAppId": 204030
+      "steamAppId": 204030,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-142",
@@ -2074,7 +2356,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/0088f68f9e771f24b774dce80886fc25.png",
-      "steamAppId": 22380
+      "steamAppId": 22380,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-143",
@@ -2088,7 +2372,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/2e8465a4b7312d8967b9c10f277e86fc.png",
-      "steamAppId": 751780
+      "steamAppId": 751780,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-144",
@@ -2102,7 +2388,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/ce8a253393a1bbbb3d72cd2093b81ede.png",
-      "steamAppId": 1145350
+      "steamAppId": 1145350,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-145",
@@ -2116,7 +2404,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/d18c832e8c956b4ef8b92862e6bf470d.png",
-      "steamAppId": 367520
+      "steamAppId": 367520,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-146",
@@ -2130,7 +2420,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/720a0841869f3a3287603ba3956d0093.png",
-      "steamAppId": 516750
+      "steamAppId": 516750,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-147",
@@ -2144,7 +2436,9 @@
       "hours": "",
       "vodUrl": "https://vk.com/videos-85096257?section=album_2",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/97771715c7dd7daf009feeb60c49915a.png",
-      "steamAppId": 814380
+      "steamAppId": 814380,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-148",
@@ -2158,7 +2452,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/123097a85681e903385665af9cb2d8ff.png",
-      "steamAppId": 250760
+      "steamAppId": 250760,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-149",
@@ -2172,7 +2468,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/e24ff8d0d57d1bf2b1315673b2b896c1.jpg",
-      "steamAppId": 2138710
+      "steamAppId": 2138710,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-150",
@@ -2186,7 +2484,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://upload.wikimedia.org/wikipedia/en/e/e4/Steins%3BGate_cover_art.jpg?utm_source=en.wikipedia.org&utm_campaign=index&utm_content=original",
-      "steamAppId": 412830
+      "steamAppId": 412830,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-151",
@@ -2200,7 +2500,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/4737bbc3e394b340f726ec032e405851.png",
-      "steamAppId": 1049410
+      "steamAppId": 1049410,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-152",
@@ -2214,7 +2516,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/a80632d4b61a618a06af232a2058cc6b.png",
-      "steamAppId": 330830
+      "steamAppId": 330830,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-153",
@@ -2228,7 +2532,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/d22605e2bddb461a4034acb67334c1f7.png",
-      "steamAppId": 1426300
+      "steamAppId": 1426300,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-154",
@@ -2242,7 +2548,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/3e1a813196d7bfc007bedb02c7956842.png",
-      "steamAppId": 3929730
+      "steamAppId": 3929730,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-155",
@@ -2256,7 +2564,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/d7940c4b3657832faf6933edc87e0490.png",
-      "steamAppId": 3050900
+      "steamAppId": 3050900,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-156",
@@ -2270,7 +2580,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/c7c53b829e0b11043361809c1fac3cbd.png",
-      "steamAppId": 3224770
+      "steamAppId": 3224770,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-157",
@@ -2284,7 +2596,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcThqAT1xuj3YvRsyUlMMT2_BEDSgufVWQnKog6iOAGbylATacZVDV5ZwrU&s=10",
-      "steamAppId": null
+      "steamAppId": null,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-158",
@@ -2298,7 +2612,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/f4d3ed0c74282c3737b540ae25e2bfd1.png",
-      "steamAppId": 3669870
+      "steamAppId": 3669870,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-159",
@@ -2312,7 +2628,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://steampay.com/product/red-comrades-3-return-of-alaska-reloaded.jpg?1677159256",
-      "steamAppId": 546220
+      "steamAppId": 546220,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-160",
@@ -2326,7 +2644,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/43b7680c04ae68a5bbeecac6c386640e.png",
-      "steamAppId": null
+      "steamAppId": null,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-161",
@@ -2340,7 +2660,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://www.gameliebe.com/media/f4/5d/c6/1747669382/the_outlast_trials_cover.jpg?ts=1747669382",
-      "steamAppId": 1304930
+      "steamAppId": 1304930,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-162",
@@ -2354,7 +2676,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/c590e8c438f7a74d8bec7407e26ef7ad.png",
-      "steamAppId": 2435900
+      "steamAppId": 2435900,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-163",
@@ -2368,7 +2692,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/20b9686ae90039dd7216f07c6bdd3211.png",
-      "steamAppId": 2475490
+      "steamAppId": 2475490,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-164",
@@ -2382,7 +2708,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQRBn_NTcFg5eGLuCZlvpRb593cMTJJQyHeMHCF3gBi-1x5_91F78pSYi0a&s=10",
-      "steamAppId": 1632490
+      "steamAppId": 1632490,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-165",
@@ -2396,7 +2724,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQFBeCx1VBLy3ut4uJrDgKPeVWJuIynHR3G7rWB_3vKQg&s",
-      "steamAppId": null
+      "steamAppId": null,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-166",
@@ -2410,7 +2740,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/79bd2e9fd8400fb610d59e4f0e1019f3.png",
-      "steamAppId": null
+      "steamAppId": null,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-167",
@@ -2419,12 +2751,14 @@
       "status": "Игра пройдена",
       "rating": "Полный кал",
       "conditions": "Исследовать всё на 100%",
-      "comment": "дропнута за 550/Палс вернул за 6к",
+      "comment": "",
       "link": "",
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/17ac85cc7b94b7e29577acb5f9b38aa7.png",
-      "steamAppId": null
+      "steamAppId": null,
+      "dropPrice": "550 ₽",
+      "returnPrice": "6000 ₽ (Палс)"
     },
     {
       "id": "game-168",
@@ -2438,7 +2772,9 @@
       "hours": "",
       "vodUrl": "https://vk.com/videos-85096257?z=video-85096257_456239126%2Fclub85096257%2Fpl_-85096257_-2",
       "coverUrl": "https://img.opencritic.com/game/4894/o/Bls8Ew0Z.jpg",
-      "steamAppId": null
+      "steamAppId": null,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-169",
@@ -2452,7 +2788,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/0d7a3aef18b1eb97e70a5148e2a2646f.jpg",
-      "steamAppId": 1172470
+      "steamAppId": 1172470,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-170",
@@ -2466,7 +2804,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/cd94516dfa071f5f8b6b4eb4e24271e6.png",
-      "steamAppId": 570
+      "steamAppId": 570,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-171",
@@ -2480,7 +2820,9 @@
       "hours": "",
       "vodUrl": "https://vk.com/videos-85096257?section=album_32",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/9971bf4009012efdc5a9cb7ed7417e90.png",
-      "steamAppId": 1070270
+      "steamAppId": 1070270,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-172",
@@ -2494,7 +2836,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/7a631f9be0cd1ee16f33be66305a1644.png",
-      "steamAppId": 1282270
+      "steamAppId": 1282270,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-173",
@@ -2508,7 +2852,9 @@
       "hours": "",
       "vodUrl": "https://vk.com/videos-85096257?z=video-85096257_456239188%2Fpl_-85096257_-2",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/7d0cf650bfb151d549c6ef86fae00577.png",
-      "steamAppId": 594330
+      "steamAppId": 594330,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-174",
@@ -2522,7 +2868,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcS7lCyTtD-_88mVRQZLaAJYbrMvNpBC9cAxit24VKY_K0sWSe6z4T_sgNSn&s=10",
-      "steamAppId": null
+      "steamAppId": null,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-175",
@@ -2536,7 +2884,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://upload.wikimedia.org/wikipedia/ru/1/12/%D0%9E%D0%B1%D0%BB%D0%BE%D0%B6%D0%BA%D0%B0_%D0%B8%D0%B3%D1%80%D1%8B_%D0%9B%D0%B5%D1%81%D0%BD%D0%B0%D1%8F_%D0%B1%D1%80%D0%B0%D1%82%D0%B2%D0%B0.jpg?utm_source=ru.wikipedia.org&utm_campaign=index&utm_content=ori",
-      "steamAppId": null
+      "steamAppId": null,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-176",
@@ -2550,7 +2900,9 @@
       "hours": "",
       "vodUrl": "https://vk.com/videos-85096257?z=video-85096257_456239328%2Fclub85096257",
       "coverUrl": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQOEVWbeBAEPKYwbREwt7iqaDwtfldXGkDsT6Aotkk9Zo8yzUEos841f_V5&s=10",
-      "steamAppId": 311140
+      "steamAppId": 311140,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-177",
@@ -2564,7 +2916,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSp5ulDKpvg5D-TquC1yZGWOp0rtXbSp82oXMxQ0E0X5g&s=10",
-      "steamAppId": null
+      "steamAppId": null,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-178",
@@ -2578,7 +2932,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTyezt3rkOL0i8JIAQtB5U8OFmgFCE9ON78-HNF87vVMg&s=10",
-      "steamAppId": 1150690
+      "steamAppId": 1150690,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-179",
@@ -2592,7 +2948,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://sun9-51.vkuserphoto.ru/s/v1/ig1/3yLsVXNYwyfBxNM52scT5bkujpef1y_nTc0aeNzjhfEikc2qdP_Snhg6c1jtYCVvXOFQpZPJ.jpg?quality=96&as=32x41,48x61,72x92,108x137,160x203,240x305,354x450&from=bu&u=fwE7bkFOBeqrQIhYHQwpw9RncAdvEBd-zW53ATWymRU",
-      "steamAppId": null
+      "steamAppId": null,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-180",
@@ -2606,7 +2964,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://lol.sakuya.su/-f48ko",
-      "steamAppId": null
+      "steamAppId": null,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-181",
@@ -2620,7 +2980,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTViLh3wbmYYUW3J01uxpc2fJ3O49YRRHZcV7VXXD6xeGINo2rpiiEQy17n&s=10",
-      "steamAppId": 1091500
+      "steamAppId": 1091500,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-182",
@@ -2634,7 +2996,9 @@
       "hours": "",
       "vodUrl": "https://vk.com/videos-85096257?section=album_15",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/e12999c8d752abf6f612f729e4800e77.png",
-      "steamAppId": 752590
+      "steamAppId": 752590,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-183",
@@ -2648,7 +3012,9 @@
       "hours": "",
       "vodUrl": "https://vk.com/videos-85096257?section=album_36",
       "coverUrl": "https://upload.wikimedia.org/wikipedia/en/2/28/Assassin%27s_Creed_IV_-_Black_Flag_cover.jpg?utm_source=en.wikipedia.org&utm_campaign=index&utm_content=original",
-      "steamAppId": 242050
+      "steamAppId": 242050,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-184",
@@ -2662,7 +3028,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/26c08ce56f0b22428f04654bbabc3e34.png",
-      "steamAppId": 1795570
+      "steamAppId": 1795570,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-185",
@@ -2676,7 +3044,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/898071a054f0e8c95a736fc773b4d872.png",
-      "steamAppId": 5522030
+      "steamAppId": 5522030,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-186",
@@ -2690,7 +3060,9 @@
       "hours": "",
       "vodUrl": "https://vk.com/videos-85096257?section=album_31",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/efb0f96fc2ee386ece83fdacdf9e9c81.png",
-      "steamAppId": 2114740
+      "steamAppId": 2114740,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-187",
@@ -2704,7 +3076,9 @@
       "hours": "",
       "vodUrl": "https://vk.com/videos-85096257?section=album_5",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/d8ecd4e7a1dba725d1179c30cb2531c5.png",
-      "steamAppId": 22340
+      "steamAppId": 22340,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-188",
@@ -2718,7 +3092,9 @@
       "hours": "5.4 часа",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/074aed57c243ae7020971ca7c9fe0f29.png",
-      "steamAppId": 504230
+      "steamAppId": 504230,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-189",
@@ -2732,7 +3108,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRd4-C-rdPUZea-K713Q4-gHVzTMaMXhSjHU8h9YjeH5A&s",
-      "steamAppId": 311210
+      "steamAppId": 311210,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-190",
@@ -2746,7 +3124,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://upload.wikimedia.org/wikipedia/en/a/a8/CZbox.jpg?utm_source=en.wikipedia.org&utm_campaign=index&utm_content=original",
-      "steamAppId": 80
+      "steamAppId": 80,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-191",
@@ -2760,7 +3140,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/cf448785aa1c13df776bcacc836b16ed.png",
-      "steamAppId": 718670
+      "steamAppId": 718670,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-192",
@@ -2774,7 +3156,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/b022e9ebc284c51640f41d419604671d.png",
-      "steamAppId": 588030
+      "steamAppId": 588030,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-193",
@@ -2788,7 +3172,9 @@
       "hours": "",
       "vodUrl": "https://vk.com/videos-85096257?z=video-85096257_456239228%2Fclub85096257%2Fpl_-85096257_-2",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/2078750ea356ba9fd472655dec36c068.png",
-      "steamAppId": 1222140
+      "steamAppId": 1222140,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-194",
@@ -2802,7 +3188,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://upload.wikimedia.org/wikipedia/en/b/bd/Epic_Mickey_2_Boxart.PNG?utm_source=en.wikipedia.org&utm_campaign=index&utm_content=original",
-      "steamAppId": 245300
+      "steamAppId": 245300,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-195",
@@ -2816,7 +3204,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/bdc31e3996f71d8f34782dda5ea48511.png",
-      "steamAppId": 21100
+      "steamAppId": 21100,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-196",
@@ -2830,7 +3220,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://upload.wikimedia.org/wikipedia/en/1/15/FEAR_DVD_box_art.jpg?utm_source=en.wikipedia.org&utm_campaign=index&utm_content=original",
-      "steamAppId": 1002300
+      "steamAppId": 1002300,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-197",
@@ -2844,7 +3236,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://upload.wikimedia.org/wikipedia/en/2/24/FlatOut_cover.jpg?utm_source=en.wikipedia.org&utm_campaign=index&utm_content=original",
-      "steamAppId": null
+      "steamAppId": null,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-198",
@@ -2858,7 +3252,9 @@
       "hours": "",
       "vodUrl": "https://vk.com/videos-85096257?section=album_19",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/4dfc4b81e77387298bc1b6beb5cfdc10.jpg",
-      "steamAppId": 362680
+      "steamAppId": 362680,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-199",
@@ -2872,7 +3268,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTLg7NAYbHliikzg4YVs4gOyxviGmWf07teOhwa-e6vwA&s=10",
-      "steamAppId": null
+      "steamAppId": null,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-200",
@@ -2886,7 +3284,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/fa2c5bb023839bbdede95d866ce86802.png",
-      "steamAppId": 1517340
+      "steamAppId": 1517340,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-201",
@@ -2900,7 +3300,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/7395326e8d5079889217be2ea9ed6a7e.png",
-      "steamAppId": 1224600
+      "steamAppId": 1224600,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-202",
@@ -2914,7 +3316,9 @@
       "hours": "",
       "vodUrl": "https://vk.com/videos-85096257?section=album_29",
       "coverUrl": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQXzBgKZjzq-xokcmZwUtthxJi_dV1eCGR3qdCvqLembxxq15CgfgFvueU&s=10",
-      "steamAppId": null
+      "steamAppId": null,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-203",
@@ -2928,7 +3332,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "",
-      "steamAppId": null
+      "steamAppId": null,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-204",
@@ -2942,7 +3348,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://howlongtobeat.com/games/63026_HellSign.jpg",
-      "steamAppId": 606500
+      "steamAppId": 606500,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-205",
@@ -2956,7 +3364,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/0f2284a440f6ef859402a2e18e60d549.png",
-      "steamAppId": 1046820
+      "steamAppId": 1046820,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-206",
@@ -2970,7 +3380,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/e0571225bc3c413f004466f1339c9f9b.png",
-      "steamAppId": 1850550
+      "steamAppId": 1850550,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-207",
@@ -2984,7 +3396,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQ_1RoOcA4cgP-RoCQHvsg-jJj9NWrLE_m6cKjOsnJvtg&s",
-      "steamAppId": null
+      "steamAppId": null,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-208",
@@ -2998,7 +3412,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/1956768b78ac039215c9600c9691c572.png",
-      "steamAppId": 233860
+      "steamAppId": 233860,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-209",
@@ -3012,7 +3428,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/8e2568d07cfc39036f5d312247e39057.png",
-      "steamAppId": 568220
+      "steamAppId": 568220,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-210",
@@ -3026,7 +3444,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/09b15aeee2bc9c47f03de9e6180d28a5.png",
-      "steamAppId": 12130
+      "steamAppId": 12130,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-211",
@@ -3040,7 +3460,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/425b39bda3156cf22e7ddd3d33e9a496.png",
-      "steamAppId": 1328670
+      "steamAppId": 1328670,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-212",
@@ -3054,7 +3476,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/f56766ef62b1d6867e6ace4bfc82c82e.png",
-      "steamAppId": 2362420
+      "steamAppId": 2362420,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-213",
@@ -3068,7 +3492,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/55b3c4bf9d61fa54ba5ebcbe37bafe89.jpg",
-      "steamAppId": 1328670
+      "steamAppId": 1328670,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-214",
@@ -3082,7 +3508,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQGPCfpelkXqiNq31Yq6AhN5AdY9BwnhvfYJlPaiOs4Qw&s=10",
-      "steamAppId": 2417610
+      "steamAppId": 2417610,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-215",
@@ -3096,7 +3524,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRPCh010KSd12BEm6cKzSnAcI8R8LIMlJaeo6BQzlUa8g&s=10",
-      "steamAppId": 286690
+      "steamAppId": 286690,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-216",
@@ -3110,7 +3540,9 @@
       "hours": "",
       "vodUrl": "https://vk.com/videos-85096257?section=album_9",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/d24e9f83cf9bfaa5692a4c9ab7633ea2.png",
-      "steamAppId": 557340
+      "steamAppId": 557340,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-217",
@@ -3124,7 +3556,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/76c2f52bb24ff6413ba62fe902f0c7f4.png",
-      "steamAppId": 40380
+      "steamAppId": 40380,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-218",
@@ -3138,7 +3572,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/cd033cf4aa836bafeaa1733dd556751c.jpg",
-      "steamAppId": 200080
+      "steamAppId": 200080,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-219",
@@ -3152,7 +3588,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSgzgIzY33V-wfzImcWIPMKdd7U9I0SwNJPSE_4BkpKjA&s=10",
-      "steamAppId": null
+      "steamAppId": null,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-220",
@@ -3166,7 +3604,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/7bd222eef752d0c47fc55f139b40d9f2.png",
-      "steamAppId": 1451940
+      "steamAppId": 1451940,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-221",
@@ -3180,7 +3620,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://upload.wikimedia.org/wikipedia/en/7/7c/Needforspeedtheruncover.jpg?utm_source=en.wikipedia.org&utm_campaign=index&utm_content=original",
-      "steamAppId": null
+      "steamAppId": null,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-222",
@@ -3194,7 +3636,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTydLDVoWlUKWp5gG4RAs8RuxHjYQesCscpc0BFF8HCiwqJ6FTZXxwI7-nD&s=10",
-      "steamAppId": 481510
+      "steamAppId": 481510,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-223",
@@ -3208,7 +3652,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSK4ziiLuWI_ulfIUSNOOzz323BjNhH6RfxLL6fKT7zu-Nt8QgoNaUDwx8&s=10",
-      "steamAppId": 3287520
+      "steamAppId": 3287520,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-224",
@@ -3222,7 +3668,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/c8d77146931324f4001237a93fe4ba8c.png",
-      "steamAppId": 275850
+      "steamAppId": 275850,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-225",
@@ -3236,7 +3684,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/d36ac395fa31afe3c1cc571c09a9644d.png",
-      "steamAppId": 587620
+      "steamAppId": 587620,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-226",
@@ -3250,7 +3700,9 @@
       "hours": "",
       "vodUrl": "https://vk.com/videos-85096257?section=album_30",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/7cd613b5798d0c540ba064c5f7ecc386.png",
-      "steamAppId": 1057090
+      "steamAppId": 1057090,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-227",
@@ -3264,7 +3716,9 @@
       "hours": "",
       "vodUrl": "https://vk.com/videos-85096257?section=album_34",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/eb14cccbec050d8e6b6d21116d5a3dd9.png",
-      "steamAppId": 753640
+      "steamAppId": 753640,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-228",
@@ -3278,7 +3732,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/5db913f047a7130c1836652b2ee21e8e.jpg",
-      "steamAppId": 356570
+      "steamAppId": 356570,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-229",
@@ -3292,7 +3748,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/b18f9c54e6efde8a08b8b478b0806587.png",
-      "steamAppId": 2694490
+      "steamAppId": 2694490,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-230",
@@ -3306,7 +3764,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/e568b8f6bbb04a676a4f9f7dd79dc79f.jpg",
-      "steamAppId": 223470
+      "steamAppId": 223470,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-231",
@@ -3320,7 +3780,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/dd0dd5f6bdbbe6eeb82d5c3f46c61296.png",
-      "steamAppId": 653530
+      "steamAppId": 653530,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-232",
@@ -3334,7 +3796,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://upload.wikimedia.org/wikipedia/en/5/56/Risen_3%2C_Titan_Lords_box_art.jpg?utm_source=en.wikipedia.org&utm_campaign=index&utm_content=original",
-      "steamAppId": 249230
+      "steamAppId": 249230,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-233",
@@ -3348,7 +3812,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/919abe568c11df749690534a9e225785.png",
-      "steamAppId": 1122720
+      "steamAppId": 1122720,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-234",
@@ -3362,7 +3828,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/037c2de02b0d16ce2c0a7c14ddaabdae.png",
-      "steamAppId": 233130
+      "steamAppId": 233130,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-235",
@@ -3376,7 +3844,9 @@
       "hours": "",
       "vodUrl": "https://vk.com/videos-85096257?section=album_33",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/be9b6cec65c863e1b55538d2c7fcc9b0.png",
-      "steamAppId": 350640
+      "steamAppId": 350640,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-236",
@@ -3390,7 +3860,9 @@
       "hours": "",
       "vodUrl": "https://vk.com/videos-85096257?z=video-85096257_456239160%2Fpl_-85096257_-2",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/ddeeb413e265b0a74b78c0d01c13bbb2.png",
-      "steamAppId": 2523740
+      "steamAppId": 2523740,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-237",
@@ -3404,7 +3876,9 @@
       "hours": "",
       "vodUrl": "https://vk.com/videos-85096257?section=album_24",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/6bd57061dc4f754f0cbad5fb6efe3733.png",
-      "steamAppId": 2124490
+      "steamAppId": 2124490,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-238",
@@ -3418,7 +3892,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/3ebe2a87a58cf391399b0bf0cb53c8ae.png",
-      "steamAppId": 3499790
+      "steamAppId": 3499790,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-239",
@@ -3432,7 +3908,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQVePavUFJGgl8B39s6_7nUa40abDiKXbjNhYOX6IZLnw&s",
-      "steamAppId": 489830
+      "steamAppId": 489830,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-240",
@@ -3446,7 +3924,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/b96cec2e96704669eac3785f45f38cb7.png",
-      "steamAppId": 1657630
+      "steamAppId": 1657630,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-241",
@@ -3460,7 +3940,9 @@
       "hours": "",
       "vodUrl": "https://vk.com/videos-85096257?section=album_22",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/b3e6fdc36d0f16ef605f73a6ad7f89fb.png",
-      "steamAppId": 17390
+      "steamAppId": 17390,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-242",
@@ -3474,7 +3956,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQxXo0Z3dRZ7YhtOzCqHRGCP2ee_0C0VAeLXOiub6itcmeRMikOjSBf8f4&s=10",
-      "steamAppId": null
+      "steamAppId": null,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-243",
@@ -3488,7 +3972,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSg4CdaOaFaHkLTZVTI1_qpOYjiwgfbq-EaFMYNstjKCA&s=10",
-      "steamAppId": 32500
+      "steamAppId": 32500,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-244",
@@ -3502,7 +3988,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTBk0SdpQs1o4LNddZhFKkaFcaIya7kTp9a70gDeYzxow&s=10",
-      "steamAppId": 1437170
+      "steamAppId": 1437170,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-245",
@@ -3516,7 +4004,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/9ef7f9b81c2532880cfe5cf53f0c906d.png",
-      "steamAppId": 105600
+      "steamAppId": 105600,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-246",
@@ -3530,7 +4020,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR3XaYTuunXb04hOwPJwuGAZSc9_pUetuZZMSHI6GKbhg&s=10",
-      "steamAppId": null
+      "steamAppId": null,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-247",
@@ -3544,7 +4036,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQxCdV3-OpJZKOoNUi60gdq0c5h4VTbkkcAZ6_5oeb2v2Y-UdStLHFNtgDD&s=10",
-      "steamAppId": null
+      "steamAppId": null,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-248",
@@ -3558,7 +4052,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/926d483b9e163eade16599f543bb9d02.jpg",
-      "steamAppId": 1295920
+      "steamAppId": 1295920,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-249",
@@ -3572,7 +4068,9 @@
       "hours": "",
       "vodUrl": "https://vk.com/videos-85096257?z=video-85096257_456239184%2Fclub85096257%2Fpl_-85096257_-2",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/fdfe44e68dc9914b41cab590f0a77ecc.png",
-      "steamAppId": null
+      "steamAppId": null,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-250",
@@ -3586,7 +4084,9 @@
       "hours": "",
       "vodUrl": "https://vk.com/videos-85096257?section=album_26",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/c2bddf053c4efc35f82eb16a22dd0de5.png",
-      "steamAppId": 2682630
+      "steamAppId": 2682630,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-251",
@@ -3600,7 +4100,9 @@
       "hours": "",
       "vodUrl": "https://vk.com/videos-85096257?z=video-85096257_456239156%2Fclub85096257%2Fpl_-85096257_-2",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/7fb3b7b9789cb9d854e5d8d5cfca27a8.png",
-      "steamAppId": null
+      "steamAppId": null,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-252",
@@ -3614,7 +4116,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/6829f04c08f76d864d84dfad889698f2.png",
-      "steamAppId": 33220
+      "steamAppId": 33220,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-253",
@@ -3628,7 +4132,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcS640Td3Q9ImyO7DYlg-bETEoEq8mOqLsxt2LyLS6g3lw&s=10",
-      "steamAppId": 391220
+      "steamAppId": 391220,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-254",
@@ -3642,7 +4148,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/ff900f735bb7284f7d73957e6980a2a0.png",
-      "steamAppId": 871720
+      "steamAppId": 871720,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-255",
@@ -3656,7 +4164,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/693279ac1b174029f3a887a93a1708c0.png",
-      "steamAppId": null
+      "steamAppId": null,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-256",
@@ -3670,7 +4180,9 @@
       "hours": "",
       "vodUrl": "https://vk.com/videos-85096257?section=album_10",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/ada98a4eb84755953f86a4ea7521a78f.jpg",
-      "steamAppId": 427290
+      "steamAppId": 427290,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-257",
@@ -3684,7 +4196,9 @@
       "hours": "",
       "vodUrl": "https://vk.com/videos-85096257?section=album_28",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/fab68d941875c19041a374166a67a8eb.jpg",
-      "steamAppId": 612880
+      "steamAppId": 612880,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-258",
@@ -3698,7 +4212,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/a3e85c3f26e6ae1ddfeb000be72a0b01.png",
-      "steamAppId": 368360
+      "steamAppId": 368360,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-259",
@@ -3712,7 +4228,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTZVBjlHJ60hDp4SUIXsLa_tWKUMnT6DB1Hq-sHDc2RW-V0fe1ZuTNH3aY&s=10",
-      "steamAppId": null
+      "steamAppId": null,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-260",
@@ -3726,7 +4244,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR5jGWehqJz1TLm-q1iDiIYH-6DowcWBmnPzczUogTrOw&s=10",
-      "steamAppId": null
+      "steamAppId": null,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-261",
@@ -3740,7 +4260,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTMtjW0H1YqaGaSDgCzOTVZ3jiqEjC6yJ2DNlPSrlNvWw&s=10",
-      "steamAppId": null
+      "steamAppId": null,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-262",
@@ -3754,7 +4276,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/c35b3195e4a9f22297f60313d970758d.png",
-      "steamAppId": 1031920
+      "steamAppId": 1031920,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-263",
@@ -3768,7 +4292,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/09246ffb824ca2c5bc47a64cb302d3cb.jpg",
-      "steamAppId": 945360
+      "steamAppId": 945360,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-264",
@@ -3782,7 +4308,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/2fb88ee97a699cbd93cb7f3859951f69.png",
-      "steamAppId": 346110
+      "steamAppId": 346110,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-265",
@@ -3796,7 +4324,9 @@
       "hours": "",
       "vodUrl": "https://vk.com/videos-85096257?section=album_11",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/8f8049419ea576995cc62452eec5a89f.png",
-      "steamAppId": 1373510
+      "steamAppId": 1373510,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-266",
@@ -3810,7 +4340,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/17223b3b72e1a9c2cfa660dade437d32.png",
-      "steamAppId": 1373550
+      "steamAppId": 1373550,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-267",
@@ -3824,7 +4356,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/ed7157c4aba5f54ace45e220fe12ea7b.jpg",
-      "steamAppId": 2479290
+      "steamAppId": 2479290,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-268",
@@ -3838,7 +4372,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/92ffe39c405eb26368e5376f396d6ade.png",
-      "steamAppId": null
+      "steamAppId": null,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-269",
@@ -3852,7 +4388,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/9bbaa92e12a293d175bd2f828c0a1b64.jpg",
-      "steamAppId": 626250
+      "steamAppId": 626250,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-270",
@@ -3866,7 +4404,9 @@
       "hours": "",
       "vodUrl": "https://vk.com/videos-85096257?section=album_20",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/24d78c489606c1a9fcb8f08c8069a5ad.png",
-      "steamAppId": null
+      "steamAppId": null,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-271",
@@ -3880,7 +4420,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/7325756d790a1626acf5d2af12610812.jpg",
-      "steamAppId": 335300
+      "steamAppId": 335300,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-272",
@@ -3894,7 +4436,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/10fbe18a1f152d7b4c7ab027cb719c9f.png",
-      "steamAppId": 265550
+      "steamAppId": 265550,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-273",
@@ -3908,7 +4452,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/43df1271f869519e2d181677962f6617.png",
-      "steamAppId": 1293230
+      "steamAppId": 1293230,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-274",
@@ -3922,7 +4468,9 @@
       "hours": "",
       "vodUrl": "https://vk.com/videos-85096257?z=video-85096257_456239196%2Fclub85096257%2Fpl_-85096257_-2",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/4f30e4b1e9c7edcc9f2cb444449eb49f.jpg",
-      "steamAppId": 4236290
+      "steamAppId": 4236290,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-275",
@@ -3936,7 +4484,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQTpRh37VGXXDE06RxOs23d4PvxOi54p56FTEyF_ZnnNnGx7cFOrx5mvXI&s=10",
-      "steamAppId": 354140
+      "steamAppId": 354140,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-276",
@@ -3950,7 +4500,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/67702d634a924d5453e8bd58c10dce90.png",
-      "steamAppId": null
+      "steamAppId": null,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-277",
@@ -3964,7 +4516,9 @@
       "hours": "",
       "vodUrl": "https://vk.com/videos-85096257?section=album_14",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/e26c3e20ad7c46dbb43e2b08fdeb48bd.png",
-      "steamAppId": 414340
+      "steamAppId": 414340,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-278",
@@ -3978,7 +4532,9 @@
       "hours": "",
       "vodUrl": "https://vk.com/videos-85096257?section=album_6",
       "coverUrl": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTmyfb2dq4Iwr6W7OALybqEgAc4D83oA6cwYKICe5CefHIk6Ob3whiyYDM&s=10",
-      "steamAppId": 760890
+      "steamAppId": 760890,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-279",
@@ -3992,7 +4548,9 @@
       "hours": "",
       "vodUrl": "https://vk.com/videos-85096257?section=album_12",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/3366ed02d59dbb4b3b3a22a575933200.png",
-      "steamAppId": 617160
+      "steamAppId": 617160,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-280",
@@ -4006,7 +4564,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/d9eee6d77d330102050f6fb76153fa5d.png",
-      "steamAppId": 234270
+      "steamAppId": 234270,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-281",
@@ -4020,7 +4580,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/97cdaade24d073d4f1f8861514054790.png",
-      "steamAppId": 250380
+      "steamAppId": 250380,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-282",
@@ -4034,7 +4596,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/ce49b7c62930aa818781c9ff64e5d84b.png",
-      "steamAppId": 1946700
+      "steamAppId": 1946700,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-283",
@@ -4048,7 +4612,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/1ad2220be81244983e4eebdcc0f7e137.png",
-      "steamAppId": null
+      "steamAppId": null,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-284",
@@ -4062,7 +4628,9 @@
       "hours": "",
       "vodUrl": "https://vk.com/videos-85096257?z=video-85096257_456239087%2Fpl_-85096257_-2",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/84a8e67cdd1efb91279b686c9720f9ca.png",
-      "steamAppId": 963710
+      "steamAppId": 963710,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-285",
@@ -4076,7 +4644,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/61d37e87ec160394e32a41dd674a3b91.jpg",
-      "steamAppId": 1372280
+      "steamAppId": 1372280,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-286",
@@ -4090,7 +4660,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSaP-AGxK0SR9ul28ZJWvK_U0pNv5ZaUUWG5ckwztiQWmT5cuy41yOn8eU&s=10",
-      "steamAppId": null
+      "steamAppId": null,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-287",
@@ -4104,7 +4676,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/9d797515849275c86aa63345977d754b.jpg",
-      "steamAppId": 1239050
+      "steamAppId": 1239050,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-288",
@@ -4118,7 +4692,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/64e94253c62955012b1e709e4476501b.png",
-      "steamAppId": null
+      "steamAppId": null,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-289",
@@ -4132,7 +4708,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSC6YY6BS7_GQtzD8EHhl5_7LPcyg2I8uVo-YkzlgTLBA&s=10",
-      "steamAppId": 234670
+      "steamAppId": 234670,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-290",
@@ -4146,7 +4724,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/13393b7d5758956f10115beabddc0a10.png",
-      "steamAppId": 1089090
+      "steamAppId": 1089090,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-291",
@@ -4160,7 +4740,9 @@
       "hours": "",
       "vodUrl": "https://vk.com/videos-85096257?z=video-85096257_456239185%2Fclub85096257%2Fpl_-85096257_-2",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/7f36fae6388df048bd2491a7dad695c6.png",
-      "steamAppId": 953900
+      "steamAppId": 953900,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-292",
@@ -4174,7 +4756,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/4f02ad36aa004ee70b015c319b58c8c0.png",
-      "steamAppId": 562410
+      "steamAppId": 562410,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-293",
@@ -4188,7 +4772,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://www.giantbomb.com/a/uploads/scale_super/9/97089/2588637-untitled.png",
-      "steamAppId": 1496180
+      "steamAppId": 1496180,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-294",
@@ -4202,7 +4788,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcT3cH7x900LtbHUHRQL3hA0kAFBuFylNWzl55zh4CXEXA&s=10",
-      "steamAppId": null
+      "steamAppId": null,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-295",
@@ -4216,7 +4804,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/f324ab5a4742d821ab16a9014ab2a9a3.png",
-      "steamAppId": null
+      "steamAppId": null,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-296",
@@ -4230,7 +4820,9 @@
       "hours": "",
       "vodUrl": "https://vk.com/videos-85096257?section=album_9&z=video-85096257_456239104%2Fclub85096257%2Fpl_-85096257_9",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/59e303779456f354cb4c87447155d612.png",
-      "steamAppId": 3487660
+      "steamAppId": 3487660,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-297",
@@ -4244,7 +4836,9 @@
       "hours": "",
       "vodUrl": "https://vk.com/videos-85096257?z=video-85096257_456239070%2Fclub85096257%2Fpl_-85096257_-2",
       "coverUrl": "https://cdn1.epicgames.com/spt-assets/26b9a7f0807e4350bdb35c8bfa7a436c/the-coma-recut-1k5lt.jpg",
-      "steamAppId": null
+      "steamAppId": null,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-298",
@@ -4258,7 +4852,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/e14ebc073505fd5a94f8c16d9be81ec2.png",
-      "steamAppId": 2825860
+      "steamAppId": 2825860,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-299",
@@ -4272,7 +4868,9 @@
       "hours": "",
       "vodUrl": "https://vk.com/videos-85096257?section=album_13",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/99cc1170ddb810f704d3a308060e614a.png",
-      "steamAppId": 207610
+      "steamAppId": 207610,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-300",
@@ -4286,7 +4884,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/cf1420a1b265012ab70e3e275f812180.png",
-      "steamAppId": 490450
+      "steamAppId": 490450,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-301",
@@ -4300,7 +4900,9 @@
       "hours": "4",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/90481c5a363e822c41b9d54fc0d71275.jpg",
-      "steamAppId": null
+      "steamAppId": null,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-302",
@@ -4314,7 +4916,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/e6aff32c42ce50bfaba5c873092efaf7.png",
-      "steamAppId": 2659870
+      "steamAppId": 2659870,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-303",
@@ -4328,7 +4932,9 @@
       "hours": "",
       "vodUrl": "https://vk.com/videos-85096257?z=video-85096257_456239064%2Fclub85096257%2Fpl_-85096257_-2",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/e5f66d54c2cd6d0c730aa5e5da1211fd.jpg",
-      "steamAppId": 883070
+      "steamAppId": 883070,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-304",
@@ -4342,7 +4948,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/a43e301639b88a3f16e238c264b93153.png",
-      "steamAppId": 466130
+      "steamAppId": 466130,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-305",
@@ -4356,7 +4964,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://upload.wikimedia.org/wikipedia/ru/1/11/Winx_Club_PC.jpg?utm_source=ru.wikipedia.org&utm_campaign=index&utm_content=original",
-      "steamAppId": null
+      "steamAppId": null,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-306",
@@ -4370,7 +4980,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/15d9f50bed66061efcb9475a573c607c.png",
-      "steamAppId": null
+      "steamAppId": null,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-307",
@@ -4384,7 +4996,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/05ba2fa1a3a92b4966cf495e5d82f973.jpg",
-      "steamAppId": 416680
+      "steamAppId": 416680,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-308",
@@ -4398,7 +5012,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTagbesguzctujSELnjJbcBxxu00BfRCAQAYFxy1tZqQN4bKta1ZFpT4ug&s=10",
-      "steamAppId": 2592160
+      "steamAppId": 2592160,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-309",
@@ -4412,7 +5028,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "",
-      "steamAppId": null
+      "steamAppId": null,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-310",
@@ -4426,7 +5044,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/420530/library_600x900.jpg",
-      "steamAppId": 420530
+      "steamAppId": 420530,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-311",
@@ -4440,7 +5060,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://thumb.wikimedia.org/wikipedia/ru/thumb/b/b7/Voices_of_the_Void_main_menu.png/960px-Voices_of_the_Void_main_menu.png?utm_source=ru.wikipedia.org&utm_campaign=api&utm_content=thumbnail",
-      "steamAppId": null
+      "steamAppId": null,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-312",
@@ -4454,7 +5076,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/4bf752f383e12921c0bd76b993792f58.png",
-      "steamAppId": 362490
+      "steamAppId": 362490,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-313",
@@ -4468,7 +5092,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://upload.wikimedia.org/wikipedia/ru/f/f4/Minecraft_Cover_Art.png?utm_source=ru.wikipedia.org&utm_campaign=index&utm_content=original",
-      "steamAppId": null
+      "steamAppId": null,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-314",
@@ -4482,7 +5108,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQqU3JY5VLEMOeQaP6WC_i09EOlv_u-8U1WlQpNejoa29El1kbXESrSUG8&s=10",
-      "steamAppId": 1392840
+      "steamAppId": 1392840,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-315",
@@ -4496,7 +5124,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/46cc597bae1fee3cd19314f32c6cb4f0.png",
-      "steamAppId": 2050650
+      "steamAppId": 2050650,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-316",
@@ -4510,7 +5140,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://upload.wikimedia.org/wikipedia/ru/5/5a/Minecraft_story_mode_a_telltale_games_series.jpg?utm_source=ru.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled",
-      "steamAppId": null
+      "steamAppId": null,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-317",
@@ -4524,7 +5156,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1449110/library_600x900.jpg",
-      "steamAppId": 1449110
+      "steamAppId": 1449110,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-318",
@@ -4538,7 +5172,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/4af861a72c2aa999770e27e22b0429c6.png",
-      "steamAppId": 461950
+      "steamAppId": 461950,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-319",
@@ -4552,7 +5188,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/333430/library_600x900.jpg",
-      "steamAppId": 333430
+      "steamAppId": 333430,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-320",
@@ -4566,7 +5204,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/2451320/library_600x900.jpg",
-      "steamAppId": 2451320
+      "steamAppId": 2451320,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-321",
@@ -4580,7 +5220,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1771300/library_600x900.jpg",
-      "steamAppId": 1771300
+      "steamAppId": 1771300,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-322",
@@ -4594,7 +5236,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://thumb.wikimedia.org/wikipedia/ru/thumb/0/04/Warcraft_III_The_Frozen_Throne_Cover.jpg/960px-Warcraft_III_The_Frozen_Throne_Cover.jpg?utm_source=ru.wikipedia.org&utm_campaign=api&utm_content=thumbnail",
-      "steamAppId": null
+      "steamAppId": null,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-323",
@@ -4608,7 +5252,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://upload.wikimedia.org/wikipedia/ru/4/4e/Portal_boxcover.jpg?utm_source=ru.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled",
-      "steamAppId": null
+      "steamAppId": null,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-324",
@@ -4622,7 +5268,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://thumb.wikimedia.org/wikipedia/ru/thumb/4/46/Lain_game-e.jpg/960px-Lain_game-e.jpg?utm_source=ru.wikipedia.org&utm_campaign=api&utm_content=thumbnail",
-      "steamAppId": null
+      "steamAppId": null,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-325",
@@ -4636,7 +5284,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/2330750/library_600x900.jpg",
-      "steamAppId": 2330750
+      "steamAppId": 2330750,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-326",
@@ -4650,7 +5300,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/652190/library_600x900.jpg",
-      "steamAppId": 652190
+      "steamAppId": 652190,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-327",
@@ -4664,7 +5316,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1973530/library_600x900.jpg",
-      "steamAppId": 1973530
+      "steamAppId": 1973530,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-328",
@@ -4678,7 +5332,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://upload.wikimedia.org/wikipedia/ru/1/17/MafiaIII.png?utm_source=ru.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled",
-      "steamAppId": null
+      "steamAppId": null,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-329",
@@ -4692,7 +5348,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://upload.wikimedia.org/wikipedia/ru/b/b1/Warcraft3_orc_cover.jpg?utm_source=ru.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled",
-      "steamAppId": null
+      "steamAppId": null,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-330",
@@ -4706,7 +5364,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/53ba5bb19dddfe339330e09b2eeff372.png",
-      "steamAppId": null
+      "steamAppId": null,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-331",
@@ -4720,7 +5380,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn.mobygames.com/0a9102b4-ae27-11ef-b7bd-02420a000103.webp",
-      "steamAppId": null
+      "steamAppId": null,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-332",
@@ -4734,7 +5396,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/e17233dc1c4e3457d5a259c06c7eb502.jpg",
-      "steamAppId": 632470
+      "steamAppId": 632470,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-333",
@@ -4748,7 +5412,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSzH7_FuXSWBMFK3gME0lntXt1bZQk0OgLTbVEvksA42w&s=10",
-      "steamAppId": null
+      "steamAppId": null,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-334",
@@ -4762,7 +5428,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSYXbYIqI5EaAEpigT2Vb-0Jz1G_4ieX4Ehi1Eubm9gyA&s=10",
-      "steamAppId": null
+      "steamAppId": null,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-335",
@@ -4776,7 +5444,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/8aa653d9862c9b6e398500df7fe1f63c.jpg",
-      "steamAppId": 1256670
+      "steamAppId": 1256670,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-336",
@@ -4790,7 +5460,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/a241c00a03bc2e135a61c0736b520b45.png",
-      "steamAppId": 287390
+      "steamAppId": 287390,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-337",
@@ -4804,7 +5476,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/a73027901f88055aaa0fd1a9e25d36c7.png",
-      "steamAppId": 1912410
+      "steamAppId": 1912410,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-338",
@@ -4818,7 +5492,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSi1xTebeTDCCCNQeqYxUTU-1PVlpO42_KBm8hlY9U1-Q&s=10",
-      "steamAppId": null
+      "steamAppId": null,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-339",
@@ -4832,7 +5508,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/203b3e4b5a23ecdde4a11b22b90c63ea.png",
-      "steamAppId": 881100
+      "steamAppId": 881100,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-340",
@@ -4846,7 +5524,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://upload.wikimedia.org/wikipedia/en/f/fd/Resident_Evil_2_Remake.jpg?utm_source=en.wikipedia.org&utm_campaign=index&utm_content=original",
-      "steamAppId": 883710
+      "steamAppId": 883710,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-341",
@@ -4860,7 +5540,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/679df50c7653f72d7733b1b6d0594f23.jpg",
-      "steamAppId": 482400
+      "steamAppId": 482400,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-342",
@@ -4874,7 +5556,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://upload.wikimedia.org/wikipedia/ru/b/bf/%D0%A1%D0%B0%D0%BD%D0%B8%D1%82%D0%B0%D1%80%D1%8B_Cover.jpg?utm_source=ru.wikipedia.org&utm_campaign=index&utm_content=original",
-      "steamAppId": 289420
+      "steamAppId": 289420,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-343",
@@ -4888,7 +5572,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/f6e41e22343d0c35855db09b72beb515.png",
-      "steamAppId": 4665290
+      "steamAppId": 4665290,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-344",
@@ -4902,7 +5588,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/0e800767d9c89736958c3d02136f9021.png",
-      "steamAppId": 1371720
+      "steamAppId": 1371720,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-345",
@@ -4916,7 +5604,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR29-KyJrCjrzGtB4kqMkN_aBkpH2_-zQFr2nyKOc6eihoMfJJLenAzm2_x&s=10",
-      "steamAppId": null
+      "steamAppId": null,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-346",
@@ -4930,7 +5620,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/4d67c8d359f4940fccc597021f79d625.png",
-      "steamAppId": 18050
+      "steamAppId": 18050,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-347",
@@ -4944,7 +5636,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/4734de6832da594cdefa794492da4736.png",
-      "steamAppId": 1239080
+      "steamAppId": 1239080,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-348",
@@ -4958,7 +5652,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/6de215b01821cd4011e93a00592a0571.png",
-      "steamAppId": 311770
+      "steamAppId": 311770,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-349",
@@ -4972,7 +5668,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/ba96164e0227e7b36a27d8840f169cae.jpg",
-      "steamAppId": 1594940
+      "steamAppId": 1594940,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-350",
@@ -4986,7 +5684,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://upload.wikimedia.org/wikipedia/en/9/9f/Mafia_III_cover_art.jpg?utm_source=en.wikipedia.org&utm_campaign=index&utm_content=original",
-      "steamAppId": null
+      "steamAppId": null,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-351",
@@ -5000,7 +5700,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/690f8928692748ab5885e0591c9e9016.png",
-      "steamAppId": 1796100
+      "steamAppId": 1796100,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-352",
@@ -5014,7 +5716,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/6a10e8d92307cbce55e02b7fd0f801b7.png",
-      "steamAppId": null
+      "steamAppId": null,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-353",
@@ -5028,7 +5732,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/dd75d67912095a58866697d129fdd0e7.png",
-      "steamAppId": 569860
+      "steamAppId": 569860,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-354",
@@ -5042,7 +5748,9 @@
       "hours": "",
       "vodUrl": "https://vk.com/videos-85096257?section=album_16",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/8cdd7f88686b0bf64ef323185c0e2aa3.png",
-      "steamAppId": 736850
+      "steamAppId": 736850,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-355",
@@ -5056,7 +5764,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/94eb3174c69baa2aa3e3ebf3d6605d8b.png",
-      "steamAppId": 1700
+      "steamAppId": 1700,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-356",
@@ -5070,7 +5780,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/c35f96e6c46a58248ab0ca39bae23039.png",
-      "steamAppId": 1546990
+      "steamAppId": 1546990,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-357",
@@ -5084,7 +5796,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/cc13c58ba4b8aa477b01d99289faa968.jpg",
-      "steamAppId": 3850550
+      "steamAppId": 3850550,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-358",
@@ -5098,7 +5812,9 @@
       "hours": "",
       "vodUrl": "https://vk.com/videos-85096257?section=album_8",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/35c0435bac5b49fc667bd23a5c49fea1.jpg",
-      "steamAppId": null
+      "steamAppId": null,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-359",
@@ -5112,7 +5828,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/22300/library_600x900.jpg",
-      "steamAppId": 22300
+      "steamAppId": 22300,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-360",
@@ -5126,7 +5844,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/204120/library_600x900.jpg",
-      "steamAppId": 204120
+      "steamAppId": 204120,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-361",
@@ -5140,7 +5860,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/384570/library_600x900.jpg",
-      "steamAppId": 384570
+      "steamAppId": 384570,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-362",
@@ -5154,7 +5876,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/d/d2/Books-bookshelf-bookstore-159778.jpg/960px-Books-bookshelf-bookstore-159778.jpg?utm_source=ru.wikipedia.org&utm_campaign=api&utm_content=thumbnail",
-      "steamAppId": null
+      "steamAppId": null,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-363",
@@ -5168,7 +5892,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/27000/library_600x900.jpg",
-      "steamAppId": 27000
+      "steamAppId": 27000,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-364",
@@ -5182,7 +5908,9 @@
       "hours": "23",
       "vodUrl": "",
       "coverUrl": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTayj-OYZJA2pSrDt3hXqMDXMMi0K3dcymb1_vkyos-i8WTCpvyDAT89Q&s=10",
-      "steamAppId": 38410
+      "steamAppId": 38410,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-365",
@@ -5196,7 +5924,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/c7cc9fab8f7e58fec0b01d1c3404eb2b.png",
-      "steamAppId": 588430
+      "steamAppId": 588430,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-366",
@@ -5210,7 +5940,9 @@
       "hours": "20",
       "vodUrl": "",
       "coverUrl": "https://lol.sakuya.su/hteuZI",
-      "steamAppId": 12210
+      "steamAppId": 12210,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-367",
@@ -5224,7 +5956,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/84d8df6932e202152767f7579f32c613.png",
-      "steamAppId": 1426210
+      "steamAppId": 1426210,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-368",
@@ -5238,7 +5972,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/622c46cf96b1667668366e68c59e08b8.png",
-      "steamAppId": 1223500
+      "steamAppId": 1223500,
+      "dropPrice": "",
+      "returnPrice": ""
     },
     {
       "id": "game-369",
@@ -5252,7 +5988,9 @@
       "hours": "",
       "vodUrl": "",
       "coverUrl": "https://cdn2.steamgriddb.com/grid/42f29b6ed8389d3ce620faf11cd4070a.jpg",
-      "steamAppId": 1846170
+      "steamAppId": 1846170,
+      "dropPrice": "",
+      "returnPrice": ""
     }
   ],
   "watchlist": [

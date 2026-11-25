@@ -92,3 +92,13 @@ export const PriorityBadge: React.FC<{ priority: string }> = ({ priority }) => {
     priority === 'Высокий' ? 'prio-high' : priority === 'Средний' ? 'prio-mid' : 'prio-low';
   return <span className={`badge ${cls}`}>{priority}</span>;
 };
+
+export const DropPriceBadge: React.FC<{ price?: string }> = ({ price }) => {
+  if (!price || !price.trim()) return null;
+  return <span className="badge badge-drop-price">💸 Дроп: {price}</span>;
+};
+
+export const ReturnPriceBadge: React.FC<{ price?: string }> = ({ price }) => {
+  if (!price || !price.trim()) return null;
+  return <span className="badge badge-return-price">🔄 Вернули: {price}</span>;
+};

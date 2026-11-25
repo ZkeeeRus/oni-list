@@ -147,6 +147,8 @@ export const GameModal: React.FC<{
   const [rating, setRating] = useState(initial?.rating ?? '');
   const [conditions, setConditions] = useState(initial?.conditions ?? '');
   const [comment, setComment] = useState(initial?.comment ?? '');
+  const [dropPrice, setDropPrice] = useState(initial?.dropPrice ?? '');
+  const [returnPrice, setReturnPrice] = useState(initial?.returnPrice ?? '');
   const [link, setLink] = useState(initial?.link ?? '');
   const [vodUrl, setVodUrl] = useState(initial?.vodUrl ?? '');
   const [hours, setHours] = useState(initial?.hours ?? '');
@@ -165,6 +167,8 @@ export const GameModal: React.FC<{
       rating,
       conditions: conditions.trim(),
       comment: comment.trim(),
+      dropPrice: dropPrice.trim(),
+      returnPrice: returnPrice.trim(),
       link: link.trim(),
       vodUrl: vodUrl.trim(),
       hours: hours.trim(),
@@ -250,6 +254,27 @@ export const GameModal: React.FC<{
               setSteamAppId(sid ?? null);
             }}
           />
+
+          <div className="form-row-2">
+            <div>
+              <label className="field-label">Цена дропа зрителями (если был выкуп/дроп)</label>
+              <input
+                className="input"
+                value={dropPrice}
+                onChange={(e) => setDropPrice(e.target.value)}
+                placeholder="Напр.: 250 ₽ или 750 ₽"
+              />
+            </div>
+            <div>
+              <label className="field-label">Сумма возврата игры (если вернули)</label>
+              <input
+                className="input"
+                value={returnPrice}
+                onChange={(e) => setReturnPrice(e.target.value)}
+                placeholder="Напр.: 2700 ₽ или 6000 ₽ (Палс)"
+              />
+            </div>
+          </div>
 
           <div>
             <label className="field-label">Условия заказа</label>

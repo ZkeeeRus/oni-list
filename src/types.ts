@@ -38,6 +38,8 @@ export interface GameItem {
   rating: string;
   conditions: string;
   comment: string;
+  dropPrice?: string;
+  returnPrice?: string;
   link: string;
   hours: string;
   vodUrl: string;

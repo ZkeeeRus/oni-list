@@ -14,7 +14,14 @@ import {
 } from 'lucide-react';
 import { GameItem, MemeItem, TwitchUser } from '../types';
 import { CoverImage } from '../components/CoverImage';
-import { GAME_STATUSES, RATINGS_ORDER, RatingBadge, StatusBadge } from '../components/Badges';
+import {
+  DropPriceBadge,
+  GAME_STATUSES,
+  RATINGS_ORDER,
+  RatingBadge,
+  ReturnPriceBadge,
+  StatusBadge,
+} from '../components/Badges';
 
 interface GamesViewProps {
   games: GameItem[];
@@ -49,11 +56,12 @@ export const GamesView: React.FC<GamesViewProps> = ({
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
   const [ratingFilter, setRatingFilter] = useState<string>('ALL');
   const [onlyVod, setOnlyVod] = useState(false);
+  const [onlyReturned, setOnlyReturned] = useState(false);
   const [onlyMine, setOnlyMine] = useState(false);
   const [ordererFilter, setOrdererFilter] = useState(initialOrdererFilter || '');
   const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
   const [sortBy, setSortBy] = useState<'default' | 'title' | 'rating'>('default');
-  const [selectedDetail, setSelectedDetail] = useState<GameItem | null>(null);
+  const [selectedDetailId, setSelectedDetailId] = useState<string | null>(null);
 
   React.useEffect(() => {
     if (initialOrdererFilter !== undefined) {
@@ -98,10 +106,12 @@ export const GamesView: React.FC<GamesViewProps> = ({
         }
       }
       if (onlyVod && !g.vodUrl) return false;
+      if (onlyReturned && !g.returnPrice) return false;
       if (onlyMine && myLogin && !g.orderedBy.toLowerCase().includes(myLogin)) return false;
       if (ordQ && !g.orderedBy.toLowerCase().includes(ordQ)) return false;
       if (q) {
-        const hay = `${g.title} ${g.orderedBy} ${g.conditions} ${g.comment}`.toLowerCase();
+        const hay =
+          `${g.title} ${g.orderedBy} ${g.conditions} ${g.comment} ${g.dropPrice || ''} ${g.returnPrice || ''}`.toLowerCase();
         if (!hay.includes(q)) return false;
       }
       return true;
@@ -122,6 +132,7 @@ export const GamesView: React.FC<GamesViewProps> = ({
     statusFilter,
     ratingFilter,
     onlyVod,
+    onlyReturned,
     onlyMine,
     ordererFilter,
     currentUser,
@@ -136,13 +147,18 @@ export const GamesView: React.FC<GamesViewProps> = ({
     return c;
   }, [games]);
 
+  const selectedDetail = useMemo(
+    () => (selectedDetailId ? games.find((x) => x.id === selectedDetailId) || null : null),
+    [games, selectedDetailId]
+  );
+
   return (
     <div className="view-stack">
       <div className="page-header">
         <div>
           <h1>Список игр ({filtered.length})</h1>
           <p className="muted-sm">
-            Все заказы, текущие прохождения, условия, оценки, комментарии и записи VOD
+            Все заказы, прохождения, условия, оценки, цены дропов/возвратов и записи VOD
           </p>
         </div>
         <div className="row-gap-sm">
@@ -217,7 +233,16 @@ export const GamesView: React.FC<GamesViewProps> = ({
             checked={onlyVod}
             onChange={(e) => setOnlyVod(e.target.checked)}
           />
-          <span>Только с VOD</span>
+          <span>С записью VOD</span>
+        </label>
+
+        <label className="check-pill">
+          <input
+            type="checkbox"
+            checked={onlyReturned}
+            onChange={(e) => setOnlyReturned(e.target.checked)}
+          />
+          <span>Вернули за донат</span>
         </label>
 
         {currentUser && (
@@ -274,7 +299,7 @@ export const GamesView: React.FC<GamesViewProps> = ({
               <article
                 key={g.id}
                 className="media-card"
-                onClick={() => setSelectedDetail(g)}
+                onClick={() => setSelectedDetailId(g.id)}
               >
                 <div className="media-card-poster">
                   <CoverImage
@@ -305,6 +330,8 @@ export const GamesView: React.FC<GamesViewProps> = ({
                   <div className="row-gap-xs wrap">
                     <StatusBadge status={g.status} />
                     <RatingBadge rating={g.rating} />
+                    <DropPriceBadge price={g.dropPrice} />
+                    <ReturnPriceBadge price={g.returnPrice} />
                   </div>
                   <h3 className="media-card-title">{g.title}</h3>
                   <div className="media-card-orderer">
@@ -331,20 +358,27 @@ export const GamesView: React.FC<GamesViewProps> = ({
 
                   {gMemes.length > 0 && (
                     <div
-                      className="attached-memes-strip"
+                      className="watch-memes-box"
                       onClick={(e) => e.stopPropagation()}
                     >
-                      {gMemes.map((m) => (
-                        <button
-                          key={m.id}
-                          type="button"
-                          className="attached-meme-thumb"
-                          onClick={() => onViewMeme(m)}
-                          title={m.caption}
-                        >
-                          <img src={m.imageUrl} alt={m.caption} />
-                        </button>
-                      ))}
+                      <span className="muted-xs">Мемы со стрима:</span>
+                      <div className="attached-memes-strip">
+                        {gMemes.map((m) => (
+                          <button
+                            key={m.id}
+                            type="button"
+                            className="attached-meme-thumb"
+                            onClick={() => onViewMeme(m)}
+                            title={m.caption}
+                          >
+                            <img
+                              src={m.imageUrl}
+                              alt={m.caption}
+                              referrerPolicy="no-referrer"
+                            />
+                          </button>
+                        ))}
+                      </div>
                     </div>
                   )}
 
@@ -364,7 +398,7 @@ export const GamesView: React.FC<GamesViewProps> = ({
                         onClick={() => onAddMemeForGame(g)}
                         title="Прикрепить мем со стрима"
                       >
-                        <ImagePlus size={13} /> Мем
+                        <ImagePlus size={13} /> + Мем
                       </button>
                       <button
                         className="btn btn-ghost btn-xs danger-text"
@@ -391,7 +425,7 @@ export const GamesView: React.FC<GamesViewProps> = ({
               <tr>
                 <th>Игра</th>
                 <th>Кто заказал</th>
-                <th>Статус</th>
+                <th>Статус / Дроп / Возврат</th>
                 <th>Оценка</th>
                 <th>Условия и комментарий</th>
                 <th>Часы / Ссылки</th>
@@ -400,7 +434,7 @@ export const GamesView: React.FC<GamesViewProps> = ({
             </thead>
             <tbody>
               {filtered.map((g) => (
-                <tr key={g.id} onClick={() => setSelectedDetail(g)}>
+                <tr key={g.id} onClick={() => setSelectedDetailId(g.id)}>
                   <td>
                     <div className="table-title-cell">
                       <CoverImage
@@ -425,23 +459,28 @@ export const GamesView: React.FC<GamesViewProps> = ({
                     </button>
                   </td>
                   <td onClick={(e) => canEdit && e.stopPropagation()}>
-                    {canEdit ? (
-                      <select
-                        className="input input-xs"
-                        value={g.status}
-                        onChange={(e) =>
-                          onQuickUpdateGame({ ...g, status: e.target.value })
-                        }
-                      >
-                        {GAME_STATUSES.map((s) => (
-                          <option key={s} value={s}>
-                            {s}
-                          </option>
-                        ))}
-                      </select>
-                    ) : (
-                      <StatusBadge status={g.status} />
-                    )}
+                    <div className="row-gap-xs wrap">
+                      {canEdit ? (
+                        <select
+                          className="input input-xs"
+                          style={{ width: 'auto' }}
+                          value={g.status}
+                          onChange={(e) =>
+                            onQuickUpdateGame({ ...g, status: e.target.value })
+                          }
+                        >
+                          {GAME_STATUSES.map((s) => (
+                            <option key={s} value={s}>
+                              {s}
+                            </option>
+                          ))}
+                        </select>
+                      ) : (
+                        <StatusBadge status={g.status} />
+                      )}
+                      <DropPriceBadge price={g.dropPrice} />
+                      <ReturnPriceBadge price={g.returnPrice} />
+                    </div>
                   </td>
                   <td onClick={(e) => canEdit && e.stopPropagation()}>
                     {canEdit ? (
@@ -527,11 +566,11 @@ export const GamesView: React.FC<GamesViewProps> = ({
 
       {/* Detail Modal on Card Click */}
       {selectedDetail && (
-        <div className="modal-backdrop" onClick={() => setSelectedDetail(null)}>
+        <div className="modal-backdrop" onClick={() => setSelectedDetailId(null)}>
           <div className="modal-card modal-lg" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <h3>{selectedDetail.title}</h3>
-              <button className="icon-btn" onClick={() => setSelectedDetail(null)}>
+              <button className="icon-btn" onClick={() => setSelectedDetailId(null)}>
                 <X size={18} />
               </button>
             </div>
@@ -546,6 +585,8 @@ export const GamesView: React.FC<GamesViewProps> = ({
                 <div className="row-gap-xs wrap">
                   <StatusBadge status={selectedDetail.status} />
                   <RatingBadge rating={selectedDetail.rating} />
+                  <DropPriceBadge price={selectedDetail.dropPrice} />
+                  <ReturnPriceBadge price={selectedDetail.returnPrice} />
                   {selectedDetail.hours && (
                     <span className="badge">{selectedDetail.hours} ч.</span>
                   )}
@@ -565,6 +606,30 @@ export const GamesView: React.FC<GamesViewProps> = ({
                     <p style={{ whiteSpace: 'pre-line' }}>{selectedDetail.comment}</p>
                   </div>
                 )}
+
+                {(memesByGame.get(selectedDetail.id) || []).length > 0 && (
+                  <div className="detail-box">
+                    <strong>Мемы с этого прохождения:</strong>
+                    <div className="detail-memes-grid">
+                      {(memesByGame.get(selectedDetail.id) || []).map((m) => (
+                        <button
+                          key={m.id}
+                          type="button"
+                          className="detail-meme-card"
+                          onClick={() => onViewMeme(m)}
+                        >
+                          <img
+                            src={m.imageUrl}
+                            alt={m.caption}
+                            referrerPolicy="no-referrer"
+                          />
+                          <span>{m.caption}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 <div className="row-gap-sm wrap" style={{ marginTop: 12 }}>
                   {selectedDetail.vodUrl && (
                     <a
@@ -587,16 +652,24 @@ export const GamesView: React.FC<GamesViewProps> = ({
                     </a>
                   )}
                   {canEdit && (
-                    <button
-                      className="btn btn-secondary btn-sm"
-                      onClick={() => {
-                        const g = selectedDetail;
-                        setSelectedDetail(null);
-                        onEditGame(g);
-                      }}
-                    >
-                      <Edit3 size={14} /> Редактировать
-                    </button>
+                    <>
+                      <button
+                        className="btn btn-secondary btn-sm"
+                        onClick={() => onAddMemeForGame(selectedDetail)}
+                      >
+                        <ImagePlus size={14} /> + Мем (Ctrl+V)
+                      </button>
+                      <button
+                        className="btn btn-secondary btn-sm"
+                        onClick={() => {
+                          const g = selectedDetail;
+                          setSelectedDetailId(null);
+                          onEditGame(g);
+                        }}
+                      >
+                        <Edit3 size={14} /> Редактировать
+                      </button>
+                    </>
                   )}
                 </div>
               </div>

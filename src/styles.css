@@ -486,6 +486,18 @@ p {
   color: #cbd5e1;
 }
 
+.badge-drop-price {
+  background: rgba(249, 115, 22, 0.18);
+  border-color: rgba(249, 115, 22, 0.5);
+  color: #fdba74;
+}
+
+.badge-return-price {
+  background: rgba(234, 179, 8, 0.2);
+  border-color: rgba(234, 179, 8, 0.55);
+  color: #fde047;
+}
+
 /* Cover Component */
 .cover-wrap,
 .cover-fallback {
@@ -1595,6 +1607,62 @@ p {
 }
 .detail-box p {
   margin-top: 4px;
+}
+
+.detail-memes-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.detail-meme-card {
+  background: #0b0e17;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+  padding: 0;
+  color: var(--text);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+  transition: border-color 0.15s, transform 0.15s;
+}
+
+.detail-meme-card:hover {
+  border-color: var(--accent);
+  transform: translateY(-2px);
+}
+
+.detail-meme-card img {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  display: block;
+}
+
+.detail-meme-card span {
+  padding: 6px 8px;
+  font-size: 0.76rem;
+  color: #cbd5e1;
+}
+
+.rank-badge-circle {
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  background: rgba(145, 70, 255, 0.18);
+  color: #d8b4fe;
+  font-weight: 700;
+  font-size: 0.82rem;
+  display: grid;
+  place-items: center;
+}
+
+.orderer-hub-row {
+  width: 100%;
+  grid-template-columns: 34px 1fr auto;
 }
 
 /* Settings */
