@@ -196,7 +196,11 @@ export async function loadInitialSiteData(apiBaseUrl: string): Promise<{
       const res = await fetch(`${cleanBase}/api/state`, { cache: 'no-store' });
       if (res.ok) {
         const remote = await res.json();
-        if (remote && Array.isArray(remote.games)) {
+        if (
+          remote &&
+          Array.isArray(remote.games) &&
+          (remote.games.length > 0 || (remote.watchlist && remote.watchlist.length > 0))
+        ) {
           return { data: ensurePermanentAdmins(remote), source: 'remote' };
         }
       }
