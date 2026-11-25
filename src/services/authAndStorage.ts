@@ -31,8 +31,8 @@ export async function loadRuntimeConfig(): Promise<RuntimeConfig> {
   ]);
 
   return {
-    apiBaseUrl: (savedCfg.apiBaseUrl ?? fileCfg.apiBaseUrl ?? '').trim(),
-    twitchClientId: (savedCfg.twitchClientId ?? fileCfg.twitchClientId ?? '').trim(),
+    apiBaseUrl: (savedCfg.apiBaseUrl || fileCfg.apiBaseUrl || '').trim(),
+    twitchClientId: (savedCfg.twitchClientId || fileCfg.twitchClientId || '').trim(),
     rootAdmins: Array.from(adminsSet),
   };
 }

@@ -1,5 +1,5 @@
 {
-  "apiBaseUrl": "",
-  "twitchClientId": "",
+  "apiBaseUrl": "https://functions.yandexcloud.net/d4ehsd85qrdehg8058ue",
+  "twitchClientId": "v78wuh35wmptpayuqj81a7y55y6l8s",
   "rootAdmins": ["onized", "zkeeerus"]
 }

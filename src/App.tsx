@@ -110,6 +110,26 @@ export const App: React.FC = () => {
   const role = getUserRole(user, data, cfg);
   const canEdit = role === 'admin' || role === 'moderator';
 
+  // Auto-initialize cloud bucket with seed data on first real Twitch login of an admin
+  useEffect(() => {
+    if (
+      data &&
+      dataSource === 'seed' &&
+      canEdit &&
+      user &&
+      !user.isPreview &&
+      user.accessToken &&
+      cfg.apiBaseUrl
+    ) {
+      persistSiteData(data, cfg.apiBaseUrl, user).then((res) => {
+        if (res.savedRemote) {
+          setDataSource('remote');
+          showToast('Стартовая база синхронизирована с облаком!');
+        }
+      });
+    }
+  }, [dataSource, canEdit, user, cfg.apiBaseUrl]);
+
   const commitData = async (next: SiteData, message?: string) => {
     setData(next);
     const res = await persistSiteData(next, cfg.apiBaseUrl, user);
