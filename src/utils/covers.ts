@@ -24,7 +24,22 @@ export function getSteamHeaderUrl(appId: number): string {
   return `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${appId}/header.jpg`;
 }
 
+export const NO_COVER_TOKEN = 'NO_COVER';
+
+export function isForcedNoCover(coverUrl?: string): boolean {
+  if (!coverUrl) return false;
+  const t = coverUrl.trim();
+  return (
+    t === NO_COVER_TOKEN ||
+    t === 'https://lol.sakuya.su/-f48ko' ||
+    t.endsWith('/no-cover.webp')
+  );
+}
+
 export function buildCoverCandidatesChain(coverUrl?: string, steamAppId?: number | null): string[] {
+  if (isForcedNoCover(coverUrl)) {
+    return [];
+  }
   const urls: string[] = [];
   const extractedFromCover = coverUrl ? extractSteamAppId(coverUrl) : null;
   const effectiveAppId = steamAppId || extractedFromCover;

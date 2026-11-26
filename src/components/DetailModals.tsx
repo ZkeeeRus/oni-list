@@ -2,6 +2,7 @@ import React from 'react';
 import {
   Edit3,
   ExternalLink,
+  ImageOff,
   ImagePlus,
   Play,
   Video,
@@ -10,6 +11,7 @@ import {
 import { BacklogItem, GameItem, MemeItem, WatchItem } from '../types';
 import { CoverImage } from './CoverImage';
 import { resolveMemeImageUrl } from '../utils/builtinMemes';
+import { isForcedNoCover, NO_COVER_TOKEN } from '../utils/covers';
 import {
   BACKLOG_STATUSES,
   DropPriceBadge,
@@ -190,6 +192,20 @@ export const GameDetailModal: React.FC<{
                   >
                     <ImagePlus size={14} /> + Мем (Ctrl+V)
                   </button>
+                  {!isForcedNoCover(game.coverUrl) && Boolean(game.coverUrl || game.steamAppId) && (
+                    <button
+                      className="btn btn-secondary btn-sm"
+                      onClick={() =>
+                        onQuickUpdate({
+                          ...game,
+                          coverUrl: NO_COVER_TOKEN,
+                          steamAppId: null,
+                        })
+                      }
+                    >
+                      <ImageOff size={14} /> Поставить заглушку
+                    </button>
+                  )}
                   <button
                     className="btn btn-secondary btn-sm"
                     onClick={() => {
@@ -338,6 +354,19 @@ export const WatchDetailModal: React.FC<{
                 >
                   <ImagePlus size={14} /> + Прикрепить мем (Ctrl+V)
                 </button>
+                {!isForcedNoCover(item.coverUrl) && Boolean(item.coverUrl) && (
+                  <button
+                    className="btn btn-secondary btn-sm"
+                    onClick={() =>
+                      onQuickUpdate({
+                        ...item,
+                        coverUrl: NO_COVER_TOKEN,
+                      })
+                    }
+                  >
+                    <ImageOff size={14} /> Поставить заглушку
+                  </button>
+                )}
                 <button
                   className="btn btn-secondary btn-sm"
                   onClick={() => {
@@ -442,6 +471,20 @@ export const BacklogDetailModal: React.FC<{
                   >
                     <Play size={14} /> Взять на стрим (в Список игр)
                   </button>
+                  {!isForcedNoCover(item.coverUrl) && Boolean(item.coverUrl || item.steamAppId) && (
+                    <button
+                      className="btn btn-secondary btn-sm"
+                      onClick={() =>
+                        onQuickUpdate({
+                          ...item,
+                          coverUrl: NO_COVER_TOKEN,
+                          steamAppId: null,
+                        })
+                      }
+                    >
+                      <ImageOff size={14} /> Поставить заглушку
+                    </button>
+                  )}
                   <button
                     className="btn btn-secondary btn-sm"
                     onClick={() => {

@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
   Download,
+  ImageOff,
   ImagePlus,
   LogOut,
   Search,
@@ -31,6 +32,8 @@ import {
   CoverCandidate,
   extractSteamAppId,
   getSteamPortraitUrl,
+  isForcedNoCover,
+  NO_COVER_TOKEN,
   searchCoversOnline,
 } from '../utils/covers';
 import { compressImageToWebpDataUrl } from '../utils/imageCompress';
@@ -50,6 +53,8 @@ const CoverPicker: React.FC<{
   const [searching, setSearching] = useState(false);
   const [candidates, setCandidates] = useState<CoverCandidate[]>([]);
   const [customQuery, setCustomQuery] = useState('');
+
+  const forcedPlaceholder = isForcedNoCover(coverUrl);
 
   const handleSearch = async () => {
     const q = (customQuery || title).trim();
@@ -77,19 +82,23 @@ const CoverPicker: React.FC<{
           <input
             type="text"
             className="input"
-            placeholder="URL обложки или ссылка на игру в Steam (store.steampowered.com/app/...)"
-            value={coverUrl}
+            placeholder={
+              forcedPlaceholder
+                ? 'Выбрана заглушка «Обложка не найдена» - вставьте URL для замены'
+                : 'URL обложки или ссылка на игру в Steam (store.steampowered.com/app/...)'
+            }
+            value={forcedPlaceholder ? '' : coverUrl}
             onChange={(e) => {
               const val = e.target.value;
               const appId = extractSteamAppId(val);
               if (appId && val.includes('store.steampowered.com')) {
                 onChange(getSteamPortraitUrl(appId), appId);
               } else {
-                onChange(val, appId ?? steamAppId ?? null);
+                onChange(val, appId ?? null);
               }
             }}
           />
-          <div className="inline-search-row">
+          <div className="inline-search-row" style={{ flexWrap: 'wrap' }}>
             <input
               type="text"
               className="input input-sm"
@@ -105,6 +114,15 @@ const CoverPicker: React.FC<{
             >
               <Search size={14} />
               {searching ? 'Ищем...' : 'Найти портрет'}
+            </button>
+            <button
+              type="button"
+              className={`btn btn-sm ${forcedPlaceholder ? 'btn-primary' : 'btn-secondary'}`}
+              onClick={() => onChange(NO_COVER_TOKEN, null)}
+              title="Поставить фирменную заглушку «Обложка не найдена»"
+            >
+              <ImageOff size={14} />
+              {forcedPlaceholder ? 'Стоит заглушка' : 'Поставить заглушку'}
             </button>
           </div>
         </div>
@@ -154,7 +172,10 @@ export const GameModal: React.FC<{
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim()) return;
-    const detectedSteam = steamAppId || extractSteamAppId(link) || extractSteamAppId(coverUrl);
+    const forcedNoCover = isForcedNoCover(coverUrl);
+    const detectedSteam = forcedNoCover
+      ? null
+      : steamAppId || extractSteamAppId(link) || extractSteamAppId(coverUrl);
     onSave({
       id: initial?.id || `game-${Date.now()}`,
       title: title.trim(),
@@ -168,8 +189,9 @@ export const GameModal: React.FC<{
       link: link.trim(),
       vodUrl: vodUrl.trim(),
       hours: hours.trim(),
-      coverUrl:
-        coverUrl.trim() || (detectedSteam ? getSteamPortraitUrl(detectedSteam) : ''),
+      coverUrl: forcedNoCover
+        ? NO_COVER_TOKEN
+        : coverUrl.trim() || (detectedSteam ? getSteamPortraitUrl(detectedSteam) : ''),
       steamAppId: detectedSteam ?? null,
     });
   };
@@ -742,8 +764,8 @@ export const BacklogModal: React.FC<{
       priority,
       status,
       link: link.trim(),
-      coverUrl: coverUrl.trim(),
-      steamAppId,
+      coverUrl: isForcedNoCover(coverUrl) ? NO_COVER_TOKEN : coverUrl.trim(),
+      steamAppId: isForcedNoCover(coverUrl) ? null : steamAppId,
     });
   };
 
