@@ -34,6 +34,7 @@ import {
   searchCoversOnline,
 } from '../utils/covers';
 import { compressImageToWebpDataUrl } from '../utils/imageCompress';
+import { resolveMemeImageUrl } from '../utils/builtinMemes';
 import { CoverImage } from './CoverImage';
 import { PERMANENT_ADMINS } from '../services/authAndStorage';
 
@@ -573,7 +574,7 @@ export const MemeModal: React.FC<{
             onClick={() => fileRef.current?.click()}
           >
             {imageUrl ? (
-              <img src={imageUrl} alt="Превью мема" className="meme-upload-preview" />
+              <img src={resolveMemeImageUrl(imageUrl)} alt="Превью мема" className="meme-upload-preview" />
             ) : (
               <div className="paste-dropzone-empty">
                 <ImagePlus size={32} />
@@ -618,7 +619,6 @@ export const MemeModal: React.FC<{
               >
                 <option value="watch">Тайтл из просмотрового</option>
                 <option value="game">Игра из списка</option>
-                <option value="general">Общий мем канала</option>
               </select>
             </div>
 
@@ -703,7 +703,7 @@ export const MemeLightbox: React.FC<{
           </div>
         </div>
         <div className="lightbox-img-wrap">
-          <img src={meme.imageUrl} alt={meme.caption} referrerPolicy="no-referrer" />
+          <img src={resolveMemeImageUrl(meme.imageUrl)} alt={meme.caption} referrerPolicy="no-referrer" />
         </div>
         <div className="lightbox-meta">
           Добавил: <strong>{meme.addedBy}</strong> • {meme.createdAt}

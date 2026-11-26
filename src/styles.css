@@ -892,22 +892,43 @@ p {
   display: flex;
   align-items: center;
 }
-.search-input-wrap svg:first-child {
+.search-input-wrap > svg {
   position: absolute;
   left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
   color: var(--text-muted);
+  pointer-events: none;
 }
 .search-input-wrap .input {
   padding-left: 36px;
-  padding-right: 32px;
+  padding-right: 36px;
 }
 .clear-input-btn {
   position: absolute;
   right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   background: transparent;
   border: none;
   color: var(--text-muted);
   cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.clear-input-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text);
+}
+.clear-input-btn svg {
+  position: static;
+  display: block;
 }
 
 .check-pill {
@@ -1080,19 +1101,25 @@ p {
   margin-top: 5px;
 }
 .attached-meme-thumb {
-  width: 48px;
-  height: 48px;
-  border-radius: 7px;
+  width: 56px;
+  height: 56px;
+  border-radius: 8px;
   overflow: hidden;
   padding: 0;
   border: 1px solid var(--border);
   cursor: pointer;
-  background: #000;
+  background: #0f1320;
+  transition: border-color 0.15s, transform 0.15s;
+}
+.attached-meme-thumb:hover {
+  border-color: var(--accent);
+  transform: scale(1.05);
 }
 .attached-meme-thumb img {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  display: block;
 }
 
 .card-mod-actions {

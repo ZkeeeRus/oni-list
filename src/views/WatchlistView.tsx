@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { MemeItem, TwitchUser, WatchItem } from '../types';
 import { CoverImage } from '../components/CoverImage';
+import { resolveMemeImageUrl } from '../utils/builtinMemes';
 import {
   RATINGS_ORDER,
   RatingBadge,
@@ -52,14 +53,20 @@ export const WatchlistView: React.FC<WatchlistViewProps> = ({
   const memesByWatchId = useMemo(() => {
     const map = new Map<string, MemeItem[]>();
     for (const m of memes) {
-      if (m.targetType === 'watch' && m.targetId) {
-        const list = map.get(m.targetId) || [];
-        list.push(m);
-        map.set(m.targetId, list);
+      if (m.targetType === 'watch') {
+        const matchedId =
+          m.targetId ||
+          watchlist.find((w) => w.title === m.targetTitle)?.id ||
+          '';
+        if (matchedId) {
+          const list = map.get(matchedId) || [];
+          list.push(m);
+          map.set(matchedId, list);
+        }
       }
     }
     return map;
-  }, [memes]);
+  }, [memes, watchlist]);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -67,7 +74,11 @@ export const WatchlistView: React.FC<WatchlistViewProps> = ({
     const myLogin = currentUser?.login.toLowerCase() || '';
 
     return watchlist.filter((w) => {
-      if (catFilter !== 'ALL' && w.category !== catFilter) return false;
+      if (catFilter === 'WITH_MEMES') {
+        if (!memesByWatchId.has(w.id)) return false;
+      } else if (catFilter !== 'ALL' && w.category !== catFilter) {
+        return false;
+      }
       if (statusFilter !== 'ALL' && w.status !== statusFilter) return false;
       if (ratingFilter !== 'ALL' && w.rating !== ratingFilter) return false;
       if (onlyMine && myLogin && !w.orderedBy.toLowerCase().includes(myLogin)) {
@@ -91,6 +102,7 @@ export const WatchlistView: React.FC<WatchlistViewProps> = ({
     onlyMine,
     ordererFilter,
     currentUser,
+    memesByWatchId,
   ]);
 
   return (
@@ -122,7 +134,7 @@ export const WatchlistView: React.FC<WatchlistViewProps> = ({
             onChange={(e) => setSearch(e.target.value)}
           />
           {search && (
-            <button className="clear-input-btn" onClick={() => setSearch('')}>
+            <button type="button" className="clear-input-btn" onClick={() => setSearch('')}>
               <X size={14} />
             </button>
           )}
@@ -194,6 +206,14 @@ export const WatchlistView: React.FC<WatchlistViewProps> = ({
             </button>
           );
         })}
+        {memesByWatchId.size > 0 && (
+          <button
+            className={`status-tab ${catFilter === 'WITH_MEMES' ? 'active' : ''}`}
+            onClick={() => setCatFilter('WITH_MEMES')}
+          >
+            🖼 С мемами <span>{memesByWatchId.size}</span>
+          </button>
+        )}
       </div>
 
       <div className="media-cards-grid">
@@ -264,7 +284,7 @@ export const WatchlistView: React.FC<WatchlistViewProps> = ({
                           title={m.caption}
                         >
                           <img
-                            src={m.imageUrl}
+                            src={resolveMemeImageUrl(m.imageUrl)}
                             alt={m.caption}
                             referrerPolicy="no-referrer"
                           />

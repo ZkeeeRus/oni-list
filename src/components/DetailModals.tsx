@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { BacklogItem, GameItem, MemeItem, WatchItem } from '../types';
 import { CoverImage } from './CoverImage';
+import { resolveMemeImageUrl } from '../utils/builtinMemes';
 import {
   BACKLOG_STATUSES,
   DropPriceBadge,
@@ -149,7 +150,7 @@ export const GameDetailModal: React.FC<{
                       onClick={() => onViewMeme(m)}
                     >
                       <img
-                        src={m.imageUrl}
+                        src={resolveMemeImageUrl(m.imageUrl)}
                         alt={m.caption}
                         referrerPolicy="no-referrer"
                       />
@@ -318,7 +319,7 @@ export const WatchDetailModal: React.FC<{
                       onClick={() => onViewMeme(m)}
                     >
                       <img
-                        src={m.imageUrl}
+                        src={resolveMemeImageUrl(m.imageUrl)}
                         alt={m.caption}
                         referrerPolicy="no-referrer"
                       />

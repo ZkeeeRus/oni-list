@@ -481,7 +481,10 @@ export const App: React.FC = () => {
         <GameDetailModal
           game={inspectedGame}
           memes={data.memes.filter(
-            (m) => m.targetType === 'game' && m.targetId === inspectedGame.id
+            (m) =>
+              m.targetType === 'game' &&
+              (m.targetId === inspectedGame.id ||
+                (!m.targetId && m.targetTitle === inspectedGame.title))
           )}
           canEdit={canEdit}
           onClose={() => setInspectGameId(null)}
@@ -511,7 +514,10 @@ export const App: React.FC = () => {
         <WatchDetailModal
           item={inspectedWatch}
           memes={data.memes.filter(
-            (m) => m.targetType === 'watch' && m.targetId === inspectedWatch.id
+            (m) =>
+              m.targetType === 'watch' &&
+              (m.targetId === inspectedWatch.id ||
+                (!m.targetId && m.targetTitle === inspectedWatch.title))
           )}
           canEdit={canEdit}
           onClose={() => setInspectWatchId(null)}

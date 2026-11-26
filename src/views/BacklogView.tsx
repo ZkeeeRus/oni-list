@@ -79,7 +79,7 @@ export const BacklogView: React.FC<BacklogViewProps> = ({
             onChange={(e) => setSearch(e.target.value)}
           />
           {search && (
-            <button className="clear-input-btn" onClick={() => setSearch('')}>
+            <button type="button" className="clear-input-btn" onClick={() => setSearch('')}>
               <X size={14} />
             </button>
           )}

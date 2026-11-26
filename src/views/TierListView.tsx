@@ -328,7 +328,7 @@ export const TierListView: React.FC<TierListViewProps> = ({
                 onChange={(e) => setAutoFilter(e.target.value)}
               />
               {autoFilter && (
-                <button className="clear-input-btn" onClick={() => setAutoFilter('')}>
+                <button type="button" className="clear-input-btn" onClick={() => setAutoFilter('')}>
                   <X size={14} />
                 </button>
               )}

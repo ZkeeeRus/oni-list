@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { GameItem, MemeItem, TwitchUser } from '../types';
 import { CoverImage } from '../components/CoverImage';
+import { resolveMemeImageUrl } from '../utils/builtinMemes';
 import {
   DropPriceBadge,
   GAME_STATUSES,
@@ -193,7 +194,7 @@ export const GamesView: React.FC<GamesViewProps> = ({
             onChange={(e) => setSearch(e.target.value)}
           />
           {search && (
-            <button className="clear-input-btn" onClick={() => setSearch('')}>
+            <button type="button" className="clear-input-btn" onClick={() => setSearch('')}>
               <X size={14} />
             </button>
           )}
@@ -368,7 +369,7 @@ export const GamesView: React.FC<GamesViewProps> = ({
                             title={m.caption}
                           >
                             <img
-                              src={m.imageUrl}
+                              src={resolveMemeImageUrl(m.imageUrl)}
                               alt={m.caption}
                               referrerPolicy="no-referrer"
                             />
