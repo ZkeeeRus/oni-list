@@ -37,7 +37,11 @@ export function playUiClick(prefs: UserPreferences): void {
   osc.stop(now + 0.045);
 }
 
-export function playRouletteTick(prefs: UserPreferences, progress = 0.5): void {
+export function playRouletteTick(
+  prefs: UserPreferences,
+  speedRatio = 0.5,
+  isPullback = false
+): void {
   if (!prefs.soundEnabled || !prefs.rouletteSound) return;
   const ctx = getAudioContext();
   if (!ctx) return;
@@ -46,11 +50,13 @@ export function playRouletteTick(prefs: UserPreferences, progress = 0.5): void {
   const osc = ctx.createOscillator();
   const gain = ctx.createGain();
   osc.type = 'triangle';
-  const baseFreq = 680 - progress * 220;
+  const clamped = Math.max(0, Math.min(1, speedRatio));
+  const baseFreq = isPullback ? 430 : 455 + clamped * 245;
   osc.frequency.setValueAtTime(baseFreq, now);
-  osc.frequency.exponentialRampToValueAtTime(190, now + 0.028);
+  osc.frequency.exponentialRampToValueAtTime(185, now + 0.028);
 
-  const vol = Math.max(0.02, prefs.soundVolume * 0.22);
+  const volScale = isPullback ? 0.14 : 0.16 + clamped * 0.08;
+  const vol = Math.max(0.02, prefs.soundVolume * volScale);
   gain.gain.setValueAtTime(vol, now);
   gain.gain.exponentialRampToValueAtTime(0.001, now + 0.032);
 
@@ -58,6 +64,83 @@ export function playRouletteTick(prefs: UserPreferences, progress = 0.5): void {
   gain.connect(ctx.destination);
   osc.start(now);
   osc.stop(now + 0.035);
+}
+
+// Звук натяжения и упругого отпускания резинки при старте рулетки
+export function playRouletteSlingshot(
+  prefs: UserPreferences,
+  pullDurationSec: number
+): void {
+  if (!prefs.soundEnabled || !prefs.rouletteSound) return;
+  const ctx = getAudioContext();
+  if (!ctx) return;
+
+  const now = ctx.currentTime;
+  const pullDur = Math.max(0.16, Math.min(0.6, pullDurationSec));
+  const vol = Math.max(0.02, prefs.soundVolume * 0.18);
+
+  // 1. Мягкое натяжение резинки
+  const stretchOsc = ctx.createOscillator();
+  const stretchFilter = ctx.createBiquadFilter();
+  const stretchGain = ctx.createGain();
+  stretchOsc.type = 'triangle';
+  stretchOsc.frequency.setValueAtTime(105, now);
+  stretchOsc.frequency.exponentialRampToValueAtTime(185, now + pullDur * 0.92);
+
+  stretchFilter.type = 'lowpass';
+  stretchFilter.frequency.setValueAtTime(420, now);
+
+  stretchGain.gain.setValueAtTime(0.001, now);
+  stretchGain.gain.linearRampToValueAtTime(vol * 0.75, now + pullDur * 0.55);
+  stretchGain.gain.exponentialRampToValueAtTime(0.001, now + pullDur);
+
+  stretchOsc.connect(stretchFilter);
+  stretchFilter.connect(stretchGain);
+  stretchGain.connect(ctx.destination);
+  stretchOsc.start(now);
+  stretchOsc.stop(now + pullDur + 0.01);
+
+  // 2. Упругий щелчок-выпуск резинки
+  const snapTime = now + pullDur;
+  const snapOsc = ctx.createOscillator();
+  const snapGain = ctx.createGain();
+  snapOsc.type = 'sine';
+  snapOsc.frequency.setValueAtTime(180, snapTime);
+  snapOsc.frequency.exponentialRampToValueAtTime(340, snapTime + 0.045);
+  snapOsc.frequency.exponentialRampToValueAtTime(125, snapTime + 0.13);
+
+  snapGain.gain.setValueAtTime(vol, snapTime);
+  snapGain.gain.exponentialRampToValueAtTime(0.001, snapTime + 0.14);
+
+  snapOsc.connect(snapGain);
+  snapGain.connect(ctx.destination);
+  snapOsc.start(snapTime);
+  snapOsc.stop(snapTime + 0.15);
+}
+
+// Мягкий звук схлопывания выбывших копий и стягивания соседних карточек
+export function playEliminationCollapse(prefs: UserPreferences): void {
+  if (!prefs.soundEnabled || !prefs.rouletteSound) return;
+  const ctx = getAudioContext();
+  if (!ctx) return;
+
+  const now = ctx.currentTime;
+  const vol = Math.max(0.02, prefs.soundVolume * 0.22);
+
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+  osc.type = 'sine';
+  osc.frequency.setValueAtTime(250, now);
+  osc.frequency.exponentialRampToValueAtTime(78, now + 0.24);
+
+  gain.gain.setValueAtTime(0.001, now);
+  gain.gain.linearRampToValueAtTime(vol, now + 0.03);
+  gain.gain.exponentialRampToValueAtTime(0.001, now + 0.26);
+
+  osc.connect(gain);
+  gain.connect(ctx.destination);
+  osc.start(now);
+  osc.stop(now + 0.28);
 }
 
 // Хруст/взрыв при уничтожении карточки на выбывании

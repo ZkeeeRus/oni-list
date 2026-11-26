@@ -1782,6 +1782,12 @@ select.input:hover {
   box-shadow: 0 0 14px #f59e0b;
   z-index: 5;
   pointer-events: none;
+  transition: background 0.2s, box-shadow 0.2s;
+}
+
+.case-reel-viewport.is-pulling-back .case-reel-center-line {
+  background: #c084fc;
+  box-shadow: 0 0 20px #a855f7;
 }
 
 .case-reel-pointer-top {
@@ -1796,28 +1802,42 @@ select.input:hover {
   border-top: 14px solid #f59e0b;
   z-index: 6;
   pointer-events: none;
+  transition: border-top-color 0.2s;
+}
+
+.case-reel-viewport.is-pulling-back .case-reel-pointer-top {
+  border-top-color: #c084fc;
 }
 
 .case-reel-track {
   display: flex;
-  gap: 12px;
+  gap: 0;
   will-change: transform;
+  transform-origin: center center;
+}
+
+.case-reel-track.is-collapsing {
+  transition: transform 0.54s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .case-reel-card {
   position: relative;
   width: 136px;
+  min-width: 0;
+  margin-right: 12px;
   flex-shrink: 0;
   border-radius: 10px;
   cursor: pointer;
 }
 
 .case-reel-card-inner {
+  position: relative;
+  width: 136px;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 10px;
   overflow: hidden;
-  transition: border-color 0.2s, box-shadow 0.2s, filter 0.25s, transform 0.25s;
+  transition: border-color 0.2s, box-shadow 0.2s, filter 0.25s, transform 0.25s, opacity 0.25s;
 }
 
 .case-reel-card.is-winner .case-reel-card-inner {
@@ -4482,6 +4502,27 @@ select.input:hover {
   box-shadow: 0 0 18px rgba(239, 68, 68, 0.4);
 }
 
+.case-reel-card.is-collapsing {
+  width: 0;
+  margin-right: 0;
+  overflow: hidden;
+  pointer-events: none;
+  transition:
+    width 0.54s cubic-bezier(0.22, 1, 0.36, 1),
+    margin-right 0.54s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.case-reel-card.is-collapsing .case-reel-card-inner {
+  left: 50%;
+  border: 2px solid #ef4444;
+  filter: grayscale(0.85) brightness(0.42);
+  transform: translateX(-50%) scale(0.22) rotate(-5deg);
+  opacity: 0;
+  transition:
+    transform 0.52s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 0.38s ease;
+}
+
 .destroy-fx-layer {
   position: absolute;
   inset: 0;
@@ -4489,6 +4530,13 @@ select.input:hover {
   z-index: 10;
   display: grid;
   place-items: center;
+}
+
+.destroy-particles-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 18;
 }
 
 .destroy-cracks {
