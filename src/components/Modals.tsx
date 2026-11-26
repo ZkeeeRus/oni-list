@@ -50,6 +50,12 @@ import { normalizeOrdererName, OrdererStat } from '../utils/orderers';
 import { ExistingMatch, findExistingMatches } from '../utils/duplicates';
 import { PERMANENT_ADMINS } from '../services/authAndStorage';
 
+const preventInputEnterSubmit = (e: React.KeyboardEvent<HTMLFormElement>) => {
+  if (e.key === 'Enter' && (e.target as HTMLElement)?.tagName === 'INPUT') {
+    e.preventDefault();
+  }
+};
+
 const DuplicateNotice: React.FC<{ matches: ExistingMatch[] }> = ({ matches }) => {
   if (matches.length === 0) return null;
   return (
@@ -190,6 +196,13 @@ const CoverPicker: React.FC<{
               placeholder={title ? `Поиск обложки: ${title}` : 'Название на англ./рус. или Steam ID'}
               value={customQuery}
               onChange={(e) => setCustomQuery(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  handleSearch();
+                }
+              }}
             />
             <button
               type="button"
@@ -323,7 +336,11 @@ export const GameModal: React.FC<{
             <X size={18} />
           </button>
         </div>
-        <form onSubmit={handleSubmit} className="modal-body form-grid">
+        <form
+          onSubmit={handleSubmit}
+          onKeyDown={preventInputEnterSubmit}
+          className="modal-body form-grid"
+        >
           <div className="form-row-2">
             <div>
               <label className="field-label">Название игры *</label>
@@ -526,7 +543,11 @@ export const WatchModal: React.FC<{
             <X size={18} />
           </button>
         </div>
-        <form onSubmit={handleSubmit} className="modal-body form-grid">
+        <form
+          onSubmit={handleSubmit}
+          onKeyDown={preventInputEnterSubmit}
+          className="modal-body form-grid"
+        >
           <div className="form-row-2">
             <div>
               <label className="field-label">Название тайтла *</label>
@@ -729,7 +750,11 @@ export const MemeModal: React.FC<{
             <X size={18} />
           </button>
         </div>
-        <form onSubmit={handleSubmit} className="modal-body form-grid">
+        <form
+          onSubmit={handleSubmit}
+          onKeyDown={preventInputEnterSubmit}
+          className="modal-body form-grid"
+        >
           <div
             className="paste-dropzone"
             onClick={() => fileRef.current?.click()}
@@ -937,7 +962,11 @@ export const BacklogModal: React.FC<{
             <X size={18} />
           </button>
         </div>
-        <form onSubmit={handleSubmit} className="modal-body form-grid">
+        <form
+          onSubmit={handleSubmit}
+          onKeyDown={preventInputEnterSubmit}
+          className="modal-body form-grid"
+        >
           <div className="form-row-2">
             <div>
               <label className="field-label">Игра / идея для стрима *</label>

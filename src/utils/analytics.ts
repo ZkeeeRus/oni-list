@@ -1,6 +1,13 @@
 import { checkBackendCapabilities } from '../services/authAndStorage';
 
-export type CookieConsentState = 'accepted' | 'essential' | null;
+export interface TelemetryPrivacyPrefs {
+  decided: boolean;
+  allowVisitorCookie: boolean;
+  allowTabStats: boolean;
+  allowActionStats: boolean;
+  allowDeviceAndRef: boolean;
+}
+
 export type TrackableTab =
   | 'hub'
   | 'games'
@@ -11,9 +18,34 @@ export type TrackableTab =
   | 'rules';
 export type TrackableAction = 'roulette_spin' | 'card_open' | 'tree_click';
 
-const CONSENT_STORAGE_KEY = 'onized_hub_cookie_consent_v1';
+const PRIVACY_STORAGE_KEY = 'onized_hub_privacy_prefs_v2';
+const LEGACY_CONSENT_KEY = 'onized_hub_cookie_consent_v1';
 const SESSION_FLAG_KEY = 'onized_hub_telemetry_session_v1';
 const VISITOR_COOKIE_NAME = 'oni_vid';
+
+export const DEFAULT_PRIVACY_UNDECIDED: TelemetryPrivacyPrefs = {
+  decided: false,
+  allowVisitorCookie: false,
+  allowTabStats: true,
+  allowActionStats: true,
+  allowDeviceAndRef: true,
+};
+
+export const PRIVACY_ACCEPT_ALL: TelemetryPrivacyPrefs = {
+  decided: true,
+  allowVisitorCookie: true,
+  allowTabStats: true,
+  allowActionStats: true,
+  allowDeviceAndRef: true,
+};
+
+export const PRIVACY_ESSENTIAL_ONLY: TelemetryPrivacyPrefs = {
+  decided: true,
+  allowVisitorCookie: false,
+  allowTabStats: false,
+  allowActionStats: false,
+  allowDeviceAndRef: false,
+};
 
 function readCookie(name: string): string {
   if (typeof document === 'undefined') return '';
@@ -41,31 +73,48 @@ function deleteVisitorCookie(): void {
   document.cookie = `${VISITOR_COOKIE_NAME}=; Path=/; Max-Age=0; SameSite=Lax`;
 }
 
-export function getCookieConsent(): CookieConsentState {
+export function loadPrivacyPrefs(): TelemetryPrivacyPrefs {
   try {
-    const raw = localStorage.getItem(CONSENT_STORAGE_KEY);
-    if (raw === 'accepted' || raw === 'essential') return raw;
+    const raw = localStorage.getItem(PRIVACY_STORAGE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      return {
+        decided: Boolean(parsed.decided),
+        allowVisitorCookie: Boolean(parsed.allowVisitorCookie),
+        allowTabStats: Boolean(parsed.allowTabStats),
+        allowActionStats: Boolean(parsed.allowActionStats),
+        allowDeviceAndRef: Boolean(parsed.allowDeviceAndRef),
+      };
+    }
+    const legacy = localStorage.getItem(LEGACY_CONSENT_KEY);
+    if (legacy === 'accepted') return PRIVACY_ACCEPT_ALL;
+    if (legacy === 'essential') return PRIVACY_ESSENTIAL_ONLY;
   } catch {
     // Ignore
   }
-  return null;
+  return DEFAULT_PRIVACY_UNDECIDED;
 }
 
-export function setCookieConsent(choice: 'accepted' | 'essential'): void {
+export function savePrivacyPrefs(next: TelemetryPrivacyPrefs): TelemetryPrivacyPrefs {
+  const normalized: TelemetryPrivacyPrefs = {
+    ...next,
+    decided: true,
+  };
   try {
-    localStorage.setItem(CONSENT_STORAGE_KEY, choice);
+    localStorage.setItem(PRIVACY_STORAGE_KEY, JSON.stringify(normalized));
   } catch {
     // Ignore
   }
-  if (choice === 'accepted') {
-    ensureVisitorId();
+  if (normalized.allowVisitorCookie) {
+    ensureVisitorId(normalized);
   } else {
     deleteVisitorCookie();
   }
+  return normalized;
 }
 
-function ensureVisitorId(): string {
-  if (getCookieConsent() !== 'accepted') return '';
+function ensureVisitorId(p: TelemetryPrivacyPrefs): string {
+  if (!p.decided || !p.allowVisitorCookie) return '';
   let existing = readCookie(VISITOR_COOKIE_NAME);
   if (existing && existing.length >= 12) return existing;
 
@@ -125,7 +174,6 @@ function detectReferrerCategory(): 'direct' | 'twitch' | 'social' | 'search' | '
   }
 }
 
-// Очередь обезличенной аналитики (отправляется пачкой раз в 25 сек или при сворачивании вкладки)
 let configuredApiUrl = '';
 let configuredIsAuthed = false;
 let pendingNewSession = false;
@@ -133,6 +181,14 @@ const pendingTabs: Partial<Record<TrackableTab, number>> = {};
 const pendingActions: Partial<Record<TrackableAction, number>> = {};
 let flushTimer: number | null = null;
 let listenersBound = false;
+
+function clearPendingBuffers(): void {
+  pendingNewSession = false;
+  for (const k of Object.keys(pendingTabs) as TrackableTab[]) delete pendingTabs[k];
+  for (const k of Object.keys(pendingActions) as TrackableAction[]) {
+    delete pendingActions[k];
+  }
+}
 
 function hasPendingData(): boolean {
   return (
@@ -149,29 +205,35 @@ export async function flushTelemetry(keepalive = false): Promise<void> {
   }
   if (!configuredApiUrl || !hasPendingData()) return;
 
+  const p = loadPrivacyPrefs();
+  // Если пользователь запретил вообще любую статистику - очищаем буфер и ничего не шлем
+  if (
+    p.decided &&
+    !p.allowVisitorCookie &&
+    !p.allowTabStats &&
+    !p.allowActionStats &&
+    !p.allowDeviceAndRef
+  ) {
+    clearPendingBuffers();
+    return;
+  }
+
   const caps = await checkBackendCapabilities(configuredApiUrl);
   if (!caps.telemetrySupported) return;
 
-  const consent = getCookieConsent();
-  // Пока пользователь не выбрал режим в баннере (consent === null), куки не ставим, но если уже выбрал 'accepted' - передаем анонимный ID
-  const vid = consent === 'accepted' ? ensureVisitorId() : '';
-
+  const vid = p.decided && p.allowVisitorCookie ? ensureVisitorId(p) : '';
   const payload = {
-    consent: consent === 'accepted',
+    consent: Boolean(vid),
     vid,
     newSession: pendingNewSession,
     authed: configuredIsAuthed,
-    device: pendingNewSession ? detectDeviceCategory() : undefined,
-    ref: pendingNewSession ? detectReferrerCategory() : undefined,
-    tabs: { ...pendingTabs },
-    actions: { ...pendingActions },
+    device: pendingNewSession && p.allowDeviceAndRef ? detectDeviceCategory() : undefined,
+    ref: pendingNewSession && p.allowDeviceAndRef ? detectReferrerCategory() : undefined,
+    tabs: p.allowTabStats ? { ...pendingTabs } : {},
+    actions: p.allowActionStats ? { ...pendingActions } : {},
   };
 
-  pendingNewSession = false;
-  for (const k of Object.keys(pendingTabs) as TrackableTab[]) delete pendingTabs[k];
-  for (const k of Object.keys(pendingActions) as TrackableAction[]) {
-    delete pendingActions[k];
-  }
+  clearPendingBuffers();
 
   try {
     const cleanBase = configuredApiUrl.replace(/\/+$/, '');
@@ -210,7 +272,7 @@ export function initTelemetrySession(apiBaseUrl: string, isAuthed: boolean): voi
       scheduleFlush(6000);
     }
   } catch {
-    // Ignore sessionStorage restrictions
+    // Ignore
   }
 
   if (!listenersBound) {
@@ -231,11 +293,15 @@ export function updateTelemetryAuthState(isAuthed: boolean): void {
 }
 
 export function trackTabView(tab: TrackableTab): void {
+  const p = loadPrivacyPrefs();
+  if (p.decided && !p.allowTabStats) return;
   pendingTabs[tab] = (pendingTabs[tab] || 0) + 1;
   scheduleFlush();
 }
 
 export function trackSiteAction(action: TrackableAction): void {
+  const p = loadPrivacyPrefs();
+  if (p.decided && !p.allowActionStats) return;
   pendingActions[action] = (pendingActions[action] || 0) + 1;
   scheduleFlush();
 }

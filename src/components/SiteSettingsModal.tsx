@@ -7,12 +7,17 @@ import {
   ExternalLink,
   HeartHandshake,
   History,
+  ImagePlus,
   LogOut,
+  Moon,
   Palette,
   RefreshCw,
   RotateCcw,
+  Send,
   Shield,
   Sparkles,
+  Sun,
+  Trash2,
   Upload,
   UserPlus,
   Volume2,
@@ -24,9 +29,17 @@ import {
   PERMANENT_ADMINS,
   restoreCloudBackupSlot,
 } from '../services/authAndStorage';
-import { CookieConsentState } from '../utils/analytics';
 import {
+  PRIVACY_ACCEPT_ALL,
+  PRIVACY_ESSENTIAL_ONLY,
+  TelemetryPrivacyPrefs,
+} from '../utils/analytics';
+import { compressWallpaperToWebpDataUrl } from '../utils/imageCompress';
+import {
+  APP_VERSION,
+  BgStyle,
   DEFAULT_PREFERENCES,
+  FestiveShapesMode,
   getFestiveSeasonKey,
   isHolidayActive,
   PerformanceMode,
@@ -36,14 +49,22 @@ import {
 } from '../utils/preferences';
 import { playBellJingle, playUiClick } from '../utils/soundEffects';
 
-export type SettingsTabId = 'appearance' | 'sound' | 'perf' | 'admin' | 'credits';
+export type SettingsTabId =
+  | 'appearance'
+  | 'sound'
+  | 'perf'
+  | 'privacy'
+  | 'admin'
+  | 'credits';
 
 interface SiteSettingsModalProps {
   initialTab?: SettingsTabId;
   prefs: UserPreferences;
   onChangePrefs: (next: UserPreferences) => void;
-  cookieConsent: CookieConsentState;
-  onChangeCookieConsent: (choice: 'accepted' | 'essential') => void;
+  customWallpaperUrl: string;
+  onChangeCustomWallpaper: (urlOrData: string) => void;
+  privacyPrefs: TelemetryPrivacyPrefs;
+  onChangePrivacyPrefs: (next: TelemetryPrivacyPrefs) => void;
   user: TwitchUser | null;
   role: UserRole;
   apiBaseUrl: string;
@@ -56,6 +77,66 @@ interface SiteSettingsModalProps {
   onRestoreCloudBackup: (restored: SiteData) => void;
   onForceCloudPush: () => void;
 }
+
+const ACCENT_THEMES: Array<{
+  id: ThemeId;
+  name: string;
+  desc: string;
+  swatch: string;
+}> = [
+  {
+    id: 'default',
+    name: 'Они-Твич (по умолчанию)',
+    desc: 'Фирменный фиолетовый неон и бирюзовый акцент',
+    swatch: 'linear-gradient(135deg, #9146ff, #06b6d4)',
+  },
+  {
+    id: 'winter',
+    name: 'Зимний лед',
+    desc: 'Морозный голубой и северное сияние индиго',
+    swatch: 'linear-gradient(135deg, #38bdf8, #818cf8)',
+  },
+  {
+    id: 'ruby',
+    name: 'Кибер-рубин',
+    desc: 'Алый рубин с теплым янтарным отблеском',
+    swatch: 'linear-gradient(135deg, #f43f5e, #fb923c)',
+  },
+  {
+    id: 'emerald',
+    name: 'Хвойный изумруд',
+    desc: 'Лесной изумруд и теплое золото',
+    swatch: 'linear-gradient(135deg, #10b981, #fbbf24)',
+  },
+];
+
+const BG_STYLES: Array<{ id: BgStyle; name: string; desc: string }> = [
+  {
+    id: 'stars',
+    name: 'Звездная сетка',
+    desc: 'Кибер-сетка, созвездия и объемное свечение',
+  },
+  {
+    id: 'aurora',
+    name: 'Северное сияние',
+    desc: 'Переливающиеся волны авроры и мягкие звезды',
+  },
+  {
+    id: 'nebula',
+    name: 'Туманность',
+    desc: 'Глубокие неоновые облака и звезды без сетки',
+  },
+  {
+    id: 'minimal',
+    name: 'Чистый минимализм',
+    desc: 'Спокойный фон без сетки и фоновых фигур',
+  },
+  {
+    id: 'custom',
+    name: 'Своя картинка',
+    desc: 'Загрузи свои обои с ПК/телефона или по ссылке',
+  },
+];
 
 const TAB_LABELS: Record<string, string> = {
   hub: 'Хаб (Главная)',
@@ -81,50 +162,14 @@ const REF_LABELS: Record<string, string> = {
   other: 'Другие ссылки',
 };
 
-const THEMES: Array<{
-  id: ThemeId;
-  name: string;
-  desc: string;
-  swatch: string;
-}> = [
-  {
-    id: 'default',
-    name: 'Они-Твич',
-    desc: 'Фирменный темный неон с фиолетовым акцентом',
-    swatch: 'linear-gradient(135deg, #9146ff, #06b6d4)',
-  },
-  {
-    id: 'winter',
-    name: 'Зимняя ночь',
-    desc: 'Морозный индиго, ледяной голубой и северное сияние',
-    swatch: 'linear-gradient(135deg, #38bdf8, #818cf8)',
-  },
-  {
-    id: 'ruby',
-    name: 'Кибер-рубин',
-    desc: 'Глубокий обсидиан с алым и теплым янтарным свечением',
-    swatch: 'linear-gradient(135deg, #f43f5e, #fb923c)',
-  },
-  {
-    id: 'emerald',
-    name: 'Хвойный лес',
-    desc: 'Темная хвоя, изумруд и новогоднее золото',
-    swatch: 'linear-gradient(135deg, #10b981, #fbbf24)',
-  },
-  {
-    id: 'light',
-    name: 'Светлый снег',
-    desc: 'Чистая дневная тема в светлых морозных тонах',
-    swatch: 'linear-gradient(135deg, #e2e8f0, #7c3aed)',
-  },
-];
-
 export const SiteSettingsModal: React.FC<SiteSettingsModalProps> = ({
   initialTab = 'appearance',
   prefs,
   onChangePrefs,
-  cookieConsent,
-  onChangeCookieConsent,
+  customWallpaperUrl,
+  onChangeCustomWallpaper,
+  privacyPrefs,
+  onChangePrivacyPrefs,
   user,
   role,
   apiBaseUrl,
@@ -142,7 +187,13 @@ export const SiteSettingsModal: React.FC<SiteSettingsModalProps> = ({
     initialTab === 'admin' && !canEdit ? 'appearance' : initialTab
   );
   const [newMod, setNewMod] = useState('');
+  const [bgUrlDraft, setBgUrlDraft] = useState(
+    customWallpaperUrl.startsWith('data:') ? '' : customWallpaperUrl
+  );
+  const [uploadingBg, setUploadingBg] = useState(false);
+
   const importRef = useRef<HTMLInputElement | null>(null);
+  const bgFileRef = useRef<HTMLInputElement | null>(null);
 
   const [authStats, setAuthStats] = useState<AuthStatsData | null>(null);
   const [authStatsLoading, setAuthStatsLoading] = useState(false);
@@ -152,6 +203,34 @@ export const SiteSettingsModal: React.FC<SiteSettingsModalProps> = ({
     'overview'
   );
   const [restoringSlot, setRestoringSlot] = useState<number | null>(null);
+
+  const updatePref = <K extends keyof UserPreferences>(
+    key: K,
+    val: UserPreferences[K]
+  ) => {
+    const next = { ...prefs, [key]: val };
+    onChangePrefs(next);
+    playUiClick(next);
+  };
+
+  const handleBgFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0];
+    e.target.value = '';
+    if (!f) return;
+    setUploadingBg(true);
+    try {
+      const compressed = await compressWallpaperToWebpDataUrl(f);
+      onChangeCustomWallpaper(compressed);
+      setBgUrlDraft('');
+      if (prefs.bgStyle !== 'custom') {
+        updatePref('bgStyle', 'custom');
+      }
+    } catch (err: any) {
+      alert(err?.message || 'Не удалось обработать картинку фона');
+    } finally {
+      setUploadingBg(false);
+    }
+  };
 
   const loadAuthStats = useCallback(async () => {
     if (!user || !canEdit || !apiBaseUrl) return;
@@ -190,15 +269,6 @@ export const SiteSettingsModal: React.FC<SiteSettingsModalProps> = ({
     }
   };
 
-  const updatePref = <K extends keyof UserPreferences>(
-    key: K,
-    val: UserPreferences[K]
-  ) => {
-    const next = { ...prefs, [key]: val };
-    onChangePrefs(next);
-    playUiClick(next);
-  };
-
   const handleExport = () => {
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
     const a = document.createElement('a');
@@ -225,6 +295,15 @@ export const SiteSettingsModal: React.FC<SiteSettingsModalProps> = ({
   const currentSeasonKey = getFestiveSeasonKey();
   const holidayActive = isHolidayActive(prefs);
 
+  const togglePrivacyField = (key: keyof Omit<TelemetryPrivacyPrefs, 'decided'>) => {
+    onChangePrivacyPrefs({
+      ...privacyPrefs,
+      decided: true,
+      [key]: !privacyPrefs[key],
+    });
+    playUiClick(prefs);
+  };
+
   return (
     <div className="modal-backdrop" onClick={onClose}>
       <div className="modal-card modal-lg" onClick={(e) => e.stopPropagation()}>
@@ -241,7 +320,7 @@ export const SiteSettingsModal: React.FC<SiteSettingsModalProps> = ({
             className={tab === 'appearance' ? 'active' : ''}
             onClick={() => setTab('appearance')}
           >
-            <Palette size={15} /> Оформление и тема
+            <Palette size={15} /> Оформление
           </button>
           <button
             type="button"
@@ -256,6 +335,13 @@ export const SiteSettingsModal: React.FC<SiteSettingsModalProps> = ({
             onClick={() => setTab('perf')}
           >
             <Cpu size={15} /> Производительность
+          </button>
+          <button
+            type="button"
+            className={tab === 'privacy' ? 'active' : ''}
+            onClick={() => setTab('privacy')}
+          >
+            <Cookie size={15} /> Cookie и стата
           </button>
           {canEdit && (
             <button
@@ -278,10 +364,35 @@ export const SiteSettingsModal: React.FC<SiteSettingsModalProps> = ({
         <div className="modal-body form-grid">
           {tab === 'appearance' && (
             <>
-              <div className="settings-section">
-                <h4>Цветовая тема</h4>
+              <div className="settings-section form-grid">
+                <div className="row-between wrap">
+                  <div>
+                    <h4 style={{ marginBottom: 2 }}>Режим отображения и акценты</h4>
+                    <p className="muted-xs">
+                      По умолчанию всегда стоит темная дефолтная Они-версия
+                    </p>
+                  </div>
+
+                  <div className="segmented">
+                    <button
+                      type="button"
+                      className={prefs.colorMode === 'dark' ? 'active' : ''}
+                      onClick={() => updatePref('colorMode', 'dark')}
+                    >
+                      <Moon size={14} /> Темная
+                    </button>
+                    <button
+                      type="button"
+                      className={prefs.colorMode === 'light' ? 'active' : ''}
+                      onClick={() => updatePref('colorMode', 'light')}
+                    >
+                      <Sun size={14} /> Светлая
+                    </button>
+                  </div>
+                </div>
+
                 <div className="theme-cards-grid">
-                  {THEMES.map((t) => (
+                  {ACCENT_THEMES.map((t) => (
                     <button
                       key={t.id}
                       type="button"
@@ -302,14 +413,127 @@ export const SiteSettingsModal: React.FC<SiteSettingsModalProps> = ({
               </div>
 
               <div className="settings-section form-grid">
-                <h4>Визуальные эффекты</h4>
+                <h4>Оформление фона и параллакс</h4>
+                <div className="theme-cards-grid">
+                  {BG_STYLES.map((b) => (
+                    <button
+                      key={b.id}
+                      type="button"
+                      className={`theme-choice-card ${prefs.bgStyle === b.id ? 'selected' : ''}`}
+                      onClick={() => updatePref('bgStyle', b.id)}
+                    >
+                      <div>
+                        <strong>{b.name}</strong>
+                        <small>{b.desc}</small>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+
+                {prefs.bgStyle === 'custom' && (
+                  <div className="custom-bg-settings-box form-grid">
+                    <div className="row-gap-sm wrap">
+                      <button
+                        type="button"
+                        className="btn btn-primary btn-sm"
+                        disabled={uploadingBg}
+                        onClick={() => bgFileRef.current?.click()}
+                      >
+                        <ImagePlus size={14} />{' '}
+                        {uploadingBg ? 'Сжимаем картинку...' : 'Загрузить картинку фона'}
+                      </button>
+                      <input
+                        ref={bgFileRef}
+                        type="file"
+                        accept="image/*"
+                        hidden
+                        onChange={handleBgFileUpload}
+                      />
+                      {customWallpaperUrl && (
+                        <button
+                          type="button"
+                          className="btn btn-ghost btn-sm danger-text"
+                          onClick={() => {
+                            onChangeCustomWallpaper('');
+                            setBgUrlDraft('');
+                          }}
+                        >
+                          <Trash2 size={14} /> Убрать картинку
+                        </button>
+                      )}
+                    </div>
+
+                    <div className="inline-search-row">
+                      <input
+                        type="text"
+                        className="input input-sm"
+                        placeholder="Или вставь прямую ссылку на обои (https://...)"
+                        value={bgUrlDraft}
+                        onChange={(e) => setBgUrlDraft(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            if (bgUrlDraft.trim()) {
+                              onChangeCustomWallpaper(bgUrlDraft.trim());
+                            }
+                          }
+                        }}
+                      />
+                      <button
+                        type="button"
+                        className="btn btn-secondary btn-sm"
+                        disabled={!bgUrlDraft.trim()}
+                        onClick={() => onChangeCustomWallpaper(bgUrlDraft.trim())}
+                      >
+                        Применить URL
+                      </button>
+                    </div>
+
+                    <div className="form-row-2">
+                      <div>
+                        <label className="field-label">
+                          Затемнение фона:{' '}
+                          <strong>{Math.round(prefs.customBgDimming * 100)}%</strong>
+                        </label>
+                        <input
+                          type="range"
+                          min={0.15}
+                          max={0.9}
+                          step={0.05}
+                          value={prefs.customBgDimming}
+                          onChange={(e) =>
+                            updatePref('customBgDimming', Number(e.target.value))
+                          }
+                          style={{ width: '100%', accentColor: 'var(--accent)' }}
+                        />
+                      </div>
+                      <div>
+                        <label className="field-label">
+                          Размытие фона: <strong>{prefs.customBgBlur} px</strong>
+                        </label>
+                        <input
+                          type="range"
+                          min={0}
+                          max={16}
+                          step={1}
+                          value={prefs.customBgBlur}
+                          onChange={(e) =>
+                            updatePref('customBgBlur', Number(e.target.value))
+                          }
+                          style={{ width: '100%', accentColor: 'var(--accent)' }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 <label className="check-pill">
                   <input
                     type="checkbox"
                     checked={prefs.parallaxEnabled}
                     onChange={(e) => updatePref('parallaxEnabled', e.target.checked)}
                   />
-                  <span>Многослойный 3D-параллакс звездного фона и свечения</span>
+                  <span>Многослойный 3D-параллакс фона при движении мыши и прокрутке</span>
                 </label>
 
                 {currentSeasonKey !== null && (
@@ -321,15 +545,18 @@ export const SiteSettingsModal: React.FC<SiteSettingsModalProps> = ({
                             size={15}
                             style={{ verticalAlign: 'middle', marginRight: 6 }}
                           />
-                          Новогоднее оформление {holidayActive ? '(включено ❄)' : '(отключено на этот сезон)'}
+                          Новогоднее оформление{' '}
+                          {holidayActive ? '(включено ❄)' : '(отключено на этот сезон)'}
                         </strong>
                         <p className="muted-xs" style={{ marginTop: 3 }}>
-                          Активно с 25 ноября по 25 января. Если выключить сейчас, на следующий Новый год включится снова автоматически.
+                          Активно с 25 ноября по 25 января. На следующий Новый год включится снова само.
                         </p>
                       </div>
                       <button
                         type="button"
-                        className={`btn btn-sm ${holidayActive ? 'btn-secondary' : 'btn-primary'}`}
+                        className={`btn btn-sm ${
+                          holidayActive ? 'btn-secondary' : 'btn-primary'
+                        }`}
                         onClick={() =>
                           updatePref(
                             'dismissedHolidaySeason',
@@ -344,36 +571,65 @@ export const SiteSettingsModal: React.FC<SiteSettingsModalProps> = ({
                     </div>
 
                     {holidayActive && (
-                      <div className="form-row-2" style={{ marginTop: 12 }}>
-                        <div>
-                          <label className="field-label">Падающий снег</label>
-                          <select
-                            className="input input-sm"
-                            value={prefs.snowIntensity}
-                            onChange={(e) =>
-                              updatePref('snowIntensity', e.target.value as SnowIntensity)
-                            }
-                          >
-                            <option value="off">Выключен</option>
-                            <option value="light">Легкий снегопад</option>
-                            <option value="rich">Густой новогодний снег</option>
-                          </select>
+                      <div className="form-grid" style={{ marginTop: 12 }}>
+                        <div className="form-row-2">
+                          <div>
+                            <label className="field-label">Падающий снег</label>
+                            <select
+                              className="input input-sm"
+                              value={prefs.snowIntensity}
+                              onChange={(e) =>
+                                updatePref(
+                                  'snowIntensity',
+                                  e.target.value as SnowIntensity
+                                )
+                              }
+                            >
+                              <option value="off">Выключен</option>
+                              <option value="light">Легкий снегопад</option>
+                              <option value="rich">Густой новогодний снег</option>
+                            </select>
+                          </div>
+
+                          <div>
+                            <label className="field-label">Фигуры на фоне (параллакс)</label>
+                            <select
+                              className="input input-sm"
+                              value={prefs.festiveShapes}
+                              onChange={(e) =>
+                                updatePref(
+                                  'festiveShapes',
+                                  e.target.value as FestiveShapesMode
+                                )
+                              }
+                            >
+                              <option value="winter">
+                                Снежинки, елочки, подарки и шары
+                              </option>
+                              <option value="abstract">Обычные неоновые фигуры</option>
+                              <option value="off">Без фигур</option>
+                            </select>
+                          </div>
                         </div>
 
-                        <div className="toggles-col">
+                        <div className="row-gap-sm wrap">
                           <label className="check-pill">
                             <input
                               type="checkbox"
                               checked={prefs.garlandEnabled}
-                              onChange={(e) => updatePref('garlandEnabled', e.target.checked)}
+                              onChange={(e) =>
+                                updatePref('garlandEnabled', e.target.checked)
+                              }
                             />
-                            <span>Гирлянда на верхней шапке</span>
+                            <span>Свисающая гирлянда с игрушками под шапкой</span>
                           </label>
                           <label className="check-pill">
                             <input
                               type="checkbox"
                               checked={prefs.footerTreeEnabled}
-                              onChange={(e) => updatePref('footerTreeEnabled', e.target.checked)}
+                              onChange={(e) =>
+                                updatePref('footerTreeEnabled', e.target.checked)
+                              }
                             />
                             <span>Сугробы и елочка в футере</span>
                           </label>
@@ -382,27 +638,6 @@ export const SiteSettingsModal: React.FC<SiteSettingsModalProps> = ({
                     )}
                   </div>
                 )}
-              </div>
-
-              <div className="settings-section form-grid">
-                <h4>
-                  <Cookie size={15} style={{ verticalAlign: 'middle', marginRight: 6 }} />
-                  Конфиденциальность и файлы cookie
-                </h4>
-                <label className="check-pill">
-                  <input
-                    type="checkbox"
-                    checked={cookieConsent === 'accepted'}
-                    onChange={(e) =>
-                      onChangeCookieConsent(
-                        e.target.checked ? 'accepted' : 'essential'
-                      )
-                    }
-                  />
-                  <span>
-                    Разрешить анонимный cookie-идентификатор для подсчета уникальных посещений сайта (без личных данных и IP)
-                  </span>
-                </label>
               </div>
             </>
           )}
@@ -461,7 +696,9 @@ export const SiteSettingsModal: React.FC<SiteSettingsModalProps> = ({
                 <button
                   type="button"
                   className="btn btn-secondary btn-sm"
-                  onClick={() => playBellJingle({ ...prefs, soundEnabled: true, uiSound: true })}
+                  onClick={() =>
+                    playBellJingle({ ...prefs, soundEnabled: true, uiSound: true })
+                  }
                 >
                   <Volume2 size={14} /> Проверить звук
                 </button>
@@ -482,7 +719,7 @@ export const SiteSettingsModal: React.FC<SiteSettingsModalProps> = ({
                     [
                       'high',
                       'Максимум красоты',
-                      'Плавный снег, стеклянное размытие шапки, свечение карточек и трехслойный параллакс.',
+                      'Плавные анимации появления, снег, стеклянное размытие шапки и многослойный параллакс.',
                     ],
                     [
                       'balanced',
@@ -492,14 +729,16 @@ export const SiteSettingsModal: React.FC<SiteSettingsModalProps> = ({
                     [
                       'eco',
                       'Экономия ресурсов (слабый ПК / телефон)',
-                      'Отключает анимацию снега, параллакс и тяжелое размытие фона для максимального FPS.',
+                      'Отключает анимацию снега, параллакс и размытие фона для максимального FPS.',
                     ],
                   ] as Array<[PerformanceMode, string, string]>
                 ).map(([modeId, title, desc]) => (
                   <button
                     key={modeId}
                     type="button"
-                    className={`theme-choice-card ${prefs.performanceMode === modeId ? 'selected' : ''}`}
+                    className={`theme-choice-card ${
+                      prefs.performanceMode === modeId ? 'selected' : ''
+                    }`}
                     onClick={() => updatePref('performanceMode', modeId)}
                   >
                     <div>
@@ -514,10 +753,121 @@ export const SiteSettingsModal: React.FC<SiteSettingsModalProps> = ({
                 <button
                   type="button"
                   className="btn btn-ghost btn-sm"
-                  onClick={() => onChangePrefs(DEFAULT_PREFERENCES)}
+                  onClick={() => {
+                    onChangePrefs(DEFAULT_PREFERENCES);
+                    onChangeCustomWallpaper('');
+                    setBgUrlDraft('');
+                  }}
                 >
-                  Сбросить все настройки оформления по умолчанию
+                  Сбросить все настройки оформления к темной Они-версии
                 </button>
+              </div>
+            </div>
+          )}
+
+          {tab === 'privacy' && (
+            <div className="settings-section form-grid">
+              <div className="row-between wrap">
+                <div>
+                  <h4 style={{ marginBottom: 2 }}>
+                    <Cookie size={15} style={{ verticalAlign: 'middle', marginRight: 6 }} />
+                    Файлы cookie и настройки статистики
+                  </h4>
+                  <p className="muted-xs">
+                    Выбери сам, какие обезличенные данные разрешено передавать для статистики канала. IP-адреса, почты и отпечатки браузера никогда не собираются.
+                  </p>
+                </div>
+              </div>
+
+              <div className="row-gap-xs wrap">
+                <button
+                  type="button"
+                  className="btn btn-primary btn-xs"
+                  onClick={() => {
+                    onChangePrivacyPrefs(PRIVACY_ACCEPT_ALL);
+                    playUiClick(prefs);
+                  }}
+                >
+                  Разрешить все пункты
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-secondary btn-xs"
+                  onClick={() => {
+                    onChangePrivacyPrefs(PRIVACY_ESSENTIAL_ONLY);
+                    playUiClick(prefs);
+                  }}
+                >
+                  Отключить всю аналитику
+                </button>
+              </div>
+
+              <div className="toggles-col">
+                <label className="check-pill privacy-option-row">
+                  <input type="checkbox" checked disabled />
+                  <div>
+                    <strong>Технические хранилища (обязательно)</strong>
+                    <div className="muted-xs">
+                      Сохранение выбранной темы оформления, громкости звуков, кэша списка и сессии входа Twitch в твоем браузере.
+                    </div>
+                  </div>
+                </label>
+
+                <label className="check-pill privacy-option-row">
+                  <input
+                    type="checkbox"
+                    checked={privacyPrefs.allowVisitorCookie}
+                    onChange={() => togglePrivacyField('allowVisitorCookie')}
+                  />
+                  <div>
+                    <strong>Анонимный cookie-идентификатор визита (oni_vid)</strong>
+                    <div className="muted-xs">
+                      Случайный код (на сервере хранится только необратимый SHA-256 хэш), чтобы не считать тебя новым посетителем при каждом обновлении страницы.
+                    </div>
+                  </div>
+                </label>
+
+                <label className="check-pill privacy-option-row">
+                  <input
+                    type="checkbox"
+                    checked={privacyPrefs.allowTabStats}
+                    onChange={() => togglePrivacyField('allowTabStats')}
+                  />
+                  <div>
+                    <strong>Популярность вкладок сайта</strong>
+                    <div className="muted-xs">
+                      Подсчет того, какие разделы открывают чаще всего (Хаб, Список игр, Просмотровое, Тир-листы, Рулетка).
+                    </div>
+                  </div>
+                </label>
+
+                <label className="check-pill privacy-option-row">
+                  <input
+                    type="checkbox"
+                    checked={privacyPrefs.allowActionStats}
+                    onChange={() => togglePrivacyField('allowActionStats')}
+                  />
+                  <div>
+                    <strong>Интерактивные действия</strong>
+                    <div className="muted-xs">
+                      Общий счетчик прокрутов рулетки, открытий карточек и кликов по новогодней елочке.
+                    </div>
+                  </div>
+                </label>
+
+                <label className="check-pill privacy-option-row">
+                  <input
+                    type="checkbox"
+                    checked={privacyPrefs.allowDeviceAndRef}
+                    onChange={() => togglePrivacyField('allowDeviceAndRef')}
+                  />
+                  <div>
+                    <strong>Категория экрана и источник перехода</strong>
+                    <div className="muted-xs">
+                      Помогает знать долю заходов с телефона и с ПК, а также переходы с Twitch/Telegram без сохранения User-Agent и полных ссылок.
+                    </div>
+                  </div>
+                </label>
               </div>
             </div>
           )}
@@ -528,9 +878,15 @@ export const SiteSettingsModal: React.FC<SiteSettingsModalProps> = ({
                 <div className="user-status-row">
                   <div className="row-gap-sm">
                     {user.avatarUrl ? (
-                      <img src={user.avatarUrl} alt={user.displayName} className="avatar-md" />
+                      <img
+                        src={user.avatarUrl}
+                        alt={user.displayName}
+                        className="avatar-md"
+                      />
                     ) : (
-                      <div className="avatar-placeholder">{user.displayName[0]?.toUpperCase()}</div>
+                      <div className="avatar-placeholder">
+                        {user.displayName[0]?.toUpperCase()}
+                      </div>
                     )}
                     <div>
                       <div>
@@ -542,7 +898,7 @@ export const SiteSettingsModal: React.FC<SiteSettingsModalProps> = ({
                         <strong>
                           {role === 'admin'
                             ? 'Админ (Стример / Создатель)'
-                            : 'Модератор (полный доступ редактора)'}
+                            : 'Модератор (доступ редактора)'}
                         </strong>
                       </div>
                     </div>
@@ -593,6 +949,20 @@ export const SiteSettingsModal: React.FC<SiteSettingsModalProps> = ({
                       placeholder="Ник модератора на Twitch (напр. samarhik, s1men5)"
                       value={newMod}
                       onChange={(e) => setNewMod(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          const clean = newMod.toLowerCase().trim().replace(/^@/, '');
+                          if (
+                            clean &&
+                            !PERMANENT_ADMINS.includes(clean) &&
+                            !data.moderators.includes(clean)
+                          ) {
+                            onUpdateModerators([...data.moderators, clean]);
+                            setNewMod('');
+                          }
+                        }
+                      }}
                     />
                     <button
                       type="button"
@@ -635,14 +1005,15 @@ export const SiteSettingsModal: React.FC<SiteSettingsModalProps> = ({
                     disabled={authStatsLoading}
                     onClick={loadAuthStats}
                   >
-                    <RefreshCw size={12} /> {authStatsLoading ? 'Загрузка...' : 'Обновить'}
+                    <RefreshCw size={12} />{' '}
+                    {authStatsLoading ? 'Загрузка...' : 'Обновить'}
                   </button>
                 </div>
 
                 {authStatsNeedFnUpdate ? (
                   <p className="muted-sm">
                     Чтобы включить сбор аналитики и облачные авто-бэкапы, вставь обновленный код{' '}
-                    <code>backend/yandex-function/index.js</code> в редактор функции в Yandex Cloud и нажми «Создать версию».
+                    <code>backend/yandex-function/index.js</code> в редактор функции в Yandex Cloud и нажми «Сохранить изменения».
                   </p>
                 ) : authStatsError ? (
                   <p className="muted-sm danger-text">{authStatsError}</p>
@@ -722,7 +1093,8 @@ export const SiteSettingsModal: React.FC<SiteSettingsModalProps> = ({
                                   {guestPct}% / {authedPct}%
                                 </strong>
                                 <small className="muted-xs">
-                                  Без входа: {sa.guestSessions} • Со входом: {sa.authedSessions}
+                                  Без входа: {sa.guestSessions} • Со входом:{' '}
+                                  {sa.authedSessions}
                                 </small>
                               </div>
                               <div className="analytics-kpi-box">
@@ -818,7 +1190,8 @@ export const SiteSettingsModal: React.FC<SiteSettingsModalProps> = ({
                                 <div className="chips-wrap">
                                   {Object.entries(REF_LABELS).map(([k, label]) => {
                                     const val = sa.referrers?.[k] || 0;
-                                    if (!val && k !== 'direct' && k !== 'twitch') return null;
+                                    if (!val && k !== 'direct' && k !== 'twitch')
+                                      return null;
                                     return (
                                       <span key={k} className="badge">
                                         {label}: <strong>&nbsp;{val}</strong>
@@ -949,69 +1322,77 @@ export const SiteSettingsModal: React.FC<SiteSettingsModalProps> = ({
                   </div>
                 </div>
 
-                {role === 'admin' && authStats?.backups && authStats.backups.length > 0 && (
-                  <div>
-                    <div className="field-label">
-                      <History
-                        size={13}
-                        style={{ verticalAlign: 'middle', marginRight: 5 }}
-                      />
-                      Автоматические облачные снимки в Yandex Storage ({authStats.backups.length})
-                    </div>
-                    <div className="auth-stats-scroll">
-                      {authStats.backups.map((b) => (
-                        <div key={b.slot} className="auth-stat-row">
-                          <div>
-                            <strong>Слот #{b.slot + 1}</strong>{' '}
-                            <span className="muted-xs">
-                              • {formatShortDate(b.savedAt)} • {b.gamesCount} игр /{' '}
-                              {b.watchCount} просм.
-                            </span>
+                {role === 'admin' &&
+                  authStats?.backups &&
+                  authStats.backups.length > 0 && (
+                    <div>
+                      <div className="field-label">
+                        <History
+                          size={13}
+                          style={{ verticalAlign: 'middle', marginRight: 5 }}
+                        />
+                        Автоматические облачные снимки в Yandex Storage (
+                        {authStats.backups.length})
+                      </div>
+                      <div className="auth-stats-scroll">
+                        {authStats.backups.map((b) => (
+                          <div key={b.slot} className="auth-stat-row">
+                            <div>
+                              <strong>Слот #{b.slot + 1}</strong>{' '}
+                              <span className="muted-xs">
+                                • {formatShortDate(b.savedAt)} • {b.gamesCount} игр /{' '}
+                                {b.watchCount} просм.
+                              </span>
+                            </div>
+                            <button
+                              type="button"
+                              className="btn btn-secondary btn-xs"
+                              disabled={restoringSlot !== null}
+                              onClick={async () => {
+                                if (
+                                  !confirm(
+                                    `Восстановить базу из облачного снимка от ${formatShortDate(
+                                      b.savedAt
+                                    )} (${b.gamesCount} игр)? Текущее состояние тоже сохранится в соседний слот.`
+                                  )
+                                ) {
+                                  return;
+                                }
+                                setRestoringSlot(b.slot);
+                                const res = await restoreCloudBackupSlot(
+                                  b.slot,
+                                  user,
+                                  apiBaseUrl
+                                );
+                                setRestoringSlot(null);
+                                if (res.error) {
+                                  alert(res.error);
+                                } else if (res.restored) {
+                                  onRestoreCloudBackup(res.restored);
+                                  loadAuthStats();
+                                }
+                              }}
+                            >
+                              <RotateCcw size={12} />{' '}
+                              {restoringSlot === b.slot
+                                ? 'Восстановление...'
+                                : 'Откатить'}
+                            </button>
                           </div>
-                          <button
-                            type="button"
-                            className="btn btn-secondary btn-xs"
-                            disabled={restoringSlot !== null}
-                            onClick={async () => {
-                              if (
-                                !confirm(
-                                  `Восстановить базу из облачного снимка от ${formatShortDate(
-                                    b.savedAt
-                                  )} (${b.gamesCount} игр)? Текущее состояние тоже сохранится в соседний слот.`
-                                )
-                              ) {
-                                return;
-                              }
-                              setRestoringSlot(b.slot);
-                              const res = await restoreCloudBackupSlot(
-                                b.slot,
-                                user,
-                                apiBaseUrl
-                              );
-                              setRestoringSlot(null);
-                              if (res.error) {
-                                alert(res.error);
-                              } else if (res.restored) {
-                                onRestoreCloudBackup(res.restored);
-                                loadAuthStats();
-                              }
-                            }}
-                          >
-                            <RotateCcw size={12} />{' '}
-                            {restoringSlot === b.slot ? 'Восстановление...' : 'Откатить'}
-                          </button>
-                        </div>
-                      ))}
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                )}
+                  )}
               </div>
             </>
           )}
 
           {tab === 'credits' && (
             <div className="settings-section form-grid">
-              <h4>О проекте OniZeD Hub</h4>
+              <div className="row-between wrap">
+                <h4 style={{ marginBottom: 0 }}>О проекте OniZeD Hub</h4>
+                <span className="badge tone-queued">Версия v{APP_VERSION}</span>
+              </div>
               <p className="muted-sm">
                 Единый интерактивный портал прохождений, заказов игр, просмотрового, бэклога, рулетки и тир-листов сообщества.
               </p>
@@ -1023,14 +1404,24 @@ export const SiteSettingsModal: React.FC<SiteSettingsModalProps> = ({
                   <p className="muted-sm">
                     Хозяин канала, автор всех оценок, прохождений, обзоров и локальных мемов.
                   </p>
-                  <a
-                    href={data.hubConfig.twitchUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="btn btn-twitch btn-xs"
-                  >
-                    twitch.tv/onized <ExternalLink size={12} />
-                  </a>
+                  <div className="row-gap-xs wrap" style={{ marginTop: 'auto' }}>
+                    <a
+                      href={data.hubConfig.twitchUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="btn btn-twitch btn-xs"
+                    >
+                      Twitch <ExternalLink size={12} />
+                    </a>
+                    <a
+                      href="https://t.me/onizedtg"
+                      target="_blank"
+                      rel="noreferrer"
+                      className="btn btn-secondary btn-xs"
+                    >
+                      <Send size={12} /> Telegram
+                    </a>
+                  </div>
                 </div>
 
                 <div className="credit-card">
@@ -1039,14 +1430,56 @@ export const SiteSettingsModal: React.FC<SiteSettingsModalProps> = ({
                   <p className="muted-sm">
                     Создатель и главный разработчик OniZeD Hub, архитектура базы, рулетка и функционал портала.
                   </p>
-                  <a
-                    href="https://www.twitch.tv/zkeeerus"
-                    target="_blank"
-                    rel="noreferrer"
-                    className="btn btn-secondary btn-xs"
-                  >
-                    Twitch профиль <ExternalLink size={12} />
-                  </a>
+                  <div className="row-gap-xs wrap" style={{ marginTop: 'auto' }}>
+                    <a
+                      href="https://www.twitch.tv/zkeeerus"
+                      target="_blank"
+                      rel="noreferrer"
+                      className="btn btn-twitch btn-xs"
+                    >
+                      Twitch <ExternalLink size={12} />
+                    </a>
+                    <a
+                      href="https://t.me/ZkeeeRusStream"
+                      target="_blank"
+                      rel="noreferrer"
+                      className="btn btn-secondary btn-xs"
+                    >
+                      <Send size={12} /> Telegram
+                    </a>
+                  </div>
+                </div>
+              </div>
+
+              <div className="credit-card friend-project-card">
+                <div className="row-between wrap" style={{ width: '100%' }}>
+                  <div>
+                    <span className="credit-badge amber">ДРУЗЬЯ ПРОЕКТА</span>
+                    <strong style={{ marginTop: 5, display: 'block' }}>
+                      Проект Sakuya
+                    </strong>
+                    <p className="muted-sm" style={{ marginTop: 2 }}>
+                      Дружественный сайт и быстрый хостинг медиа и картинок наших ребят.
+                    </p>
+                  </div>
+                  <div className="row-gap-xs wrap">
+                    <a
+                      href="https://sakuya.su/"
+                      target="_blank"
+                      rel="noreferrer"
+                      className="btn btn-secondary btn-xs"
+                    >
+                      sakuya.su <ExternalLink size={12} />
+                    </a>
+                    <a
+                      href="https://lol.sakuya.su/"
+                      target="_blank"
+                      rel="noreferrer"
+                      className="btn btn-secondary btn-xs"
+                    >
+                      lol.sakuya.su <ExternalLink size={12} />
+                    </a>
+                  </div>
                 </div>
               </div>
 

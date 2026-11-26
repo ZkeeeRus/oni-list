@@ -1,14 +1,82 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { ExternalLink, Settings, Sparkles } from 'lucide-react';
 import { isHolidayActive, UserPreferences } from '../utils/preferences';
 import { playBellJingle } from '../utils/soundEffects';
 import { trackSiteAction } from '../utils/analytics';
 
-/* ---------- Multi-Plane 3D Parallax + Falling Snow Canvas ---------- */
+/* ---------- Новогодние векторные рисунки для параллакса ---------- */
+const WinterParallaxDrawings: React.FC = () => (
+  <>
+    {/* 1. Крупная ажурная снежинка */}
+    <svg className="winter-fig wf-1" viewBox="0 0 64 64" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+      <path d="M32 6v52M9.5 19l45 26M54.5 19l-45 26" />
+      <path d="M26 12l6 6 6-6M26 52l6-6 6 6M13 27l7-2-2-7M51 37l-7 2 2 7M49 20l-5 5 7 2M15 44l5-5-7-2" />
+      <circle cx="32" cy="32" r="5" />
+    </svg>
+
+    {/* 2. Абстрактная неоновая елочка со звездой */}
+    <svg className="winter-fig wf-2" viewBox="0 0 64 72" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+      <polygon points="32,6 34.5,12 41,12 36,16 38,22 32,18.5 26,22 28,16 23,12 29.5,12" stroke="#fde047" />
+      <path d="M32 20L17 39h30L32 20z" />
+      <path d="M32 33L13 54h38L32 33z" />
+      <path d="M28 54v10h8V54" stroke="#fbbf24" />
+      <circle cx="26" cy="36" r="1.8" fill="#f43f5e" stroke="none" />
+      <circle cx="38" cy="48" r="2" fill="#38bdf8" stroke="none" />
+      <circle cx="24" cy="49" r="1.8" fill="#fde047" stroke="none" />
+    </svg>
+
+    {/* 3. Подарок с лентой и бантом */}
+    <svg className="winter-fig wf-3" viewBox="0 0 60 60" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="10" y="24" width="40" height="28" rx="4" />
+      <rect x="7" y="17" width="46" height="8" rx="3" />
+      <path d="M30 17v35M10 36h40" stroke="#fde047" />
+      <path d="M30 17c-5-8-14-7-13-1s7 3 13 1zm0 0c5-8 14-7 13-1s-7 3-13 1z" stroke="#fde047" />
+    </svg>
+
+    {/* 4. Новогодний леденец-трость */}
+    <svg className="winter-fig wf-4" viewBox="0 0 56 64" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round">
+      <path d="M20 24a11 11 0 0 1 22 0v30a4.5 4.5 0 0 1-9 0V24a2 2 0 0 0-4 0v2a4.5 4.5 0 0 1-9 0v-2z" />
+      <path d="M33 15l7 5M33 27l9 6M33 39l9 6" stroke="#fda4af" />
+    </svg>
+
+    {/* 5. Елочный шар с узором */}
+    <svg className="winter-fig wf-5" viewBox="0 0 60 68" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+      <path d="M26 10h8v6h-8z" stroke="#fde047" />
+      <path d="M30 4a3 3 0 0 1 3 3v3h-6V7a3 3 0 0 1 3-3z" stroke="#fde047" />
+      <circle cx="30" cy="38" r="21" />
+      <path d="M11 33q9.5 7 19 0t19 0" stroke="#fde047" />
+      <path d="M12 44q9 6 18 0t18 0" opacity="0.7" />
+    </svg>
+
+    {/* 6. Вторая малая снежинка */}
+    <svg className="winter-fig wf-6" viewBox="0 0 56 56" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+      <path d="M28 6v44M9 17l38 22M47 17L9 39" />
+      <polygon points="28,18 36,23 36,33 28,38 20,33 20,23" opacity="0.75" />
+    </svg>
+
+    {/* 7. Второй подарок */}
+    <svg className="winter-fig wf-7" viewBox="0 0 56 56" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="11" y="22" width="34" height="25" rx="3.5" />
+      <rect x="8" y="16" width="40" height="7" rx="2.5" />
+      <path d="M28 16v31" stroke="#67e8f9" />
+      <path d="M28 16c-4-6-11-5-10 0s6 2 10 0zm0 0c4-6 11-5 10 0s-6 2-10 0z" stroke="#67e8f9" />
+    </svg>
+
+    {/* 8. Рождественская восьмилучевая звезда */}
+    <svg className="winter-fig wf-8" viewBox="0 0 56 56" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <polygon points="28,4 32,22 50,28 32,34 28,52 24,34 6,28 24,22" />
+      <line x1="15" y1="15" x2="41" y2="41" opacity="0.6" />
+      <line x1="41" y1="15" x2="15" y2="41" opacity="0.6" />
+    </svg>
+  </>
+);
+
+/* ---------- Multi-Plane 3D Parallax + Custom Wallpaper + Falling Snow ---------- */
 export const SnowAndParallaxLayer: React.FC<{
   prefs: UserPreferences;
-}> = ({ prefs }) => {
+  customWallpaperUrl?: string;
+}> = ({ prefs, customWallpaperUrl }) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const wallpaperRef = useRef<HTMLDivElement | null>(null);
   const farPlaneRef = useRef<HTMLDivElement | null>(null);
   const midPlaneRef = useRef<HTMLDivElement | null>(null);
   const shardsPlaneRef = useRef<HTMLDivElement | null>(null);
@@ -20,8 +88,17 @@ export const SnowAndParallaxLayer: React.FC<{
   const enableParallax =
     prefs.parallaxEnabled && prefs.performanceMode !== 'eco';
 
+  const hasCustomBg =
+    prefs.bgStyle === 'custom' && Boolean(customWallpaperUrl?.trim());
+  const showScene = prefs.bgStyle !== 'minimal';
+  const showWinterDrawings = holiday && prefs.festiveShapes === 'winter';
+  const showAbstractShards =
+    prefs.bgStyle !== 'minimal' &&
+    (!holiday || prefs.festiveShapes === 'abstract');
+
   useEffect(() => {
     if (!enableParallax) {
+      if (wallpaperRef.current) wallpaperRef.current.style.transform = 'scale(1.04)';
       if (farPlaneRef.current) farPlaneRef.current.style.transform = 'none';
       if (midPlaneRef.current) midPlaneRef.current.style.transform = 'none';
       if (shardsPlaneRef.current) shardsPlaneRef.current.style.transform = 'none';
@@ -38,8 +115,8 @@ export const SnowAndParallaxLayer: React.FC<{
     let curSy = sy;
 
     const onMove = (e: MouseEvent) => {
-      mx = (e.clientX / Math.max(1, window.innerWidth) - 0.5) * 2; // -1 .. +1
-      my = (e.clientY / Math.max(1, window.innerHeight) - 0.5) * 2; // -1 .. +1
+      mx = (e.clientX / Math.max(1, window.innerWidth) - 0.5) * 2;
+      my = (e.clientY / Math.max(1, window.innerHeight) - 0.5) * 2;
     };
 
     const onScroll = () => {
@@ -51,21 +128,24 @@ export const SnowAndParallaxLayer: React.FC<{
       curMy += (my - curMy) * 0.095;
       curSy += (sy - curSy) * 0.12;
 
-      // 180px - точный период сетки и звезд plane-far (60px и 180px)
+      if (wallpaperRef.current) {
+        const wx = curMx * -20;
+        const wy = curMy * -16;
+        wallpaperRef.current.style.transform = `translate3d(${wx.toFixed(1)}px, ${wy.toFixed(1)}px, 0) scale(1.07)`;
+      }
       if (farPlaneRef.current) {
         const fx = curMx * -28;
         const fy = curMy * -22 - ((curSy * 0.18) % 180);
         farPlaneRef.current.style.transform = `translate3d(${fx.toFixed(1)}px, ${fy.toFixed(1)}px, 0)`;
       }
-      // 300px - точный период созвездий plane-mid
       if (midPlaneRef.current) {
         const mdx = curMx * -56;
         const mdy = curMy * -44 - ((curSy * 0.36) % 300);
         midPlaneRef.current.style.transform = `translate3d(${mdx.toFixed(1)}px, ${mdy.toFixed(1)}px, 0)`;
       }
       if (shardsPlaneRef.current) {
-        const sx = curMx * -78;
-        const syShift = curMy * -62 + Math.sin(curSy * 0.003) * 48;
+        const sx = curMx * -82;
+        const syShift = curMy * -64 + Math.sin(curSy * 0.003) * 48;
         shardsPlaneRef.current.style.transform = `translate3d(${sx.toFixed(1)}px, ${syShift.toFixed(1)}px, 0)`;
       }
       if (nearPlaneRef.current) {
@@ -85,7 +165,7 @@ export const SnowAndParallaxLayer: React.FC<{
       window.removeEventListener('scroll', onScroll);
       cancelAnimationFrame(raf);
     };
-  }, [enableParallax]);
+  }, [enableParallax, prefs.bgStyle, hasCustomBg]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -104,6 +184,8 @@ export const SnowAndParallaxLayer: React.FC<{
         : isMobile
           ? Math.round(baseCount * 0.65)
           : baseCount;
+
+    const isLight = prefs.colorMode === 'light';
 
     const flakes = Array.from({ length: count }, () => {
       const depth = 0.45 + Math.random() * 1.15;
@@ -148,7 +230,9 @@ export const SnowAndParallaxLayer: React.FC<{
 
           ctx.beginPath();
           ctx.arc(f.x, f.y, f.r, 0, Math.PI * 2);
-          ctx.fillStyle = `rgba(241, 245, 249, ${f.alpha})`;
+          ctx.fillStyle = isLight
+            ? `rgba(148, 163, 184, ${f.alpha * 0.85})`
+            : `rgba(241, 245, 249, ${f.alpha})`;
           ctx.fill();
         }
       }
@@ -164,33 +248,76 @@ export const SnowAndParallaxLayer: React.FC<{
       window.removeEventListener('mousemove', onMouse);
       cancelAnimationFrame(rafId);
     };
-  }, [showSnow, prefs.snowIntensity, prefs.performanceMode, enableParallax]);
+  }, [
+    showSnow,
+    prefs.snowIntensity,
+    prefs.performanceMode,
+    prefs.colorMode,
+    enableParallax,
+  ]);
 
   return (
     <>
-      {enableParallax && (
-        <div className="parallax-scene" aria-hidden="true">
-          {/* Дальний план: кибер-сетка и дальние звезды */}
-          <div className="parallax-plane plane-far" ref={farPlaneRef} />
-          {/* Средний план: яркие созвездия */}
-          <div className="parallax-plane plane-mid" ref={midPlaneRef} />
-          {/* Плавающие неоновые фигуры */}
-          <div className="parallax-plane plane-shards" ref={shardsPlaneRef}>
-            <span className="p-shard s1" />
-            <span className="p-shard s2" />
-            <span className="p-shard s3" />
-            <span className="p-shard s4" />
-            <span className="p-shard s5" />
-            <span className="p-shard s6" />
-          </div>
-          {/* Ближний план: объемные световые пятна */}
-          <div className="parallax-plane plane-near" ref={nearPlaneRef}>
-            <span className="orb orb-1" />
-            <span className="orb orb-2" />
-            <span className="orb orb-3" />
-          </div>
+      {hasCustomBg && (
+        <div className="custom-wallpaper-wrap" aria-hidden="true">
+          <div
+            ref={wallpaperRef}
+            className="custom-wallpaper-img"
+            style={{
+              backgroundImage: `url("${customWallpaperUrl}")`,
+              filter:
+                prefs.customBgBlur > 0 ? `blur(${prefs.customBgBlur}px)` : 'none',
+            }}
+          />
+          <div
+            className="custom-wallpaper-dim"
+            style={{ opacity: prefs.customBgDimming }}
+          />
         </div>
       )}
+
+      {showScene && prefs.performanceMode !== 'eco' && (
+        <div
+          className={`parallax-scene bg-variant-${prefs.bgStyle}`}
+          aria-hidden="true"
+        >
+          {prefs.bgStyle === 'stars' && (
+            <div className="parallax-plane plane-far" ref={farPlaneRef} />
+          )}
+          {prefs.bgStyle === 'aurora' && (
+            <div className="parallax-plane plane-aurora" ref={farPlaneRef} />
+          )}
+          {prefs.bgStyle !== 'custom' && (
+            <div className="parallax-plane plane-mid" ref={midPlaneRef} />
+          )}
+
+          {(showWinterDrawings || showAbstractShards) && (
+            <div className="parallax-plane plane-shards" ref={shardsPlaneRef}>
+              {showWinterDrawings ? (
+                <WinterParallaxDrawings />
+              ) : (
+                <>
+                  <span className="p-shard s1" />
+                  <span className="p-shard s2" />
+                  <span className="p-shard s3" />
+                  <span className="p-shard s4" />
+                  <span className="p-shard s5" />
+                  <span className="p-shard s6" />
+                </>
+              )}
+            </div>
+          )}
+
+          {prefs.bgStyle !== 'custom' && (
+            <div className="parallax-plane plane-near" ref={nearPlaneRef}>
+              <span className="orb orb-1" />
+              <span className="orb orb-2" />
+              <span className="orb orb-3" />
+            </div>
+          )}
+        </div>
+      )}
+
       {showSnow && (
         <canvas
           ref={canvasRef}
@@ -202,8 +329,11 @@ export const SnowAndParallaxLayer: React.FC<{
   );
 };
 
-/* ---------- Header Holiday Garland ---------- */
+/* ---------- Свисающая новогодняя гирлянда под шапкой с игрушками и хвойными дугами ---------- */
 const BULB_COLORS = ['#fbbf24', '#f43f5e', '#38bdf8', '#34d399', '#c084fc'];
+const SWAG_COUNT = 4;
+const BULBS_PER_SWAG = 6;
+const CTRL_Y_DELTA = 36; // Провисание кривой Безье (в нижней точке ~20px ниже шапки)
 
 export const HeaderGarland: React.FC<{
   prefs: UserPreferences;
@@ -212,44 +342,106 @@ export const HeaderGarland: React.FC<{
   const holiday = isHolidayActive(prefs);
   if (!holiday || !prefs.garlandEnabled) return null;
 
-  const bulbs = Array.from({ length: 22 }, (_, i) => ({
-    idx: i,
-    color: BULB_COLORS[i % BULB_COLORS.length],
-    delay: `${(i % 5) * 0.35}s`,
-  }));
+  const bulbs: Array<{
+    key: string;
+    leftPct: number;
+    topPx: number;
+    tiltDeg: number;
+    color: string;
+    delay: string;
+  }> = [];
+
+  for (let s = 0; s < SWAG_COUNT; s++) {
+    for (let k = 1; k <= BULBS_PER_SWAG; k++) {
+      const t = k / (BULBS_PER_SWAG + 1); // 0..1 внутри одной дуги
+      const leftPct = ((s + t) / SWAG_COUNT) * 100;
+      const topPx = 2 + 2 * t * (1 - t) * CTRL_Y_DELTA;
+      const tiltDeg = (0.5 - t) * 26;
+      const idx = s * BULBS_PER_SWAG + k;
+      bulbs.push({
+        key: `${s}-${k}`,
+        leftPct,
+        topPx,
+        tiltDeg,
+        color: BULB_COLORS[idx % BULB_COLORS.length],
+        delay: `${((idx * 3) % 7) * 0.28}s`,
+      });
+    }
+  }
+
+  const clasps = [
+    { pct: 0.8, kind: 'bow' },
+    { pct: 25, kind: 'star' },
+    { pct: 50, kind: 'bauble' },
+    { pct: 75, kind: 'flake' },
+    { pct: 99.2, kind: 'bow' },
+  ];
 
   return (
     <div
-      className={`header-garland ${flash ? 'garland-flash' : ''}`}
+      className={`header-garland-drape ${flash ? 'garland-flash' : ''}`}
       onClick={() => {
         playBellJingle(prefs);
         setFlash(true);
-        setTimeout(() => setFlash(false), 900);
+        setTimeout(() => setFlash(false), 950);
       }}
-      title="Новогодняя гирлянда (нажми!)"
     >
-      <div className="garland-bulbs-row">
-        {bulbs.map((b) => (
-          <span
-            key={b.idx}
-            className="garland-bulb-unit"
-            style={
-              {
-                '--bulb-color': b.color,
-                animationDelay: b.delay,
-              } as React.CSSProperties
-            }
-          >
-            <i className="bulb-cap" />
-            <b className="bulb-glass" />
-          </span>
-        ))}
-      </div>
+      {/* Провисающие провода с хвойной мишурой */}
+      <svg
+        className="garland-wire-svg"
+        viewBox="0 0 1200 40"
+        preserveAspectRatio="none"
+        aria-hidden="true"
+      >
+        <path
+          d="M0,2 Q150,38 300,2 Q450,38 600,2 Q750,38 900,2 Q1050,38 1200,2"
+          className="garland-pine-glow"
+        />
+        <path
+          d="M0,2 Q150,38 300,2 Q450,38 600,2 Q750,38 900,2 Q1050,38 1200,2"
+          className="garland-wire-line"
+        />
+      </svg>
+
+      {/* Свисающие огоньки вдоль дуг */}
+      {bulbs.map((b) => (
+        <span
+          key={b.key}
+          className="garland-drape-bulb"
+          style={
+            {
+              left: `${b.leftPct}%`,
+              top: `${b.topPx}px`,
+              '--bulb-tilt': `${b.tiltDeg.toFixed(1)}deg`,
+              '--bulb-color': b.color,
+              animationDelay: b.delay,
+            } as React.CSSProperties
+          }
+        >
+          <i className="bulb-cap" />
+          <b className="bulb-glass" />
+        </span>
+      ))}
+
+      {/* Узлы крепления с бантиками и свисающими подвесками */}
+      {clasps.map((c, idx) => (
+        <span
+          key={idx}
+          className={`garland-clasp kind-${c.kind}`}
+          style={{ left: `${c.pct}%` }}
+          aria-hidden="true"
+        >
+          <i className="clasp-knot" />
+          {c.kind === 'star' && <span className="dangling-charm star">★</span>}
+          {c.kind === 'bauble' && <span className="dangling-charm bauble" />}
+          {c.kind === 'flake' && <span className="dangling-charm flake">❄</span>}
+        </span>
+      ))}
     </div>
   );
 };
 
-/* ---------- Site Footer with Snowdrifts, Christmas Tree & Credits ---------- */
+/* ---------- Компактный футер с сугробами, елочкой и ненавязчивыми ссылками ---------- */
 const TREE_WISHES = [
   'С наступающим! Пусть в рулетке выпадают только шедевры без тех-дропов!',
   'Новогоднего вайба чату OniZeD и годных заказов на стримах!',
@@ -259,11 +451,8 @@ const TREE_WISHES = [
 
 export const FestiveFooter: React.FC<{
   prefs: UserPreferences;
-  twitchUrl: string;
-  vodUrl: string;
-  onOpenSettings: () => void;
   onShowWish: (msg: string) => void;
-}> = ({ prefs, twitchUrl, vodUrl, onOpenSettings, onShowWish }) => {
+}> = ({ prefs, onShowWish }) => {
   const [treeLit, setTreeLit] = useState(false);
   const holiday = isHolidayActive(prefs);
   const showWinter = holiday && prefs.footerTreeEnabled;
@@ -333,52 +522,22 @@ export const FestiveFooter: React.FC<{
         </div>
       )}
 
-      <div className="footer-inner">
-        <div className="footer-brand-col">
-          <div className="row-gap-xs">
-            <span className="brand-dot" />
-            <strong>OniZeD Hub</strong>
-            {holiday && <span className="winter-pill">❄ Зимний сезон</span>}
-          </div>
-          <p className="muted-xs">
-            Портал заказов, прохождений, просмотрового и тир-листов канала Дена (
-            <strong>OniZeD</strong>) • Разработка: <strong>ZkeeeRus</strong>
-          </p>
+      <div className="footer-inner footer-minimal">
+        <div className="row-gap-xs">
+          <span className="brand-dot" />
+          <strong>OniZeD Hub</strong>
+          {holiday && <span className="winter-pill">❄ Зимний сезон</span>}
         </div>
 
-        <div className="row-gap-sm wrap">
-          <a
-            href={twitchUrl}
-            target="_blank"
-            rel="noreferrer"
-            className="btn btn-ghost btn-xs"
-          >
-            Twitch <ExternalLink size={12} />
+        <div className="footer-friend-links muted-xs">
+          <span>Друзья:</span>
+          <a href="https://sakuya.su/" target="_blank" rel="noreferrer">
+            sakuya.su
           </a>
-          <a
-            href={vodUrl}
-            target="_blank"
-            rel="noreferrer"
-            className="btn btn-ghost btn-xs"
-          >
-            Архив VOD <ExternalLink size={12} />
+          <span>•</span>
+          <a href="https://lol.sakuya.su/" target="_blank" rel="noreferrer">
+            lol.sakuya.su
           </a>
-          <button
-            type="button"
-            className="btn btn-ghost btn-xs"
-            onClick={onOpenSettings}
-          >
-            <Settings size={13} /> Оформление и настройки
-          </button>
-          {showWinter && (
-            <button
-              type="button"
-              className="btn btn-ghost btn-xs"
-              onClick={handleTreeClick}
-            >
-              <Sparkles size={13} /> Зажечь елочку
-            </button>
-          )}
         </div>
       </div>
     </footer>

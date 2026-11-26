@@ -97,3 +97,26 @@ export async function compressImageToWebpDataUrl(
   }
   return best;
 }
+
+// Сжатие пользовательских обоев фона сайта (~1600px WebP, высокая четкость при малом весе)
+export async function compressWallpaperToWebpDataUrl(
+  file: File,
+  targetMaxBytes = 320 * 1024
+): Promise<string> {
+  const img = await loadImageFromFile(file);
+  const attempts: Array<[number, number]> = [
+    [1920, 0.82],
+    [1600, 0.76],
+    [1440, 0.68],
+    [1280, 0.6],
+  ];
+
+  let best = '';
+  for (const [dim, q] of attempts) {
+    best = renderWebp(img, dim, q);
+    if (estimateDataUrlBytes(best) <= targetMaxBytes) {
+      return best;
+    }
+  }
+  return best;
+}

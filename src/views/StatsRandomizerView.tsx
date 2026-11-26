@@ -229,6 +229,10 @@ export const StatsRandomizerView: React.FC<StatsRandomizerViewProps> = ({
   // Tape animation state
   const stageRef = useRef<HTMLDivElement | null>(null);
   const trackRef = useRef<HTMLDivElement | null>(null);
+  const spinControlRef = useRef<HTMLDivElement | null>(null);
+  const spinSecondsRef = useRef<number>(spinSeconds);
+  spinSecondsRef.current = spinSeconds;
+  const isBusyRef = useRef<boolean>(false);
   const spinTimerRef = useRef<number | null>(null);
   const destroyTimerRef = useRef<number | null>(null);
   const [reelItems, setReelItems] = useState<RollCandidate[]>([]);
@@ -243,6 +247,52 @@ export const StatsRandomizerView: React.FC<StatsRandomizerViewProps> = ({
   const [viewerSearch, setViewerSearch] = useState('');
 
   const isBusy = rolling || destroyingSlot !== null;
+  isBusyRef.current = isBusy;
+
+  useEffect(() => {
+    const el = spinControlRef.current;
+    if (!el) return;
+    const onWheel = (e: WheelEvent) => {
+      if (isBusyRef.current) return;
+      e.preventDefault();
+      const dir = e.deltaY < 0 ? 0.5 : -0.5;
+      const next = Math.min(
+        60,
+        Math.max(1, Math.round((spinSecondsRef.current + dir) * 2) / 2)
+      );
+      setSpinInput(String(next));
+    };
+    el.addEventListener('wheel', onWheel, { passive: false });
+    return () => el.removeEventListener('wheel', onWheel);
+  }, []);
+
+  const handleScrubMouseDown = (e: React.MouseEvent<HTMLLabelElement>) => {
+    if (isBusy || e.button !== 0) return;
+    e.preventDefault();
+    const startX = e.clientX;
+    const startVal = spinSeconds;
+    const prevCursor = document.body.style.cursor;
+    const prevSelect = document.body.style.userSelect;
+    document.body.style.cursor = 'ew-resize';
+    document.body.style.userSelect = 'none';
+
+    const onMove = (ev: MouseEvent) => {
+      const dx = ev.clientX - startX;
+      const raw = startVal + dx * 0.12;
+      const next = Math.min(60, Math.max(1, Math.round(raw * 2) / 2));
+      setSpinInput(String(next));
+    };
+
+    const onUp = () => {
+      document.body.style.cursor = prevCursor;
+      document.body.style.userSelect = prevSelect;
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseup', onUp);
+    };
+
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
+  };
 
   useEffect(() => {
     return () => {
@@ -749,8 +799,12 @@ export const StatsRandomizerView: React.FC<StatsRandomizerViewProps> = ({
             </div>
           </div>
 
-          <div className="row-gap-xs wrap">
-            <label className="muted-xs" htmlFor="spin-seconds-input">
+          <div className="row-gap-xs wrap" ref={spinControlRef}>
+            <label
+              className="muted-xs unity-scrub-label"
+              htmlFor="spin-seconds-input"
+              onMouseDown={handleScrubMouseDown}
+            >
               <Clock size={12} style={{ verticalAlign: 'middle', marginRight: 4 }} />
               Сколько крутить (сек):
             </label>

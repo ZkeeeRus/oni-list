@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { buildCoverCandidatesChain } from '../utils/covers';
 import { DEFAULT_COVER_URL } from '../utils/defaultCover';
 
@@ -25,11 +25,27 @@ export const CoverImage: React.FC<CoverImageProps> = ({
   );
   const [idx, setIdx] = useState(0);
   const [failedAll, setFailedAll] = useState(candidates.length === 0);
+  const [loaded, setLoaded] = useState(false);
+  const imgRef = useRef<HTMLImageElement | null>(null);
+
+  const activeSrc =
+    failedAll || idx >= candidates.length ? DEFAULT_COVER_URL : candidates[idx];
 
   useEffect(() => {
     setIdx(0);
     setFailedAll(candidates.length === 0);
   }, [candidates]);
+
+  useEffect(() => {
+    if (activeSrc.startsWith('data:')) {
+      setLoaded(true);
+      return;
+    }
+    setLoaded(false);
+    if (imgRef.current && imgRef.current.complete && imgRef.current.naturalWidth > 0) {
+      setLoaded(true);
+    }
+  }, [activeSrc]);
 
   const aspectClass =
     aspect === 'wide'
@@ -38,35 +54,41 @@ export const CoverImage: React.FC<CoverImageProps> = ({
         ? 'cover-square'
         : 'cover-portrait';
 
-  if (failedAll || idx >= candidates.length) {
-    return (
-      <div className={`cover-wrap ${aspectClass} ${className}`}>
-        <img
-          src={DEFAULT_COVER_URL}
-          alt={title}
-          style={
-            aspect === 'wide'
-              ? { objectFit: 'contain', background: '#110e1b' }
-              : undefined
-          }
-        />
-        {badgeText && <span className="cover-badge">{badgeText}</span>}
-      </div>
-    );
-  }
+  const isFallback = failedAll || idx >= candidates.length;
 
   return (
     <div className={`cover-wrap ${aspectClass} ${className}`}>
+      {!loaded && (
+        <div className="img-loading-overlay" aria-hidden="true">
+          <span className="img-loading-dots">
+            <i />
+            <i />
+            <i />
+          </span>
+        </div>
+      )}
       <img
-        src={candidates[idx]}
+        ref={imgRef}
+        src={activeSrc}
         alt={title}
         loading="lazy"
         referrerPolicy="no-referrer"
+        className={loaded ? 'cover-img-loaded' : 'cover-img-loading'}
+        style={
+          isFallback && aspect === 'wide'
+            ? { objectFit: 'contain', background: '#110e1b' }
+            : undefined
+        }
+        onLoad={() => setLoaded(true)}
         onError={() => {
-          if (idx + 1 < candidates.length) {
-            setIdx(idx + 1);
+          if (!isFallback) {
+            if (idx + 1 < candidates.length) {
+              setIdx(idx + 1);
+            } else {
+              setFailedAll(true);
+            }
           } else {
-            setFailedAll(true);
+            setLoaded(true);
           }
         }}
       />

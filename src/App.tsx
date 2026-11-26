@@ -59,7 +59,10 @@ import {
 import { collectOrdererStats } from './utils/orderers';
 import { loadGameMetaMap } from './utils/gameMeta';
 import {
+  isHolidayActive,
+  loadCustomWallpaper,
   loadUserPreferences,
+  saveCustomWallpaper,
   saveUserPreferences,
   UserPreferences,
 } from './utils/preferences';
@@ -72,11 +75,11 @@ import {
 import { SettingsTabId, SiteSettingsModal } from './components/SiteSettingsModal';
 import { CookieBanner } from './components/CookieBanner';
 import {
-  CookieConsentState,
   flushTelemetry,
-  getCookieConsent,
   initTelemetrySession,
-  setCookieConsent,
+  loadPrivacyPrefs,
+  savePrivacyPrefs,
+  TelemetryPrivacyPrefs,
   trackSiteAction,
   trackTabView,
   updateTelemetryAuthState,
@@ -124,22 +127,78 @@ export const App: React.FC = () => {
   const [viewerAccountOpen, setViewerAccountOpen] = useState(false);
   const [siteSettingsTab, setSiteSettingsTab] = useState<SettingsTabId | null>(null);
   const [prefs, setPrefs] = useState<UserPreferences>(() => loadUserPreferences());
-  const [cookieConsent, setCookieConsentState] = useState<CookieConsentState>(() =>
-    getCookieConsent()
+  const [customWallpaperUrl, setCustomWallpaperUrl] = useState<string>('');
+  const [privacyPrefs, setPrivacyPrefs] = useState<TelemetryPrivacyPrefs>(() =>
+    loadPrivacyPrefs()
   );
 
-  const handleCookieDecision = useCallback((choice: 'accepted' | 'essential') => {
-    setCookieConsent(choice);
-    setCookieConsentState(choice);
-    if (choice === 'accepted') {
+  useEffect(() => {
+    loadCustomWallpaper().then((saved) => {
+      if (saved) setCustomWallpaperUrl(saved);
+    });
+  }, []);
+
+  const handleChangeCustomWallpaper = useCallback((urlOrData: string) => {
+    setCustomWallpaperUrl(urlOrData);
+    saveCustomWallpaper(urlOrData);
+  }, []);
+
+  const handleApplyPrivacy = useCallback((next: TelemetryPrivacyPrefs) => {
+    const saved = savePrivacyPrefs(next);
+    setPrivacyPrefs(saved);
+    if (
+      saved.allowVisitorCookie ||
+      saved.allowTabStats ||
+      saved.allowActionStats ||
+      saved.allowDeviceAndRef
+    ) {
       flushTelemetry(false);
     }
   }, []);
 
   useEffect(() => {
     document.documentElement.dataset.theme = prefs.theme;
+    document.documentElement.dataset.mode = prefs.colorMode;
     document.documentElement.dataset.perf = prefs.performanceMode;
-  }, [prefs.theme, prefs.performanceMode]);
+    document.documentElement.dataset.holiday = isHolidayActive(prefs)
+      ? 'true'
+      : 'false';
+  }, [prefs]);
+
+  // Блокировка прокрутки основного окна колесиком при открытии любого модального окна
+  const anyModalOpen =
+    inspectGameId !== null ||
+    inspectWatchId !== null ||
+    inspectBacklogId !== null ||
+    gameModalItem !== undefined ||
+    watchModalItem !== undefined ||
+    backlogModalItem !== undefined ||
+    memeModalTarget !== undefined ||
+    editingMeme !== null ||
+    lightboxMeme !== null ||
+    viewerAccountOpen ||
+    siteSettingsTab !== null;
+
+  useEffect(() => {
+    if (!anyModalOpen) return;
+    const scrollbarW =
+      window.innerWidth - document.documentElement.clientWidth;
+    const prevHtmlOverflow = document.documentElement.style.overflow;
+    const prevBodyOverflow = document.body.style.overflow;
+    const prevPaddingRight = document.body.style.paddingRight;
+
+    document.documentElement.style.overflow = 'hidden';
+    document.body.style.overflow = 'hidden';
+    if (scrollbarW > 0) {
+      document.body.style.paddingRight = `${scrollbarW}px`;
+    }
+
+    return () => {
+      document.documentElement.style.overflow = prevHtmlOverflow;
+      document.body.style.overflow = prevBodyOverflow;
+      document.body.style.paddingRight = prevPaddingRight;
+    };
+  }, [anyModalOpen]);
 
   const handleUpdatePrefs = useCallback((next: UserPreferences) => {
     setPrefs(next);
@@ -382,7 +441,7 @@ export const App: React.FC = () => {
 
   return (
     <div className="app-shell">
-      <SnowAndParallaxLayer prefs={prefs} />
+      <SnowAndParallaxLayer prefs={prefs} customWallpaperUrl={customWallpaperUrl} />
 
       {/* Sticky Top Navbar */}
       <header className="top-nav">
@@ -939,8 +998,10 @@ export const App: React.FC = () => {
           initialTab={siteSettingsTab}
           prefs={prefs}
           onChangePrefs={handleUpdatePrefs}
-          cookieConsent={cookieConsent}
-          onChangeCookieConsent={handleCookieDecision}
+          customWallpaperUrl={customWallpaperUrl}
+          onChangeCustomWallpaper={handleChangeCustomWallpaper}
+          privacyPrefs={privacyPrefs}
+          onChangePrivacyPrefs={handleApplyPrivacy}
           user={user}
           role={role}
           apiBaseUrl={cfg.apiBaseUrl}
@@ -976,13 +1037,14 @@ export const App: React.FC = () => {
 
       <FestiveFooter
         prefs={prefs}
-        twitchUrl={data.hubConfig.twitchUrl}
-        vodUrl={data.hubConfig.vkVodUrl}
-        onOpenSettings={() => setSiteSettingsTab('appearance')}
         onShowWish={(wish) => showToast(wish, false)}
       />
 
-      <CookieBanner consent={cookieConsent} onDecide={handleCookieDecision} />
+      <CookieBanner
+        privacy={privacyPrefs}
+        onApply={handleApplyPrivacy}
+        onOpenCustomize={() => setSiteSettingsTab('privacy')}
+      />
 
       {toast && (
         <div className="toast-popup">

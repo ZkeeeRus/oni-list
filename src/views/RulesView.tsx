@@ -1,5 +1,15 @@
 import React, { useState } from 'react';
-import { Check, Edit3, Plus, Trash2 } from 'lucide-react';
+import {
+  Award,
+  BookOpen,
+  Check,
+  Edit3,
+  Info,
+  Plus,
+  ShieldAlert,
+  Sparkles,
+  Trash2,
+} from 'lucide-react';
 import { RatingScaleItem, RulesData } from '../types';
 
 interface RulesViewProps {
@@ -7,6 +17,64 @@ interface RulesViewProps {
   ratingScale: RatingScaleItem[];
   canEdit: boolean;
   onSaveRules: (rules: RulesData) => void;
+}
+
+const TIER_LETTERS: Record<string, string> = {
+  Шедевр: 'S',
+  Великолепно: 'A',
+  Похвально: 'B',
+  Проходняк: 'C',
+  'Полный кал': 'D',
+  'Нет мнения': '?',
+};
+
+const RULE_TOKEN_RE =
+  /(https?:\/\/[^\s)]+|«[^»]+»|\b\d[\d\s.,]*(?:\s?(?:₽|руб(?:лей|\.)?|р\.|ч\.|час(?:а|ов)?|%|раз(?:а)?|мин\.|дн\.))|\b[xхXХ]\d+\b|\b(?:Дроп[а-яё]*|дроп[а-яё]*|Возврат[а-яё]*|возврат[а-яё]*|Аукцион[а-яё]*|аукцион[а-яё]*|Рулетк[а-яё]*|рулетк[а-яё]*|Запрещ[а-яё]*|запрещ[а-яё]*|Важно|Внимание|СмолДик)\b)/g;
+
+function renderFormattedRuleText(text: string): React.ReactNode {
+  const parts = text.split(RULE_TOKEN_RE);
+  return parts.map((part, idx) => {
+    if (!part) return null;
+    if (/^https?:\/\//.test(part)) {
+      return (
+        <a
+          key={idx}
+          href={part}
+          target="_blank"
+          rel="noreferrer"
+          className="link-inline"
+        >
+          {part}
+        </a>
+      );
+    }
+    if (part.startsWith('«') && part.endsWith('»')) {
+      return (
+        <span key={idx} className="rule-accent-quote">
+          {part}
+        </span>
+      );
+    }
+    if (/^(?:\d|[xхXХ]\d)/.test(part)) {
+      return (
+        <span key={idx} className="rule-accent-num">
+          {part}
+        </span>
+      );
+    }
+    if (
+      /^(?:Дроп|дроп|Возврат|возврат|Аукцион|аукцион|Рулетк|рулетк|Запрещ|запрещ|Важно|Внимание|СмолДик)/.test(
+        part
+      )
+    ) {
+      return (
+        <strong key={idx} className="rule-accent-term">
+          {part}
+        </strong>
+      );
+    }
+    return <React.Fragment key={idx}>{part}</React.Fragment>;
+  });
 }
 
 export const RulesView: React.FC<RulesViewProps> = ({
@@ -45,7 +113,14 @@ export const RulesView: React.FC<RulesViewProps> = ({
       </div>
 
       {editing ? (
-        <section className="section-block form-grid">
+        <section
+          className="section-block form-grid"
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && (e.target as HTMLElement)?.tagName === 'INPUT') {
+              e.preventDefault();
+            }
+          }}
+        >
           <div>
             <label className="field-label">Вступление</label>
             <input
@@ -122,52 +197,105 @@ export const RulesView: React.FC<RulesViewProps> = ({
       ) : (
         <div className="two-col-hub">
           <section className="section-block">
-            <h2>Свод правил заказа</h2>
-            <p className="muted-sm" style={{ marginBottom: 16 }}>
-              {rules.intro}
-            </p>
+            <div className="rules-sec-title">
+              <span className="kpi-icon purple" style={{ marginBottom: 0 }}>
+                <BookOpen size={18} />
+              </span>
+              <div>
+                <h2>Свод правил заказа</h2>
+                <span className="muted-xs">Основные условия заказов, дропов и возвратов</span>
+              </div>
+            </div>
+
+            {rules.intro && (
+              <div className="rules-intro-banner">
+                <Sparkles size={16} className="rules-intro-icon" />
+                <p>{renderFormattedRuleText(rules.intro)}</p>
+              </div>
+            )}
 
             <div className="rules-stack">
-              {rules.sections.map((sec) => (
+              {rules.sections.map((sec, secIdx) => (
                 <div key={sec.id} className="rule-group-card">
-                  <h3>{sec.title}</h3>
-                  <ul className="rules-list">
+                  <div className="rule-group-head">
+                    <span className="rule-sec-badge">Раздел {secIdx + 1}</span>
+                    <h3>{sec.title}</h3>
+                  </div>
+                  <div className="rules-items-stack">
                     {sec.items.map((it, i) => (
-                      <li key={i}>{it}</li>
+                      <div key={i} className="rule-item-row">
+                        <span className="rule-num-pill">
+                          {String(i + 1).padStart(2, '0')}
+                        </span>
+                        <div className="rule-item-text">
+                          {renderFormattedRuleText(it)}
+                        </div>
+                      </div>
                     ))}
-                  </ul>
+                  </div>
                 </div>
               ))}
             </div>
 
-            <div className="footnotes-box">
-              {rules.footnotes.map((fn, i) => (
-                <p key={i} className="muted-xs">
-                  {fn}
-                </p>
-              ))}
-            </div>
+            {rules.footnotes && rules.footnotes.length > 0 && (
+              <div className="footnotes-box">
+                <div className="footnote-head">
+                  <ShieldAlert size={14} /> Примечания и сноски
+                </div>
+                {rules.footnotes.map((fn, i) => (
+                  <div key={i} className="footnote-row">
+                    <Info size={13} className="footnote-icon" />
+                    <span>{renderFormattedRuleText(fn)}</span>
+                  </div>
+                ))}
+              </div>
+            )}
           </section>
 
           <section className="section-block">
-            <h2>Шкала оценок канала</h2>
-            <p className="muted-sm" style={{ marginBottom: 16 }}>
-              Как стример оценивает пройденные и просмотренные тайтлы
-            </p>
+            <div className="rules-sec-title" style={{ marginBottom: 16 }}>
+              <span className="kpi-icon amber" style={{ marginBottom: 0 }}>
+                <Award size={18} />
+              </span>
+              <div>
+                <h2>Шкала оценок канала</h2>
+                <span className="muted-xs">
+                  Как Ден оценивает пройденные игры и просмотренные тайтлы
+                </span>
+              </div>
+            </div>
 
             <div className="scale-cards">
-              {ratingScale.map((rs) => (
-                <div
-                  key={rs.rating}
-                  className="scale-card"
-                  style={{ borderLeft: `4px solid ${rs.color}` }}
-                >
-                  <strong style={{ color: rs.color, fontSize: '1.05rem' }}>
-                    {rs.rating}
-                  </strong>
-                  <p>{rs.description}</p>
-                </div>
-              ))}
+              {ratingScale.map((rs) => {
+                const letter = TIER_LETTERS[rs.rating] || '★';
+                return (
+                  <div
+                    key={rs.rating}
+                    className="scale-card"
+                    style={{
+                      borderLeft: `4px solid ${rs.color}`,
+                      background: `linear-gradient(95deg, ${rs.color}14 0%, var(--bg-elev) 58%)`,
+                    }}
+                  >
+                    <div className="scale-card-head">
+                      <span
+                        className="scale-tier-letter"
+                        style={{
+                          backgroundColor: `${rs.color}26`,
+                          borderColor: `${rs.color}66`,
+                          color: rs.color,
+                        }}
+                      >
+                        {letter}
+                      </span>
+                      <strong style={{ color: rs.color, fontSize: '1.06rem' }}>
+                        {rs.rating}
+                      </strong>
+                    </div>
+                    <p>{rs.description}</p>
+                  </div>
+                );
+              })}
             </div>
           </section>
         </div>

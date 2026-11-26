@@ -110,6 +110,8 @@ function isAllowedOrigin(event) {
   if (
     origin === 'https://onihub.ru' ||
     origin === 'https://www.onihub.ru' ||
+    origin === 'http://onihub.ru' ||
+    origin === 'http://www.onihub.ru' ||
     origin === 'https://zkeeerus.github.io' ||
     origin.startsWith('http://localhost:') ||
     origin.startsWith('http://127.0.0.1:')
