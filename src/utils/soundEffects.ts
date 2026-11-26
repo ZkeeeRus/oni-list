@@ -37,85 +37,120 @@ export function playUiClick(prefs: UserPreferences): void {
   osc.stop(now + 0.045);
 }
 
-export function playRouletteTick(
-  prefs: UserPreferences,
-  speedRatio = 0.5,
-  isPullback = false
-): void {
-  if (!prefs.soundEnabled || !prefs.rouletteSound) return;
-  const ctx = getAudioContext();
-  if (!ctx) return;
+export interface ScheduledTickEvent {
+  offsetSec: number;
+  speedRatio: number;
+}
 
-  const now = ctx.currentTime;
+function scheduleTickOnContext(
+  ctx: AudioContext,
+  when: number,
+  prefs: UserPreferences,
+  speedRatio: number
+): OscillatorNode {
   const osc = ctx.createOscillator();
   const gain = ctx.createGain();
   osc.type = 'triangle';
   const clamped = Math.max(0, Math.min(1, speedRatio));
-  const baseFreq = isPullback ? 430 : 455 + clamped * 245;
-  osc.frequency.setValueAtTime(baseFreq, now);
-  osc.frequency.exponentialRampToValueAtTime(185, now + 0.028);
+  const baseFreq = 450 + clamped * 270;
+  const dur = clamped > 0.72 ? 0.022 : 0.03;
 
-  const volScale = isPullback ? 0.14 : 0.16 + clamped * 0.08;
+  osc.frequency.setValueAtTime(baseFreq, when);
+  osc.frequency.exponentialRampToValueAtTime(185, when + dur * 0.9);
+
+  const volScale = 0.16 + clamped * 0.08;
   const vol = Math.max(0.02, prefs.soundVolume * volScale);
-  gain.gain.setValueAtTime(vol, now);
-  gain.gain.exponentialRampToValueAtTime(0.001, now + 0.032);
+  gain.gain.setValueAtTime(vol, when);
+  gain.gain.exponentialRampToValueAtTime(0.001, when + dur);
 
   osc.connect(gain);
   gain.connect(ctx.destination);
-  osc.start(now);
-  osc.stop(now + 0.035);
+  osc.start(when);
+  osc.stop(when + dur + 0.004);
+  return osc;
 }
 
-// Звук натяжения и упругого отпускания резинки при старте рулетки
-export function playRouletteSlingshot(
-  prefs: UserPreferences,
-  pullDurationSec: number
-): void {
+export function playRouletteTick(prefs: UserPreferences, speedRatio = 0.5): void {
   if (!prefs.soundEnabled || !prefs.rouletteSound) return;
   const ctx = getAudioContext();
   if (!ctx) return;
+  scheduleTickOnContext(ctx, ctx.currentTime, prefs, speedRatio);
+}
 
-  const now = ctx.currentTime;
-  const pullDur = Math.max(0.16, Math.min(0.6, pullDurationSec));
-  const vol = Math.max(0.02, prefs.soundVolume * 0.18);
+// Аппаратный планировщик щелчков рулетки через WebAudio (не пропадает при Alt+Tab и сворачивании окна)
+export function startRouletteAudioSchedule(
+  prefs: UserPreferences,
+  events: ScheduledTickEvent[],
+  totalSpinSec: number
+): () => void {
+  if (!prefs.soundEnabled || !prefs.rouletteSound || events.length === 0) {
+    return () => {};
+  }
+  const ctx = getAudioContext();
+  if (!ctx) return () => {};
 
-  // 1. Мягкое натяжение резинки
-  const stretchOsc = ctx.createOscillator();
-  const stretchFilter = ctx.createBiquadFilter();
-  const stretchGain = ctx.createGain();
-  stretchOsc.type = 'triangle';
-  stretchOsc.frequency.setValueAtTime(105, now);
-  stretchOsc.frequency.exponentialRampToValueAtTime(185, now + pullDur * 0.92);
+  const baseTime = ctx.currentTime + 0.012;
+  const scheduledOscs: OscillatorNode[] = [];
+  let nextIdx = 0;
+  let stopped = false;
 
-  stretchFilter.type = 'lowpass';
-  stretchFilter.frequency.setValueAtTime(420, now);
+  // Тихий keep-alive сигнал (-100 дБ) удерживает аудиопоток браузера активным при Alt+Tab до конца прокрута
+  const keepAliveOsc = ctx.createOscillator();
+  const keepAliveGain = ctx.createGain();
+  keepAliveOsc.type = 'sine';
+  keepAliveOsc.frequency.setValueAtTime(60, baseTime);
+  keepAliveGain.gain.setValueAtTime(0.00001, baseTime);
+  keepAliveOsc.connect(keepAliveGain);
+  keepAliveGain.connect(ctx.destination);
+  keepAliveOsc.start(baseTime);
+  keepAliveOsc.stop(baseTime + totalSpinSec + 1.8);
 
-  stretchGain.gain.setValueAtTime(0.001, now);
-  stretchGain.gain.linearRampToValueAtTime(vol * 0.75, now + pullDur * 0.55);
-  stretchGain.gain.exponentialRampToValueAtTime(0.001, now + pullDur);
+  const LOOKAHEAD_SEC = 5.5;
 
-  stretchOsc.connect(stretchFilter);
-  stretchFilter.connect(stretchGain);
-  stretchGain.connect(ctx.destination);
-  stretchOsc.start(now);
-  stretchOsc.stop(now + pullDur + 0.01);
+  const pump = () => {
+    if (stopped) return;
+    if (ctx.state === 'suspended') {
+      ctx.resume().catch(() => {});
+    }
+    const horizon = ctx.currentTime + LOOKAHEAD_SEC;
+    while (nextIdx < events.length) {
+      const ev = events[nextIdx];
+      const when = baseTime + ev.offsetSec;
+      if (when > horizon) break;
+      if (when >= ctx.currentTime - 0.03) {
+        const node = scheduleTickOnContext(
+          ctx,
+          Math.max(ctx.currentTime, when),
+          prefs,
+          ev.speedRatio
+        );
+        scheduledOscs.push(node);
+      }
+      nextIdx += 1;
+    }
+  };
 
-  // 2. Упругий щелчок-выпуск резинки
-  const snapTime = now + pullDur;
-  const snapOsc = ctx.createOscillator();
-  const snapGain = ctx.createGain();
-  snapOsc.type = 'sine';
-  snapOsc.frequency.setValueAtTime(180, snapTime);
-  snapOsc.frequency.exponentialRampToValueAtTime(340, snapTime + 0.045);
-  snapOsc.frequency.exponentialRampToValueAtTime(125, snapTime + 0.13);
+  pump();
+  const timerId =
+    nextIdx < events.length ? window.setInterval(pump, 700) : null;
 
-  snapGain.gain.setValueAtTime(vol, snapTime);
-  snapGain.gain.exponentialRampToValueAtTime(0.001, snapTime + 0.14);
-
-  snapOsc.connect(snapGain);
-  snapGain.connect(ctx.destination);
-  snapOsc.start(snapTime);
-  snapOsc.stop(snapTime + 0.15);
+  return () => {
+    stopped = true;
+    if (timerId !== null) window.clearInterval(timerId);
+    const now = ctx.currentTime;
+    for (const node of scheduledOscs) {
+      try {
+        node.stop(now);
+      } catch {
+        // Уже завершился
+      }
+    }
+    try {
+      keepAliveOsc.stop(now);
+    } catch {
+      // Уже завершился
+    }
+  };
 }
 
 // Мягкий звук схлопывания выбывших копий и стягивания соседних карточек

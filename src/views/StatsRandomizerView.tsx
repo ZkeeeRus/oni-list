@@ -19,8 +19,8 @@ import { UserPreferences } from '../utils/preferences';
 import {
   playEliminationCollapse,
   playRouletteResult,
-  playRouletteSlingshot,
-  playRouletteTick,
+  ScheduledTickEvent,
+  startRouletteAudioSchedule,
 } from '../utils/soundEffects';
 import { trackSiteAction } from '../utils/analytics';
 import {
@@ -75,14 +75,104 @@ interface RollCandidate {
 const CARD_WIDTH = 136;
 const CARD_GAP = 12;
 const CARD_STEP = CARD_WIDTH + CARD_GAP;
-const START_SLOT = 7;
-const PULLBACK_PX = 112;
+const START_SLOT = 5;
 
 type ElimPhase = 'idle' | 'shattering' | 'collapsing';
 
 interface ReelEntry {
   uid: string;
   item: RollCandidate;
+}
+
+const ACCEL_POLY_P = 4.2;
+const ACCEL_SIN_WEIGHT = 0.11;
+const ACCEL_POLY_WEIGHT = 1 - ACCEL_SIN_WEIGHT;
+const ACCEL_INTEGRAL =
+  ACCEL_SIN_WEIGHT * (2 / Math.PI) + ACCEL_POLY_WEIGHT * (2 / (ACCEL_POLY_P + 2));
+const DECEL_K = 3.25;
+const DECEL_INTEGRAL = 2 / (DECEL_K + 2);
+
+// Монотонная кривая движения: плавный старт с места -> резкий рывок-разгон выше прежней максималки -> длинное плавное затухание
+function evaluateSpinCurve(
+  elapsedSec: number,
+  totalSec: number,
+  accelFrac: number
+): { posFrac: number; velNorm: number } {
+  if (elapsedSec <= 0) return { posFrac: 0, velNorm: 0 };
+  if (elapsedSec >= totalSec) return { posFrac: 1, velNorm: 0 };
+
+  const area = accelFrac * ACCEL_INTEGRAL + (1 - accelFrac) * DECEL_INTEGRAL;
+  const vPeakNorm = 1 / area;
+  const s = elapsedSec / totalSec;
+
+  if (s <= accelFrac) {
+    const u = s / accelFrac;
+    const velNorm =
+      ACCEL_SIN_WEIGHT * Math.sin(u * Math.PI * 0.5) +
+      ACCEL_POLY_WEIGHT *
+        Math.pow(u, ACCEL_POLY_P) *
+        (ACCEL_POLY_P + 1 - ACCEL_POLY_P * u);
+    const iu =
+      ACCEL_SIN_WEIGHT * (2 / Math.PI) * (1 - Math.cos(u * Math.PI * 0.5)) +
+      ACCEL_POLY_WEIGHT *
+        (Math.pow(u, ACCEL_POLY_P + 1) -
+          (ACCEL_POLY_P / (ACCEL_POLY_P + 2)) * Math.pow(u, ACCEL_POLY_P + 2));
+    return { posFrac: vPeakNorm * accelFrac * iu, velNorm };
+  }
+
+  const w = (s - accelFrac) / (1 - accelFrac);
+  const omw = 1 - w;
+  const velNorm = Math.pow(omw, DECEL_K) * (1 + DECEL_K * w);
+  const hw =
+    1 -
+    Math.pow(omw, DECEL_K + 1) -
+    (DECEL_K / (DECEL_K + 2)) * (1 - Math.pow(omw, DECEL_K + 2));
+  return {
+    posFrac: vPeakNorm * (accelFrac * ACCEL_INTEGRAL + (1 - accelFrac) * hw),
+    velNorm,
+  };
+}
+
+function precomputeTickSchedule(
+  startX: number,
+  targetX: number,
+  viewportW: number,
+  totalSec: number,
+  accelFrac: number
+): ScheduledTickEvent[] {
+  const dist = targetX - startX;
+  if (dist <= 1) return [];
+
+  const firstSlot = Math.floor((startX + viewportW / 2) / CARD_STEP) + 1;
+  const lastSlot = Math.floor((targetX + viewportW / 2) / CARD_STEP);
+  const events: ScheduledTickEvent[] = [];
+  let prevT = 0;
+
+  for (let slot = firstSlot; slot <= lastSlot; slot++) {
+    const xCross = slot * CARD_STEP - viewportW / 2;
+    const targetFrac = (xCross - startX) / dist;
+    if (targetFrac <= 0) continue;
+    if (targetFrac >= 1) break;
+
+    let lo = prevT;
+    let hi = totalSec;
+    for (let iter = 0; iter < 18; iter++) {
+      const mid = (lo + hi) * 0.5;
+      if (evaluateSpinCurve(mid, totalSec, accelFrac).posFrac < targetFrac) {
+        lo = mid;
+      } else {
+        hi = mid;
+      }
+    }
+    const tCross = (lo + hi) * 0.5;
+    prevT = tCross;
+    events.push({
+      offsetSec: tCross,
+      speedRatio: evaluateSpinCurve(tCross, totalSec, accelFrac).velNorm,
+    });
+  }
+
+  return events;
 }
 
 const SHARD_VECTORS: Array<{ dx: string; dy: string; rot: string; delay: string }> = [
@@ -188,6 +278,8 @@ export const StatsRandomizerView: React.FC<StatsRandomizerViewProps> = ({
   prefsRef.current = prefs;
   const isBusyRef = useRef<boolean>(false);
   const rafRef = useRef<number | null>(null);
+  const spinDoneTimerRef = useRef<number | null>(null);
+  const stopAudioScheduleRef = useRef<(() => void) | null>(null);
   const destroyTimerRef = useRef<number | null>(null);
   const collapseTimerRef = useRef<number | null>(null);
   const spinSeqRef = useRef<number>(0);
@@ -252,6 +344,8 @@ export const StatsRandomizerView: React.FC<StatsRandomizerViewProps> = ({
   useEffect(() => {
     return () => {
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
+      if (spinDoneTimerRef.current) window.clearTimeout(spinDoneTimerRef.current);
+      stopAudioScheduleRef.current?.();
       if (destroyTimerRef.current) window.clearTimeout(destroyTimerRef.current);
       if (collapseTimerRef.current) window.clearTimeout(collapseTimerRef.current);
     };
@@ -395,10 +489,13 @@ export const StatsRandomizerView: React.FC<StatsRandomizerViewProps> = ({
     }
 
     if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    if (spinDoneTimerRef.current) window.clearTimeout(spinDoneTimerRef.current);
+    stopAudioScheduleRef.current?.();
+    stopAudioScheduleRef.current = null;
     if (destroyTimerRef.current) window.clearTimeout(destroyTimerRef.current);
     if (collapseTimerRef.current) window.clearTimeout(collapseTimerRef.current);
 
-    const travelSlots = Math.max(18, Math.min(260, Math.round(spinSeconds * 8.5)));
+    const travelSlots = Math.max(30, Math.min(420, Math.round(spinSeconds * 16)));
     const winSlot = START_SLOT + travelSlots;
     const totalSlots = winSlot + 16;
 
@@ -422,7 +519,7 @@ export const StatsRandomizerView: React.FC<StatsRandomizerViewProps> = ({
       stageRef.current?.clientWidth ||
       Math.max(280, Math.min(1300, window.innerWidth - 72));
     const initialStartX = Math.max(
-      PULLBACK_PX + 24,
+      0,
       START_SLOT * CARD_STEP + CARD_WIDTH / 2 - estViewportW / 2
     );
 
@@ -438,108 +535,61 @@ export const StatsRandomizerView: React.FC<StatsRandomizerViewProps> = ({
     setTranslateX(initialStartX);
     setReelItems(entries);
 
+    // Планируем аппаратные щелчки WebAudio сразу в обработчике клика, чтобы звук не пропадал при Alt+Tab
+    const viewportWForSchedule = stageRef.current?.clientWidth || estViewportW;
+    const startXForSchedule = Math.max(
+      0,
+      START_SLOT * CARD_STEP + CARD_WIDTH / 2 - viewportWForSchedule / 2
+    );
+    const cardCenter = winSlot * CARD_STEP + CARD_WIDTH / 2;
+    const jitter = (Math.random() - 0.5) * (CARD_WIDTH * 0.52);
+    const targetXForSchedule = Math.max(
+      0,
+      cardCenter - viewportWForSchedule / 2 + jitter
+    );
+
+    const totalSec = spinSeconds;
+    const accelFrac = Math.min(0.24, Math.max(0.12, 1.05 / totalSec));
+    const tickEvents = precomputeTickSchedule(
+      startXForSchedule,
+      targetXForSchedule,
+      viewportWForSchedule,
+      totalSec,
+      accelFrac
+    );
+    stopAudioScheduleRef.current = startRouletteAudioSchedule(
+      prefsRef.current,
+      tickEvents,
+      totalSec
+    );
+
     requestAnimationFrame(() => {
-      const viewportW = stageRef.current?.clientWidth || estViewportW;
+      const viewportW = stageRef.current?.clientWidth || viewportWForSchedule;
       const startX = Math.max(
-        PULLBACK_PX + 24,
+        0,
         START_SLOT * CARD_STEP + CARD_WIDTH / 2 - viewportW / 2
       );
-      const pullPx = Math.min(PULLBACK_PX, Math.max(48, startX - 16));
-      const minX = startX - pullPx;
-
-      const cardCenter = winSlot * CARD_STEP + CARD_WIDTH / 2;
-      const jitter = (Math.random() - 0.5) * (CARD_WIDTH * 0.52);
       const targetX = Math.max(0, cardCenter - viewportW / 2 + jitter);
-      const totalForwardDist = targetX - minX;
-
-      const totalSec = spinSeconds;
-      const tPull = Math.min(0.46, Math.max(0.18, totalSec * 0.088));
-      const tRun = Math.max(0.4, totalSec - tPull);
-      const accelFrac = Math.min(0.24, Math.max(0.13, 0.88 / tRun));
-      const decelK = 2.25;
-      const h1 = 1 - decelK / (decelK + 2);
-      const area = 0.5 * accelFrac + (1 - accelFrac) * h1;
-      const vPeakNorm = 1 / area;
+      const totalForwardDist = targetX - startX;
 
       if (trackRef.current) {
         trackRef.current.style.transform = `translate3d(-${startX.toFixed(2)}px, 0, 0)`;
       }
-      stageRef.current?.classList.add('is-pulling-back');
-      playRouletteSlingshot(prefsRef.current, tPull);
 
       const spinStartTs = performance.now();
-      let lastTickSlot = Math.floor((startX + viewportW / 2) / CARD_STEP);
-      let pullReleased = false;
+      let didFinalize = false;
 
-      const stepFrame = (now: number) => {
-        const elapsedSec = Math.max(0, (now - spinStartTs) / 1000);
-
-        if (elapsedSec < totalSec) {
-          let curX = startX;
-          let skewDeg = 0;
-          let speedRatio = 0.2;
-          let isPull = false;
-
-          if (elapsedSec < tPull) {
-            // Фаза 1: упругая оттяжка резинки назад с плавным выходом в точку натяжения
-            const u = elapsedSec / tPull;
-            const pullEase = u * u * (3 - 2 * u);
-            curX = startX - pullPx * pullEase;
-            skewDeg = pullEase * 2.5;
-            speedRatio = 0.16;
-            isPull = true;
-          } else {
-            if (!pullReleased) {
-              pullReleased = true;
-              stageRef.current?.classList.remove('is-pulling-back');
-            }
-            const s = (elapsedSec - tPull) / tRun;
-            if (s <= accelFrac) {
-              // Фаза 2: упругий разгон резинкой с нуля до пиковой скорости
-              const u = s / accelFrac;
-              const velNorm = u * u * (3 - 2 * u);
-              const posFrac =
-                vPeakNorm * accelFrac * (u * u * u - 0.5 * u * u * u * u);
-              curX = minX + totalForwardDist * posFrac;
-              skewDeg = -velNorm * 2.1;
-              speedRatio = velNorm;
-            } else {
-              // Фаза 3: длинное плавное затухание скорости без рывков
-              const w = (s - accelFrac) / (1 - accelFrac);
-              const omw = 1 - w;
-              const velNorm = Math.pow(omw, decelK) * (1 + decelK * w);
-              const hw =
-                1 -
-                Math.pow(omw, decelK + 1) -
-                (decelK / (decelK + 2)) * (1 - Math.pow(omw, decelK + 2));
-              const posFrac = vPeakNorm * (0.5 * accelFrac + (1 - accelFrac) * hw);
-              curX = minX + totalForwardDist * posFrac;
-              skewDeg = -velNorm * 2.1;
-              speedRatio = velNorm;
-            }
-          }
-
-          if (trackRef.current) {
-            if (prefsRef.current.performanceMode === 'eco') {
-              trackRef.current.style.transform = `translate3d(-${curX.toFixed(2)}px, 0, 0)`;
-            } else {
-              trackRef.current.style.transform = `translate3d(-${curX.toFixed(2)}px, 0, 0) skewX(${skewDeg.toFixed(2)}deg)`;
-            }
-          }
-
-          const curSlot = Math.floor((curX + viewportW / 2) / CARD_STEP);
-          if (curSlot !== lastTickSlot && curSlot >= 0) {
-            playRouletteTick(prefsRef.current, speedRatio, isPull);
-            lastTickSlot = curSlot;
-          }
-
-          rafRef.current = requestAnimationFrame(stepFrame);
-          return;
+      const finalizeSpin = () => {
+        if (didFinalize) return;
+        didFinalize = true;
+        if (rafRef.current) {
+          cancelAnimationFrame(rafRef.current);
+          rafRef.current = null;
         }
-
-        // Остановка ленты точно в финальной точке
-        rafRef.current = null;
-        stageRef.current?.classList.remove('is-pulling-back');
+        if (spinDoneTimerRef.current) {
+          window.clearTimeout(spinDoneTimerRef.current);
+          spinDoneTimerRef.current = null;
+        }
         if (trackRef.current) {
           trackRef.current.style.transform = `translate3d(-${targetX.toFixed(2)}px, 0, 0)`;
         }
@@ -575,6 +625,8 @@ export const StatsRandomizerView: React.FC<StatsRandomizerViewProps> = ({
 
             // 3) По завершении анимации стягивания удаляем копии из массива ленты без сдвига
             collapseTimerRef.current = window.setTimeout(() => {
+              stopAudioScheduleRef.current?.();
+              stopAudioScheduleRef.current = null;
               setElimPhase('idle');
               setElimCandidateId(null);
               setReelItems((prev) => prev.filter((e) => e.item.id !== chosen.id));
@@ -602,7 +654,45 @@ export const StatsRandomizerView: React.FC<StatsRandomizerViewProps> = ({
             setCustomWinnerTitle(chosen.title);
           }
           playRouletteResult(prefsRef.current, 'win');
+          window.setTimeout(() => {
+            stopAudioScheduleRef.current?.();
+            stopAudioScheduleRef.current = null;
+          }, 600);
         }
+      };
+
+      // Таймер страхует точное завершение прокрута и финальный звук даже если вкладка свернута (Alt+Tab)
+      spinDoneTimerRef.current = window.setTimeout(
+        finalizeSpin,
+        Math.round(totalSec * 1000) + 25
+      );
+
+      const stepFrame = (now: number) => {
+        if (didFinalize) return;
+        const elapsedSec = Math.max(0, (now - spinStartTs) / 1000);
+
+        if (elapsedSec < totalSec) {
+          const { posFrac, velNorm } = evaluateSpinCurve(
+            elapsedSec,
+            totalSec,
+            accelFrac
+          );
+          const curX = startX + totalForwardDist * posFrac;
+          const skewDeg = -velNorm * 2.4;
+
+          if (trackRef.current) {
+            if (prefsRef.current.performanceMode === 'eco') {
+              trackRef.current.style.transform = `translate3d(-${curX.toFixed(2)}px, 0, 0)`;
+            } else {
+              trackRef.current.style.transform = `translate3d(-${curX.toFixed(2)}px, 0, 0) skewX(${skewDeg.toFixed(2)}deg)`;
+            }
+          }
+
+          rafRef.current = requestAnimationFrame(stepFrame);
+          return;
+        }
+
+        finalizeSpin();
       };
 
       rafRef.current = requestAnimationFrame(stepFrame);

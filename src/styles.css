@@ -1782,12 +1782,6 @@ select.input:hover {
   box-shadow: 0 0 14px #f59e0b;
   z-index: 5;
   pointer-events: none;
-  transition: background 0.2s, box-shadow 0.2s;
-}
-
-.case-reel-viewport.is-pulling-back .case-reel-center-line {
-  background: #c084fc;
-  box-shadow: 0 0 20px #a855f7;
 }
 
 .case-reel-pointer-top {
@@ -1802,11 +1796,6 @@ select.input:hover {
   border-top: 14px solid #f59e0b;
   z-index: 6;
   pointer-events: none;
-  transition: border-top-color 0.2s;
-}
-
-.case-reel-viewport.is-pulling-back .case-reel-pointer-top {
-  border-top-color: #c084fc;
 }
 
 .case-reel-track {
