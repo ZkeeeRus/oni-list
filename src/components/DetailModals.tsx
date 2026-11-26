@@ -1,10 +1,11 @@
-import React from 'react';
+import React, { useRef, useState } from 'react';
 import {
   Edit3,
   ExternalLink,
   ImageOff,
   ImagePlus,
   Play,
+  Upload,
   Video,
   X,
 } from 'lucide-react';
@@ -12,6 +13,48 @@ import { BacklogItem, GameItem, MemeItem, WatchItem } from '../types';
 import { CoverImage } from './CoverImage';
 import { resolveMemeImageUrl } from '../utils/builtinMemes';
 import { isForcedNoCover, NO_COVER_TOKEN } from '../utils/covers';
+import { compressCoverToWebpDataUrl } from '../utils/imageCompress';
+
+const QuickCoverUploadButton: React.FC<{
+  onUploaded: (webpDataUrl: string) => void;
+}> = ({ onUploaded }) => {
+  const inputRef = useRef<HTMLInputElement | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  return (
+    <>
+      <button
+        type="button"
+        className="btn btn-secondary btn-sm"
+        disabled={busy}
+        onClick={() => inputRef.current?.click()}
+        title="Загрузить свою обложку из файла с сильным сжатием (~12-18 КБ WebP)"
+      >
+        <Upload size={14} /> {busy ? 'Сжимаем...' : 'Обложка из файла'}
+      </button>
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/*"
+        hidden
+        onChange={async (e) => {
+          const f = e.target.files?.[0];
+          e.target.value = '';
+          if (!f) return;
+          setBusy(true);
+          try {
+            const webp = await compressCoverToWebpDataUrl(f);
+            onUploaded(webp);
+          } catch (err: any) {
+            alert(err?.message || 'Не удалось сжать картинку');
+          } finally {
+            setBusy(false);
+          }
+        }}
+      />
+    </>
+  );
+};
 import {
   BACKLOG_STATUSES,
   DropPriceBadge,
@@ -192,6 +235,15 @@ export const GameDetailModal: React.FC<{
                   >
                     <ImagePlus size={14} /> + Мем (Ctrl+V)
                   </button>
+                  <QuickCoverUploadButton
+                    onUploaded={(webp) =>
+                      onQuickUpdate({
+                        ...game,
+                        coverUrl: webp,
+                        steamAppId: null,
+                      })
+                    }
+                  />
                   {!isForcedNoCover(game.coverUrl) && Boolean(game.coverUrl || game.steamAppId) && (
                     <button
                       className="btn btn-secondary btn-sm"
@@ -354,6 +406,14 @@ export const WatchDetailModal: React.FC<{
                 >
                   <ImagePlus size={14} /> + Прикрепить мем (Ctrl+V)
                 </button>
+                <QuickCoverUploadButton
+                  onUploaded={(webp) =>
+                    onQuickUpdate({
+                      ...item,
+                      coverUrl: webp,
+                    })
+                  }
+                />
                 {!isForcedNoCover(item.coverUrl) && Boolean(item.coverUrl) && (
                   <button
                     className="btn btn-secondary btn-sm"
@@ -471,6 +531,15 @@ export const BacklogDetailModal: React.FC<{
                   >
                     <Play size={14} /> Взять на стрим (в Список игр)
                   </button>
+                  <QuickCoverUploadButton
+                    onUploaded={(webp) =>
+                      onQuickUpdate({
+                        ...item,
+                        coverUrl: webp,
+                        steamAppId: null,
+                      })
+                    }
+                  />
                   {!isForcedNoCover(item.coverUrl) && Boolean(item.coverUrl || item.steamAppId) && (
                     <button
                       className="btn btn-secondary btn-sm"

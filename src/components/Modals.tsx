@@ -36,7 +36,11 @@ import {
   NO_COVER_TOKEN,
   searchCoversOnline,
 } from '../utils/covers';
-import { compressImageToWebpDataUrl } from '../utils/imageCompress';
+import {
+  compressCoverToWebpDataUrl,
+  compressImageToWebpDataUrl,
+  formatDataUrlKb,
+} from '../utils/imageCompress';
 import { resolveMemeImageUrl } from '../utils/builtinMemes';
 import { CoverImage } from './CoverImage';
 import { PERMANENT_ADMINS } from '../services/authAndStorage';
@@ -51,10 +55,44 @@ const CoverPicker: React.FC<{
   onChange: (coverUrl: string, steamAppId?: number | null) => void;
 }> = ({ title, kind, coverUrl, steamAppId, apiBaseUrl, onChange }) => {
   const [searching, setSearching] = useState(false);
+  const [compressing, setCompressing] = useState(false);
   const [candidates, setCandidates] = useState<CoverCandidate[]>([]);
   const [customQuery, setCustomQuery] = useState('');
+  const coverFileRef = useRef<HTMLInputElement | null>(null);
 
   const forcedPlaceholder = isForcedNoCover(coverUrl);
+  const isUploadedFile = coverUrl.startsWith('data:image/');
+
+  const applyCoverFile = async (file: File) => {
+    setCompressing(true);
+    try {
+      const webp = await compressCoverToWebpDataUrl(file);
+      onChange(webp, null);
+    } catch (err: any) {
+      alert(err?.message || 'Не удалось сжать картинку');
+    } finally {
+      setCompressing(false);
+    }
+  };
+
+  useEffect(() => {
+    const onPaste = (e: ClipboardEvent) => {
+      const items = e.clipboardData?.items;
+      if (!items) return;
+      for (const item of Array.from(items)) {
+        if (item.type.startsWith('image/')) {
+          const f = item.getAsFile();
+          if (f) {
+            e.preventDefault();
+            applyCoverFile(f);
+            break;
+          }
+        }
+      }
+    };
+    window.addEventListener('paste', onPaste);
+    return () => window.removeEventListener('paste', onPaste);
+  }, []);
 
   const handleSearch = async () => {
     const q = (customQuery || title).trim();
@@ -72,22 +110,41 @@ const CoverPicker: React.FC<{
   };
 
   return (
-    <div className="cover-picker-box">
+    <div
+      className="cover-picker-box"
+      onDragOver={(e) => e.preventDefault()}
+      onDrop={(e) => {
+        e.preventDefault();
+        const f = e.dataTransfer?.files?.[0];
+        if (f && f.type.startsWith('image/')) {
+          applyCoverFile(f);
+        }
+      }}
+    >
       <div className="cover-picker-row">
-        <div className="cover-mini-preview">
+        <div
+          className="cover-mini-preview"
+          onClick={() => coverFileRef.current?.click()}
+          style={{ cursor: 'pointer' }}
+          title="Нажмите, чтобы загрузить обложку из файла"
+        >
           <CoverImage title={title || '?'} coverUrl={coverUrl} steamAppId={steamAppId} />
         </div>
         <div className="cover-picker-controls">
-          <label className="field-label">Портрет / обложка (внешняя ссылка, без хранения файла)</label>
+          <label className="field-label">
+            Обложка (ссылка, автопоиск, файл или Ctrl+V скриншота - автосжатие ~12-18 КБ WebP)
+          </label>
           <input
             type="text"
             className="input"
             placeholder={
-              forcedPlaceholder
-                ? 'Выбрана заглушка «Обложка не найдена» - вставьте URL для замены'
-                : 'URL обложки или ссылка на игру в Steam (store.steampowered.com/app/...)'
+              isUploadedFile
+                ? `Загружена сжатая обложка из файла (${formatDataUrlKb(coverUrl)}) - вставьте URL для замены`
+                : forcedPlaceholder
+                  ? 'Выбрана заглушка «Обложка не найдена» - вставьте URL для замены'
+                  : 'URL обложки или ссылка на игру в Steam (store.steampowered.com/app/...)'
             }
-            value={forcedPlaceholder ? '' : coverUrl}
+            value={forcedPlaceholder || isUploadedFile ? '' : coverUrl}
             onChange={(e) => {
               const val = e.target.value;
               const appId = extractSteamAppId(val);
@@ -115,6 +172,31 @@ const CoverPicker: React.FC<{
               <Search size={14} />
               {searching ? 'Ищем...' : 'Найти портрет'}
             </button>
+            <button
+              type="button"
+              className={`btn btn-sm ${isUploadedFile ? 'btn-primary' : 'btn-secondary'}`}
+              onClick={() => coverFileRef.current?.click()}
+              disabled={compressing}
+              title="Выбрать картинку с ПК (сожмется в легкий WebP ~12-18 КБ)"
+            >
+              <Upload size={14} />
+              {compressing
+                ? 'Сжимаем...'
+                : isUploadedFile
+                  ? `Из файла (${formatDataUrlKb(coverUrl)})`
+                  : 'Из файла'}
+            </button>
+            <input
+              ref={coverFileRef}
+              type="file"
+              accept="image/*"
+              hidden
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                if (f) applyCoverFile(f);
+                e.target.value = '';
+              }}
+            />
             <button
               type="button"
               className={`btn btn-sm ${forcedPlaceholder ? 'btn-primary' : 'btn-secondary'}`}
@@ -173,9 +255,11 @@ export const GameModal: React.FC<{
     e.preventDefault();
     if (!title.trim()) return;
     const forcedNoCover = isForcedNoCover(coverUrl);
-    const detectedSteam = forcedNoCover
-      ? null
-      : steamAppId || extractSteamAppId(link) || extractSteamAppId(coverUrl);
+    const isUploadedCover = coverUrl.startsWith('data:image/');
+    const detectedSteam =
+      forcedNoCover || isUploadedCover
+        ? null
+        : steamAppId || extractSteamAppId(link) || extractSteamAppId(coverUrl);
     onSave({
       id: initial?.id || `game-${Date.now()}`,
       title: title.trim(),
@@ -604,7 +688,7 @@ export const MemeModal: React.FC<{
                   Нажмите <strong>Ctrl+V</strong>, чтобы вставить скриншот/мем из буфера обмена,
                   или кликните для выбора файла
                 </p>
-                <span>Картинка автоматически сжимается в лёгкий WebP (~35 КБ)</span>
+                <span>Картинка автоматически сжимается в легкий WebP (~15-28 КБ)</span>
               </div>
             )}
             <input
@@ -765,7 +849,10 @@ export const BacklogModal: React.FC<{
       status,
       link: link.trim(),
       coverUrl: isForcedNoCover(coverUrl) ? NO_COVER_TOKEN : coverUrl.trim(),
-      steamAppId: isForcedNoCover(coverUrl) ? null : steamAppId,
+      steamAppId:
+        isForcedNoCover(coverUrl) || coverUrl.startsWith('data:image/')
+          ? null
+          : steamAppId,
     });
   };
 

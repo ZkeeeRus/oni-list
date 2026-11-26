@@ -40,6 +40,9 @@ export function buildCoverCandidatesChain(coverUrl?: string, steamAppId?: number
   if (isForcedNoCover(coverUrl)) {
     return [];
   }
+  if (coverUrl?.startsWith('data:image/')) {
+    return [coverUrl];
+  }
   const urls: string[] = [];
   const extractedFromCover = coverUrl ? extractSteamAppId(coverUrl) : null;
   const effectiveAppId = steamAppId || extractedFromCover;
