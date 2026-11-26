@@ -30,7 +30,9 @@ import {
   initTwitchSession,
   loadInitialSiteData,
   loadRuntimeConfig,
+  logTwitchAuthEvent,
   PERMANENT_ADMINS,
+  PersistOptions,
   persistSiteData,
   startTwitchOAuth,
 } from './services/authAndStorage';
@@ -68,6 +70,17 @@ import {
   SnowAndParallaxLayer,
 } from './components/FestiveEffects';
 import { SettingsTabId, SiteSettingsModal } from './components/SiteSettingsModal';
+import { CookieBanner } from './components/CookieBanner';
+import {
+  CookieConsentState,
+  flushTelemetry,
+  getCookieConsent,
+  initTelemetrySession,
+  setCookieConsent,
+  trackSiteAction,
+  trackTabView,
+  updateTelemetryAuthState,
+} from './utils/analytics';
 
 export const App: React.FC = () => {
   const [cfg, setCfg] = useState<RuntimeConfig>({
@@ -111,6 +124,17 @@ export const App: React.FC = () => {
   const [viewerAccountOpen, setViewerAccountOpen] = useState(false);
   const [siteSettingsTab, setSiteSettingsTab] = useState<SettingsTabId | null>(null);
   const [prefs, setPrefs] = useState<UserPreferences>(() => loadUserPreferences());
+  const [cookieConsent, setCookieConsentState] = useState<CookieConsentState>(() =>
+    getCookieConsent()
+  );
+
+  const handleCookieDecision = useCallback((choice: 'accepted' | 'essential') => {
+    setCookieConsent(choice);
+    setCookieConsentState(choice);
+    if (choice === 'accepted') {
+      flushTelemetry(false);
+    }
+  }, []);
 
   useEffect(() => {
     document.documentElement.dataset.theme = prefs.theme;
@@ -150,6 +174,14 @@ export const App: React.FC = () => {
         setPendingCloudMigration(true);
       }
       setUser(twitchSession.user);
+      initTelemetrySession(loadedCfg.apiBaseUrl, Boolean(twitchSession.user));
+      if (twitchSession.user) {
+        logTwitchAuthEvent(
+          twitchSession.user,
+          loadedCfg.apiBaseUrl,
+          Boolean(twitchSession.justLoggedIn)
+        );
+      }
       if (twitchSession.justLoggedIn && twitchSession.user) {
         const loggedRole = getUserRole(twitchSession.user, loadedData.data, loadedCfg);
         if (loggedRole === 'admin' || loggedRole === 'moderator') {
@@ -184,7 +216,21 @@ export const App: React.FC = () => {
     }
   }, [data, pendingCloudMigration, canEdit, user, cfg.apiBaseUrl]);
 
-  const commitData = async (next: SiteData, message?: string) => {
+  useEffect(() => {
+    updateTelemetryAuthState(Boolean(user));
+  }, [user]);
+
+  useEffect(() => {
+    if (inspectGameId || inspectWatchId || inspectBacklogId) {
+      trackSiteAction('card_open');
+    }
+  }, [inspectGameId, inspectWatchId, inspectBacklogId]);
+
+  const commitData = async (
+    next: SiteData,
+    message?: string,
+    options?: PersistOptions
+  ) => {
     if (data) {
       setUndoStack((prev) => [
         ...prev.slice(-24),
@@ -193,12 +239,12 @@ export const App: React.FC = () => {
       setRedoStack([]);
     }
     setData(next);
-    const res = await persistSiteData(next, cfg.apiBaseUrl, user);
+    const res = await persistSiteData(next, cfg.apiBaseUrl, user, options);
     if (res.savedRemote) {
       setDataSource('remote');
       showToast(message || 'Сохранено в облачную БД', true);
     } else if (res.error) {
-      showToast(res.error, true);
+      showToast(res.error, !res.conflict);
     } else {
       setDataSource('local');
       showToast(`${message || 'Сохранено'} (черновик в браузере)`, true);
@@ -303,6 +349,7 @@ export const App: React.FC = () => {
   const handleNavigate = (tab: NavTab) => {
     playUiClick(prefs);
     setActiveTab(tab);
+    trackTabView(tab);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -553,9 +600,47 @@ export const App: React.FC = () => {
             watchlist={data.watchlist}
             ratingScale={data.ratingScale}
             customTierLists={data.customTierLists}
+            tierItemOrder={data.tierItemOrder || {}}
             canEdit={canEdit}
             authorName={user?.displayName || 'OniZeD'}
             apiBaseUrl={cfg.apiBaseUrl}
+            onMoveAutoTierItem={({
+              itemId,
+              itemKind,
+              itemTitle,
+              fromTier,
+              toTier,
+              nextTierOrder,
+            }) => {
+              const ratingChanged = fromTier !== toTier;
+              const nextGames =
+                ratingChanged && itemKind === 'game'
+                  ? data.games.map((g) =>
+                      g.id === itemId ? { ...g, rating: toTier } : g
+                    )
+                  : data.games;
+              const nextWatch =
+                ratingChanged && itemKind === 'watch'
+                  ? data.watchlist.map((w) =>
+                      w.id === itemId ? { ...w, rating: toTier } : w
+                    )
+                  : data.watchlist;
+              const msg = ratingChanged
+                ? toTier
+                  ? `«${itemTitle}»: оценка изменена на «${toTier}»`
+                  : `«${itemTitle}»: оценка снята`
+                : `Порядок в тире «${toTier || 'Без оценки'}» обновлён`;
+
+              commitData(
+                {
+                  ...data,
+                  games: nextGames,
+                  watchlist: nextWatch,
+                  tierItemOrder: nextTierOrder,
+                },
+                msg
+              );
+            }}
             onSaveCustomTierLists={(lists) =>
               commitData({ ...data, customTierLists: lists }, 'Тир-лист сохранён')
             }
@@ -854,8 +939,11 @@ export const App: React.FC = () => {
           initialTab={siteSettingsTab}
           prefs={prefs}
           onChangePrefs={handleUpdatePrefs}
+          cookieConsent={cookieConsent}
+          onChangeCookieConsent={handleCookieDecision}
           user={user}
           role={role}
+          apiBaseUrl={cfg.apiBaseUrl}
           data={data}
           dataSource={dataSource}
           onClose={() => setSiteSettingsTab(null)}
@@ -868,10 +956,20 @@ export const App: React.FC = () => {
             commitData({ ...data, moderators }, 'Список модераторов обновлён')
           }
           onImportJson={(imported) =>
-            commitData(imported, 'Резервная копия успешно загружена!')
+            commitData(imported, 'Резервная копия успешно загружена!', {
+              forceOverwrite: true,
+              allowMassDelete: true,
+            })
           }
+          onRestoreCloudBackup={(restored) => {
+            setData(restored);
+            setDataSource('remote');
+            showToast('База восстановлена из облачного снимка!', false);
+          }}
           onForceCloudPush={() =>
-            commitData(data, 'Все текущие данные отправлены в облако!')
+            commitData(data, 'Все текущие данные отправлены в облако!', {
+              forceOverwrite: true,
+            })
           }
         />
       )}
@@ -883,6 +981,8 @@ export const App: React.FC = () => {
         onOpenSettings={() => setSiteSettingsTab('appearance')}
         onShowWish={(wish) => showToast(wish, false)}
       />
+
+      <CookieBanner consent={cookieConsent} onDecide={handleCookieDecision} />
 
       {toast && (
         <div className="toast-popup">

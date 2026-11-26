@@ -1,11 +1,12 @@
 export type ThemeId = 'default' | 'winter' | 'ruby' | 'emerald' | 'light';
-export type HolidayMode = 'auto' | 'on' | 'off';
 export type SnowIntensity = 'off' | 'light' | 'rich';
 export type PerformanceMode = 'high' | 'balanced' | 'eco';
 
 export interface UserPreferences {
   theme: ThemeId;
-  holidayMode: HolidayMode;
+  // Хранит год начала сезона (напр. "2026"), если пользователь отключил новогоднее оформление в этом сезоне.
+  // На следующий Новый год ключ сезона станет "2027", и новогоднее оформление включится заново само!
+  dismissedHolidaySeason: string | null;
   snowIntensity: SnowIntensity;
   garlandEnabled: boolean;
   footerTreeEnabled: boolean;
@@ -17,11 +18,11 @@ export interface UserPreferences {
   uiSound: boolean;
 }
 
-const PREFS_STORAGE_KEY = 'onized_hub_user_prefs_v1';
+const PREFS_STORAGE_KEY = 'onized_hub_user_prefs_v2';
 
 export const DEFAULT_PREFERENCES: UserPreferences = {
   theme: 'default',
-  holidayMode: 'auto',
+  dismissedHolidaySeason: null,
   snowIntensity: 'light',
   garlandEnabled: true,
   footerTreeEnabled: true,
@@ -33,20 +34,28 @@ export const DEFAULT_PREFERENCES: UserPreferences = {
   uiSound: true,
 };
 
-// Новогодний сезон с 25 ноября по 25 января включительно каждый год
-export function isFestiveSeasonDate(now: Date = new Date()): boolean {
+// Возвращает идентификатор новогоднего сезона (с 25 ноября Y по 25 января Y+1 -> "Y"), либо null вне сезона
+export function getFestiveSeasonKey(now: Date = new Date()): string | null {
   const m = now.getMonth(); // 0 = январь, 10 = ноябрь, 11 = декабрь
   const d = now.getDate();
-  if (m === 10 && d >= 25) return true;
-  if (m === 11) return true;
-  if (m === 0 && d <= 25) return true;
-  return false;
+  const y = now.getFullYear();
+  if ((m === 10 && d >= 25) || m === 11) {
+    return String(y);
+  }
+  if (m === 0 && d <= 25) {
+    return String(y - 1);
+  }
+  return null;
+}
+
+export function isFestiveSeasonDate(now: Date = new Date()): boolean {
+  return getFestiveSeasonKey(now) !== null;
 }
 
 export function isHolidayActive(prefs: UserPreferences, now?: Date): boolean {
-  if (prefs.holidayMode === 'on') return true;
-  if (prefs.holidayMode === 'off') return false;
-  return isFestiveSeasonDate(now);
+  const seasonKey = getFestiveSeasonKey(now);
+  if (!seasonKey) return false;
+  return prefs.dismissedHolidaySeason !== seasonKey;
 }
 
 export function loadUserPreferences(): UserPreferences {

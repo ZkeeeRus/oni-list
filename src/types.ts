@@ -150,6 +150,7 @@ export interface SiteData {
   memes: MemeItem[];
   backlog: BacklogItem[];
   customTierLists: CustomTierList[];
+  tierItemOrder?: Record<string, string[]>;
 }
 
 export interface TwitchUser {
@@ -167,4 +168,65 @@ export interface RuntimeConfig {
   apiBaseUrl: string;
   twitchClientId: string;
   rootAdmins: string[];
+}
+
+export interface AuthStatUser {
+  login: string;
+  displayName: string;
+  avatarUrl: string;
+  firstSeenAt: string;
+  lastSeenAt: string;
+  loginCount: number;
+}
+
+export interface AuthLogEntry {
+  login: string;
+  displayName: string;
+  avatarUrl: string;
+  at: string;
+}
+
+export interface DailyTrafficPoint {
+  date: string;
+  sessions: number;
+  tabViews: number;
+  uniqueVisitors: number;
+  authedSessions: number;
+  guestSessions: number;
+}
+
+export interface SiteAnalyticsSummary {
+  uniqueVisitors: number;
+  uniqueAuthedVisitors: number;
+  uniqueGuestVisitors: number;
+  consentlessHits: number;
+  totalSessions: number;
+  totalTabViews: number;
+  authedSessions: number;
+  guestSessions: number;
+  tabs: Record<string, number>;
+  devices: Record<string, number>;
+  referrers: Record<string, number>;
+  actions: Record<string, number>;
+  daily: DailyTrafficPoint[];
+}
+
+export interface CloudBackupMeta {
+  slot: number;
+  key: string;
+  savedAt: string;
+  stateUpdatedAt: string;
+  savedBeforeEditBy: string;
+  gamesCount: number;
+  watchCount: number;
+}
+
+export interface AuthStatsData {
+  ok: boolean;
+  totalUniqueUsers: number;
+  totalLogins: number;
+  users: AuthStatUser[];
+  recent: AuthLogEntry[];
+  siteAnalytics?: SiteAnalyticsSummary;
+  backups?: CloudBackupMeta[];
 }

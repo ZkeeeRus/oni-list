@@ -1,4 +1,4 @@
-import { RuntimeConfig, SiteData, TwitchUser, UserRole } from '../types';
+import { AuthStatsData, RuntimeConfig, SiteData, TwitchUser, UserRole } from '../types';
 import { normalizeOrdererName } from '../utils/orderers';
 import { resolveMemeImageUrl } from '../utils/builtinMemes';
 
@@ -181,9 +181,11 @@ function createEmptyFallbackData(): SiteData {
     admins: PERMANENT_ADMINS,
     moderators: [],
     hubConfig: {
+      channelName: 'OniZeD',
       headline: 'OniZeD Hub',
       subheadline: 'База прохождений, заказов зрителей, просмотрового и тир-листов',
-      freezeBanner: '',
+      isListFrozen: false,
+      freezeBannerText: '',
       currentPlanNote: '',
       twitchUrl: 'https://www.twitch.tv/onized',
       vkVodUrl: 'https://vkvideo.ru/@onized',
@@ -193,7 +195,11 @@ function createEmptyFallbackData(): SiteData {
     memes: [],
     backlog: [],
     ratingScale: [],
-    rules: [],
+    rules: {
+      intro: '',
+      sections: [],
+      footnotes: [],
+    },
     customTierLists: [],
   };
 }
@@ -223,6 +229,7 @@ export async function loadInitialSiteData(apiBaseUrl: string): Promise<{
             }
           );
           const normalized = ensurePermanentAdmins(remote);
+          lastKnownServerUpdatedAt = String(remote.updatedAt || '');
           try {
             localStorage.setItem(LOCAL_DATA_KEY, JSON.stringify(normalized));
           } catch {
@@ -279,11 +286,19 @@ function ensurePermanentAdmins(d: SiteData): SiteData {
   };
 }
 
+let lastKnownServerUpdatedAt = '';
+
+export interface PersistOptions {
+  forceOverwrite?: boolean;
+  allowMassDelete?: boolean;
+}
+
 export async function persistSiteData(
   next: SiteData,
   apiBaseUrl: string,
-  user: TwitchUser | null
-): Promise<{ savedRemote: boolean; error?: string }> {
+  user: TwitchUser | null,
+  options?: PersistOptions
+): Promise<{ savedRemote: boolean; conflict?: boolean; error?: string }> {
   const stamped: SiteData = ensurePermanentAdmins({
     ...next,
     updatedAt: new Date().toISOString(),
@@ -315,7 +330,13 @@ export async function persistSiteData(
       headers.Authorization = `Bearer ${user.accessToken}`;
     }
     const payloadObj = isYandexFn
-      ? { ...stamped, _twitchToken: user.accessToken }
+      ? {
+          ...stamped,
+          _twitchToken: user.accessToken,
+          _baseUpdatedAt: lastKnownServerUpdatedAt || undefined,
+          _forceOverwrite: options?.forceOverwrite || undefined,
+          _allowMassDelete: options?.allowMassDelete || undefined,
+        }
       : stamped;
 
     const res = await fetch(buildStateEndpoint(apiBaseUrl), {
@@ -323,9 +344,25 @@ export async function persistSiteData(
       headers,
       body: JSON.stringify(payloadObj),
     });
+    const rawText = await res.text();
+    let parsedRes: any = null;
+    try {
+      parsedRes = JSON.parse(rawText);
+    } catch {
+      // Ignore non-JSON error text
+    }
+
     if (!res.ok) {
-      const errBody = await res.text();
-      return { savedRemote: false, error: errBody || `Ошибка сервера (${res.status})` };
+      const msg = parsedRes?.error || rawText || `Ошибка сервера (${res.status})`;
+      return {
+        savedRemote: false,
+        conflict: res.status === 409 || Boolean(parsedRes?.conflict),
+        error: msg,
+      };
+    }
+
+    if (parsedRes?.updatedAt) {
+      lastKnownServerUpdatedAt = String(parsedRes.updatedAt);
     }
     return { savedRemote: true };
   } catch (e: any) {
@@ -335,4 +372,168 @@ export async function persistSiteData(
 
 export function resetLocalDraft(): void {
   localStorage.removeItem(LOCAL_DATA_KEY);
+}
+
+const AUTH_PING_STORAGE_KEY = 'onized_hub_auth_ping_v1';
+let cachedCapabilities: {
+  authStatsSupported: boolean;
+  telemetrySupported: boolean;
+  backupsSupported: boolean;
+} | null = null;
+
+export async function checkBackendCapabilities(
+  apiBaseUrl: string,
+  forceRefresh = false
+): Promise<{
+  authStatsSupported: boolean;
+  telemetrySupported: boolean;
+  backupsSupported: boolean;
+}> {
+  const empty = {
+    authStatsSupported: false,
+    telemetrySupported: false,
+    backupsSupported: false,
+  };
+  if (!apiBaseUrl) return empty;
+  if (!forceRefresh && cachedCapabilities !== null) return cachedCapabilities;
+  try {
+    const cleanBase = apiBaseUrl.replace(/\/+$/, '');
+    const res = await fetch(`${cleanBase}?action=diag`, { cache: 'no-store' });
+    if (!res.ok) return empty;
+    const json = await res.json();
+    cachedCapabilities = {
+      authStatsSupported: Boolean(json?.authStatsSupported),
+      telemetrySupported: Boolean(json?.telemetrySupported),
+      backupsSupported: Boolean(json?.backupsSupported),
+    };
+    return cachedCapabilities;
+  } catch {
+    return empty;
+  }
+}
+
+export async function logTwitchAuthEvent(
+  user: TwitchUser,
+  apiBaseUrl: string,
+  isFreshLogin: boolean
+): Promise<void> {
+  if (!apiBaseUrl || !user || !user.accessToken || user.isPreview) return;
+
+  if (!isFreshLogin) {
+    try {
+      const raw = localStorage.getItem(AUTH_PING_STORAGE_KEY);
+      if (raw) {
+        const prev = JSON.parse(raw) as { login?: string; ts?: number };
+        if (
+          prev.login === user.login &&
+          prev.ts &&
+          Date.now() - prev.ts < 12 * 60 * 60 * 1000
+        ) {
+          return;
+        }
+      }
+    } catch {
+      // Ignore storage errors
+    }
+  }
+
+  const caps = await checkBackendCapabilities(apiBaseUrl);
+  if (!caps.authStatsSupported) return;
+
+  try {
+    const cleanBase = apiBaseUrl.replace(/\/+$/, '');
+    const res = await fetch(`${cleanBase}?action=auth-log`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        _twitchToken: user.accessToken,
+        displayName: user.displayName,
+        avatarUrl: user.avatarUrl,
+        isLogin: isFreshLogin,
+      }),
+    });
+    if (res.ok) {
+      try {
+        localStorage.setItem(
+          AUTH_PING_STORAGE_KEY,
+          JSON.stringify({ login: user.login, ts: Date.now() })
+        );
+      } catch {
+        // Ignore
+      }
+    }
+  } catch {
+    // Ignore background telemetry errors
+  }
+}
+
+export async function fetchTwitchAuthStats(
+  user: TwitchUser,
+  apiBaseUrl: string
+): Promise<{ stats: AuthStatsData | null; notUpdatedYet?: boolean; error?: string }> {
+  if (!apiBaseUrl || !user?.accessToken) {
+    return { stats: null, error: 'Не выполнен вход через Twitch' };
+  }
+
+  const caps = await checkBackendCapabilities(apiBaseUrl, true);
+  if (!caps.authStatsSupported) {
+    return { stats: null, notUpdatedYet: true };
+  }
+
+  try {
+    const cleanBase = apiBaseUrl.replace(/\/+$/, '');
+    const res = await fetch(`${cleanBase}?action=admin-dashboard`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ _twitchToken: user.accessToken }),
+    });
+    const json = await res.json();
+    if (!res.ok) {
+      return { stats: null, error: json?.error || `Ошибка (${res.status})` };
+    }
+    if (json && Array.isArray(json.users)) {
+      return { stats: json as AuthStatsData };
+    }
+    return { stats: null, notUpdatedYet: true };
+  } catch (e: any) {
+    return { stats: null, error: e?.message || 'Не удалось загрузить статистику' };
+  }
+}
+
+export async function restoreCloudBackupSlot(
+  slot: number,
+  user: TwitchUser,
+  apiBaseUrl: string
+): Promise<{ restored?: SiteData; error?: string }> {
+  if (!apiBaseUrl || !user?.accessToken) {
+    return { error: 'Не выполнен вход через Twitch' };
+  }
+  try {
+    const cleanBase = apiBaseUrl.replace(/\/+$/, '');
+    const res = await fetch(`${cleanBase}?action=restore-backup`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        _twitchToken: user.accessToken,
+        slot,
+      }),
+    });
+    const json = await res.json();
+    if (!res.ok) {
+      return { error: json?.error || `Ошибка восстановления (${res.status})` };
+    }
+    if (json?.state && Array.isArray(json.state.games)) {
+      lastKnownServerUpdatedAt = String(json.state.updatedAt || '');
+      const normalized = ensurePermanentAdmins(json.state);
+      try {
+        localStorage.setItem(LOCAL_DATA_KEY, JSON.stringify(normalized));
+      } catch {
+        // Ignore
+      }
+      return { restored: normalized };
+    }
+    return { error: 'Пустой ответ при восстановлении бэкапа' };
+  } catch (e: any) {
+    return { error: e?.message || 'Не удалось восстановить бэкап' };
+  }
 }

@@ -60,6 +60,54 @@ export function playRouletteTick(prefs: UserPreferences, progress = 0.5): void {
   osc.stop(now + 0.035);
 }
 
+// Хруст/взрыв при уничтожении карточки на выбывании
+export function playEliminationBlast(prefs: UserPreferences): void {
+  if (!prefs.soundEnabled || !prefs.rouletteSound) return;
+  const ctx = getAudioContext();
+  if (!ctx) return;
+
+  const now = ctx.currentTime;
+  const dur = 0.42;
+  const bufferSize = Math.floor(ctx.sampleRate * dur);
+  const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+  const data = buffer.getChannelData(0);
+  for (let i = 0; i < bufferSize; i++) {
+    data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / bufferSize, 1.8);
+  }
+
+  const noise = ctx.createBufferSource();
+  noise.buffer = buffer;
+
+  const filter = ctx.createBiquadFilter();
+  filter.type = 'lowpass';
+  filter.frequency.setValueAtTime(1100, now);
+  filter.frequency.exponentialRampToValueAtTime(140, now + dur);
+
+  const gain = ctx.createGain();
+  const vol = Math.max(0.03, prefs.soundVolume * 0.34);
+  gain.gain.setValueAtTime(vol, now);
+  gain.gain.exponentialRampToValueAtTime(0.001, now + dur);
+
+  noise.connect(filter);
+  filter.connect(gain);
+  gain.connect(ctx.destination);
+  noise.start(now);
+  noise.stop(now + dur);
+
+  // Низкий удар
+  const boom = ctx.createOscillator();
+  const boomGain = ctx.createGain();
+  boom.type = 'sine';
+  boom.frequency.setValueAtTime(150, now);
+  boom.frequency.exponentialRampToValueAtTime(38, now + 0.32);
+  boomGain.gain.setValueAtTime(vol * 0.9, now);
+  boomGain.gain.exponentialRampToValueAtTime(0.001, now + 0.34);
+  boom.connect(boomGain);
+  boomGain.connect(ctx.destination);
+  boom.start(now);
+  boom.stop(now + 0.35);
+}
+
 export function playRouletteResult(
   prefs: UserPreferences,
   mode: 'win' | 'eliminated'
@@ -68,21 +116,23 @@ export function playRouletteResult(
   const ctx = getAudioContext();
   if (!ctx) return;
 
+  if (mode === 'eliminated') {
+    playEliminationBlast(prefs);
+    return;
+  }
+
   const now = ctx.currentTime;
-  const notes =
-    mode === 'win'
-      ? [523.25, 659.25, 783.99, 1046.5]
-      : [440, 349.23, 261.63];
+  const notes = [523.25, 659.25, 783.99, 1046.5];
 
   notes.forEach((freq, idx) => {
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
-    osc.type = mode === 'win' ? 'triangle' : 'sawtooth';
-    const t0 = now + idx * (mode === 'win' ? 0.075 : 0.09);
-    const dur = mode === 'win' ? 0.28 : 0.18;
+    osc.type = 'triangle';
+    const t0 = now + idx * 0.075;
+    const dur = 0.28;
     osc.frequency.setValueAtTime(freq, t0);
 
-    const vol = Math.max(0.02, prefs.soundVolume * (mode === 'win' ? 0.24 : 0.15));
+    const vol = Math.max(0.02, prefs.soundVolume * 0.24);
     gain.gain.setValueAtTime(0.001, t0);
     gain.gain.linearRampToValueAtTime(vol, t0 + 0.015);
     gain.gain.exponentialRampToValueAtTime(0.001, t0 + dur);

@@ -173,7 +173,7 @@ export const GamesView: React.FC<GamesViewProps> = ({
             Все заказы, прохождения, условия, оценки, цены дропов/возвратов и записи VOD
           </p>
         </div>
-        <div className="row-gap-sm">
+        <div className="row-gap-sm wrap">
           <div className="segmented">
             <button
               className={viewMode === 'grid' ? 'active' : ''}

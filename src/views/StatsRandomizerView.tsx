@@ -17,6 +17,7 @@ import { OrdererAutocomplete } from '../components/OrdererAutocomplete';
 import { collectOrdererStats } from '../utils/orderers';
 import { UserPreferences } from '../utils/preferences';
 import { playRouletteResult, playRouletteTick } from '../utils/soundEffects';
+import { trackSiteAction } from '../utils/analytics';
 import {
   BACKLOG_STATUSES,
   GAME_STATUSES,
@@ -68,7 +69,131 @@ interface RollCandidate {
 
 const CARD_WIDTH = 136;
 const CARD_GAP = 12;
-const DURATION_PRESETS = [2, 4.5, 8, 12, 16];
+
+const SHARD_VECTORS: Array<{ dx: string; dy: string; rot: string; delay: string }> = [
+  { dx: '-78px', dy: '-64px', rot: '-140deg', delay: '0ms' },
+  { dx: '-28px', dy: '-88px', rot: '-75deg', delay: '20ms' },
+  { dx: '34px', dy: '-86px', rot: '85deg', delay: '10ms' },
+  { dx: '82px', dy: '-58px', rot: '150deg', delay: '30ms' },
+  { dx: '94px', dy: '-6px', rot: '195deg', delay: '15ms' },
+  { dx: '80px', dy: '56px', rot: '125deg', delay: '35ms' },
+  { dx: '32px', dy: '84px', rot: '65deg', delay: '25ms' },
+  { dx: '-30px', dy: '86px', rot: '-65deg', delay: '15ms' },
+  { dx: '-82px', dy: '54px', rot: '-130deg', delay: '30ms' },
+  { dx: '-94px', dy: '-4px', rot: '-190deg', delay: '10ms' },
+  { dx: '-54px', dy: '-42px', rot: '-95deg', delay: '40ms' },
+  { dx: '56px', dy: '38px', rot: '110deg', delay: '45ms' },
+];
+
+function shuffleCandidates<T>(arr: T[]): T[] {
+  const copy = [...arr];
+  for (let i = copy.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    const tmp = copy[i];
+    copy[i] = copy[j];
+    copy[j] = tmp;
+  }
+  return copy;
+}
+
+function isSameCandidate(a?: RollCandidate, b?: RollCandidate): boolean {
+  if (!a || !b) return false;
+  if (a.id === b.id) return true;
+  return a.title.trim().toLowerCase() === b.title.trim().toLowerCase();
+}
+
+// Строит ленту рулетки без идущих подряд одинаковых карточек (строгое чередование при 2 вариантах и перемешанные колоды без стыков при 3+)
+function buildAlternatingReelSequence(
+  candidates: RollCandidate[],
+  chosen: RollCandidate,
+  totalSlots: number,
+  winSlot: number
+): RollCandidate[] {
+  if (candidates.length === 0) return [];
+  if (candidates.length === 1) {
+    return Array.from({ length: totalSlots }, () => candidates[0]);
+  }
+
+  // При 2 вариантах строго чередуем A, B, A, B... с точным попаданием chosen в winSlot
+  const distinctOthers = candidates.filter((c) => !isSameCandidate(c, chosen));
+  if (distinctOthers.length === 0) {
+    return Array.from({ length: totalSlots }, (_, i) =>
+      i === winSlot ? chosen : candidates[i % candidates.length]
+    );
+  }
+  if (candidates.length === 2 || distinctOthers.length === 1) {
+    const other = distinctOthers[0];
+    return Array.from({ length: totalSlots }, (_, i) =>
+      Math.abs(winSlot - i) % 2 === 0 ? chosen : other
+    );
+  }
+
+  // При 3 и более вариантах тянем карточки из перемешанных колод без повторов на границах
+  const sequence: RollCandidate[] = [];
+  let deck: RollCandidate[] = [];
+
+  for (let i = 0; i < totalSlots; i++) {
+    if (deck.length === 0) {
+      deck = shuffleCandidates(candidates);
+    }
+    const prev1 = sequence[i - 1];
+    const prev2 = sequence[i - 2];
+
+    let pickIdx = deck.findIndex(
+      (c) =>
+        !isSameCandidate(c, prev1) &&
+        (candidates.length < 4 || !isSameCandidate(c, prev2))
+    );
+    if (pickIdx === -1) {
+      pickIdx = deck.findIndex((c) => !isSameCandidate(c, prev1));
+    }
+
+    if (pickIdx !== -1) {
+      const [picked] = deck.splice(pickIdx, 1);
+      sequence.push(picked);
+    } else {
+      // В остатке колоды лежал тот же элемент, что и prev1 - сбрасываем остаток и берем другой вариант
+      deck = [];
+      const fallbackPool = candidates.filter(
+        (c) =>
+          !isSameCandidate(c, prev1) &&
+          (candidates.length < 4 || !isSameCandidate(c, prev2))
+      );
+      const poolToUse =
+        fallbackPool.length > 0
+          ? fallbackPool
+          : candidates.filter((c) => !isSameCandidate(c, prev1));
+      sequence.push(poolToUse[Math.floor(Math.random() * poolToUse.length)]);
+    }
+  }
+
+  // Ставим выбранный вариант ровно в winSlot и чиним соседей слева/справа, чтобы не возникло повтора
+  sequence[winSlot] = chosen;
+
+  if (winSlot >= 1 && isSameCandidate(sequence[winSlot - 1], chosen)) {
+    const prevLeft = sequence[winSlot - 2];
+    const validLeft = candidates.filter(
+      (c) => !isSameCandidate(c, chosen) && !isSameCandidate(c, prevLeft)
+    );
+    if (validLeft.length > 0) {
+      sequence[winSlot - 1] =
+        validLeft[Math.floor(Math.random() * validLeft.length)];
+    }
+  }
+
+  if (winSlot + 1 < totalSlots && isSameCandidate(sequence[winSlot + 1], chosen)) {
+    const nextRight = sequence[winSlot + 2];
+    const validRight = candidates.filter(
+      (c) => !isSameCandidate(c, chosen) && !isSameCandidate(c, nextRight)
+    );
+    if (validRight.length > 0) {
+      sequence[winSlot + 1] =
+        validRight[Math.floor(Math.random() * validRight.length)];
+    }
+  }
+
+  return sequence;
+}
 
 export const StatsRandomizerView: React.FC<StatsRandomizerViewProps> = ({
   data,
@@ -88,16 +213,24 @@ export const StatsRandomizerView: React.FC<StatsRandomizerViewProps> = ({
     hasQueued ? 'QUEUED_GAMES' : 'BACKLOG_READY'
   );
   const [rollMode, setRollMode] = useState<'normal' | 'elimination'>('normal');
-  const [spinSeconds, setSpinSeconds] = useState<number>(4.5);
+  const [spinInput, setSpinInput] = useState<string>('5');
   const [eliminatedIds, setEliminatedIds] = useState<string[]>([]);
   const [lastEliminated, setLastEliminated] = useState<RollCandidate | null>(null);
+  const [destroyingSlot, setDestroyingSlot] = useState<number | null>(null);
   const [customLines, setCustomLines] = useState(
     'Вариант 1\nВариант 2\nВариант 3'
   );
 
+  const parsedSpin = Number(spinInput.replace(',', '.'));
+  const spinSeconds = Number.isFinite(parsedSpin) && parsedSpin > 0
+    ? Math.min(60, Math.max(1, parsedSpin))
+    : 5;
+
   // Tape animation state
   const stageRef = useRef<HTMLDivElement | null>(null);
   const trackRef = useRef<HTMLDivElement | null>(null);
+  const spinTimerRef = useRef<number | null>(null);
+  const destroyTimerRef = useRef<number | null>(null);
   const [reelItems, setReelItems] = useState<RollCandidate[]>([]);
   const [activeWinnerSlot, setActiveWinnerSlot] = useState(38);
   const [translateX, setTranslateX] = useState(0);
@@ -108,6 +241,15 @@ export const StatsRandomizerView: React.FC<StatsRandomizerViewProps> = ({
   const [customWinnerTitle, setCustomWinnerTitle] = useState<string | null>(null);
   const [showAllOrderers, setShowAllOrderers] = useState(false);
   const [viewerSearch, setViewerSearch] = useState('');
+
+  const isBusy = rolling || destroyingSlot !== null;
+
+  useEffect(() => {
+    return () => {
+      if (spinTimerRef.current) window.clearTimeout(spinTimerRef.current);
+      if (destroyTimerRef.current) window.clearTimeout(destroyTimerRef.current);
+    };
+  }, []);
 
   const mapGame = (g: GameItem): RollCandidate => ({
     id: g.id,
@@ -261,11 +403,14 @@ export const StatsRandomizerView: React.FC<StatsRandomizerViewProps> = ({
   }, [rolling, spinSeconds, prefs]);
 
   const handleSpin = () => {
-    if (rolling) return;
+    if (isBusy) return;
     const currentCandidates = rollMode === 'elimination' ? activePool : pool;
     if (currentCandidates.length === 0) return;
 
-    // If elimination mode already has only 1 survivor left, crown it directly!
+    // Нормализуем поле ввода перед запуском прокрутки
+    setSpinInput(String(spinSeconds));
+
+    // Если в режиме на выбывание остался ровно 1 выживший - сразу объявляем его чемпионом
     if (rollMode === 'elimination' && currentCandidates.length === 1) {
       const champ = currentCandidates[0];
       setWinnerId(champ.id);
@@ -275,23 +420,21 @@ export const StatsRandomizerView: React.FC<StatsRandomizerViewProps> = ({
       return;
     }
 
-    const winSlot = Math.max(20, Math.min(140, Math.round(spinSeconds * 8.5)));
-    const totalSlots = winSlot + 12;
+    const winSlot = Math.max(18, Math.min(220, Math.round(spinSeconds * 8.5)));
+    const totalSlots = winSlot + 14;
 
     const chosen =
       currentCandidates[Math.floor(Math.random() * currentCandidates.length)];
-    const sequence: RollCandidate[] = [];
-    for (let i = 0; i < totalSlots; i++) {
-      if (i === winSlot) {
-        sequence.push(chosen);
-      } else {
-        sequence.push(
-          currentCandidates[Math.floor(Math.random() * currentCandidates.length)]
-        );
-      }
-    }
+    const sequence = buildAlternatingReelSequence(
+      currentCandidates,
+      chosen,
+      totalSlots,
+      winSlot
+    );
 
     setRolling(true);
+    trackSiteAction('roulette_spin');
+    setDestroyingSlot(null);
     setActiveWinnerSlot(winSlot);
     setWinnerId(null);
     setWinnerKind(null);
@@ -312,23 +455,31 @@ export const StatsRandomizerView: React.FC<StatsRandomizerViewProps> = ({
         setAnimateTransition(true);
         setTranslateX(target);
 
-        window.setTimeout(() => {
+        spinTimerRef.current = window.setTimeout(() => {
           setRolling(false);
           if (rollMode === 'elimination') {
-            const nextElim = [...eliminatedIds, chosen.id];
-            setEliminatedIds(nextElim);
-            setLastEliminated(chosen);
+            // Запускаем взрыв/уничтожение выпавшей карточки в ленте
+            setDestroyingSlot(winSlot);
+            playRouletteResult(prefs, 'eliminated');
 
-            const survivors = currentCandidates.filter((x) => x.id !== chosen.id);
-            if (survivors.length === 1) {
-              const champ = survivors[0];
-              setWinnerId(champ.id);
-              setWinnerKind(champ.kind);
-              if (champ.kind === 'custom') setCustomWinnerTitle(champ.title);
-              playRouletteResult(prefs, 'win');
-            } else {
-              playRouletteResult(prefs, 'eliminated');
-            }
+            destroyTimerRef.current = window.setTimeout(() => {
+              setDestroyingSlot(null);
+              setEliminatedIds((prev) =>
+                prev.includes(chosen.id) ? prev : [...prev, chosen.id]
+              );
+              setLastEliminated(chosen);
+
+              const survivors = currentCandidates.filter(
+                (x) => x.id !== chosen.id
+              );
+              if (survivors.length === 1) {
+                const champ = survivors[0];
+                setWinnerId(champ.id);
+                setWinnerKind(champ.kind);
+                if (champ.kind === 'custom') setCustomWinnerTitle(champ.title);
+                playRouletteResult(prefs, 'win');
+              }
+            }, 880);
           } else {
             setWinnerId(chosen.id);
             setWinnerKind(chosen.kind);
@@ -441,7 +592,7 @@ export const StatsRandomizerView: React.FC<StatsRandomizerViewProps> = ({
             <select
               className="input select-auto"
               value={rollSource}
-              disabled={rolling}
+              disabled={isBusy}
               onChange={(e) => {
                 setRollSource(e.target.value as RollSource);
                 setReelItems([]);
@@ -552,16 +703,18 @@ export const StatsRandomizerView: React.FC<StatsRandomizerViewProps> = ({
             <button
               className="btn btn-primary"
               onClick={handleSpin}
-              disabled={rolling || activePool.length === 0}
+              disabled={isBusy || activePool.length === 0}
             >
               <Sparkles size={16} />{' '}
               {rolling
                 ? 'Крутится...'
-                : rollMode === 'elimination'
-                  ? activePool.length <= 1
-                    ? 'Определить чемпиона!'
-                    : 'Крутить на выбывание!'
-                  : 'Крутить рулетку!'}
+                : destroyingSlot !== null
+                  ? 'Выбывание...'
+                  : rollMode === 'elimination'
+                    ? activePool.length <= 1
+                      ? 'Определить чемпиона!'
+                      : 'Крутить на выбывание!'
+                    : 'Крутить рулетку!'}
             </button>
           </div>
         </div>
@@ -573,7 +726,7 @@ export const StatsRandomizerView: React.FC<StatsRandomizerViewProps> = ({
             <div className="segmented">
               <button
                 type="button"
-                disabled={rolling}
+                disabled={isBusy}
                 className={rollMode === 'normal' ? 'active' : ''}
                 onClick={() => {
                   setRollMode('normal');
@@ -584,7 +737,7 @@ export const StatsRandomizerView: React.FC<StatsRandomizerViewProps> = ({
               </button>
               <button
                 type="button"
-                disabled={rolling}
+                disabled={isBusy}
                 className={rollMode === 'elimination' ? 'active' : ''}
                 onClick={() => {
                   setRollMode('elimination');
@@ -596,34 +749,22 @@ export const StatsRandomizerView: React.FC<StatsRandomizerViewProps> = ({
             </div>
           </div>
 
-          <div className="row-gap-sm wrap">
-            <span className="muted-xs">
+          <div className="row-gap-xs wrap">
+            <label className="muted-xs" htmlFor="spin-seconds-input">
               <Clock size={12} style={{ verticalAlign: 'middle', marginRight: 4 }} />
-              Время прокрута: <strong>{spinSeconds} сек</strong>
-            </span>
-            <div className="duration-pills">
-              {DURATION_PRESETS.map((sec) => (
-                <button
-                  key={sec}
-                  type="button"
-                  disabled={rolling}
-                  className={`dur-pill ${spinSeconds === sec ? 'active' : ''}`}
-                  onClick={() => setSpinSeconds(sec)}
-                >
-                  {sec}с
-                </button>
-              ))}
-            </div>
+              Сколько крутить (сек):
+            </label>
             <input
-              type="range"
-              min={1.5}
-              max={20}
-              step={0.5}
-              disabled={rolling}
-              value={spinSeconds}
-              onChange={(e) => setSpinSeconds(Number(e.target.value))}
-              className="spin-range-slider"
-              title="Настроить точное время прокрутки в секундах"
+              id="spin-seconds-input"
+              type="number"
+              min={1}
+              max={60}
+              step="any"
+              disabled={isBusy}
+              value={spinInput}
+              onChange={(e) => setSpinInput(e.target.value)}
+              onBlur={() => setSpinInput(String(spinSeconds))}
+              className="input input-sm spin-num-input"
             />
           </div>
 
@@ -631,7 +772,7 @@ export const StatsRandomizerView: React.FC<StatsRandomizerViewProps> = ({
             <div className="row-gap-xs wrap">
               <button
                 type="button"
-                disabled={rolling}
+                disabled={isBusy}
                 className="btn btn-secondary btn-xs"
                 onClick={() => {
                   setEliminatedIds((prev) => prev.slice(0, -1));
@@ -643,7 +784,7 @@ export const StatsRandomizerView: React.FC<StatsRandomizerViewProps> = ({
               </button>
               <button
                 type="button"
-                disabled={rolling}
+                disabled={isBusy}
                 className="btn btn-ghost btn-xs"
                 onClick={() => {
                   setEliminatedIds([]);
@@ -680,7 +821,12 @@ export const StatsRandomizerView: React.FC<StatsRandomizerViewProps> = ({
           <>
             {/* Animated Case-Opening Tape */}
             {reelItems.length > 0 && (
-              <div className="case-reel-viewport" ref={stageRef}>
+              <div
+                className={`case-reel-viewport ${
+                  destroyingSlot !== null ? 'reel-impact-shake' : ''
+                }`}
+                ref={stageRef}
+              >
                 <div className="case-reel-pointer-top" />
                 <div className="case-reel-center-line" />
                 <div
@@ -695,23 +841,68 @@ export const StatsRandomizerView: React.FC<StatsRandomizerViewProps> = ({
                 >
                   {reelItems.map((item, idx) => {
                     const isLanded = !rolling && idx === activeWinnerSlot;
+                    const isDestroying = destroyingSlot === idx;
                     const isElimTile =
-                      isLanded && rollMode === 'elimination' && lastEliminated?.id === item.id;
-                    const isWinTile = isLanded && !isElimTile && winnerId !== null;
+                      isLanded &&
+                      !isDestroying &&
+                      rollMode === 'elimination' &&
+                      lastEliminated?.id === item.id;
+                    const isWinTile =
+                      isLanded && !isDestroying && !isElimTile && winnerId !== null;
                     return (
                       <div
                         key={`${item.id}-${idx}`}
                         className={`case-reel-card ${isWinTile ? 'is-winner' : ''} ${
-                          isElimTile ? 'is-eliminated' : ''
-                        }`}
-                        onClick={() => !rolling && handleInspectCandidate(item)}
+                          isDestroying ? 'is-destroying' : ''
+                        } ${isElimTile ? 'is-eliminated' : ''}`}
+                        onClick={() => !isBusy && handleInspectCandidate(item)}
                       >
-                        <CoverImage
-                          title={item.title}
-                          coverUrl={item.coverUrl}
-                          steamAppId={item.steamAppId}
-                        />
-                        <div className="case-reel-title">{item.title}</div>
+                        <div className="case-reel-card-inner">
+                          <CoverImage
+                            title={item.title}
+                            coverUrl={item.coverUrl}
+                            steamAppId={item.steamAppId}
+                          />
+                          <div className="case-reel-title">{item.title}</div>
+                        </div>
+
+                        {(isDestroying || isElimTile) && (
+                          <div className="destroy-fx-layer" aria-hidden="true">
+                            <svg
+                              className="destroy-cracks"
+                              viewBox="0 0 136 210"
+                              preserveAspectRatio="none"
+                            >
+                              <path
+                                d="M68,95 L22,18 M68,95 L118,26 M68,95 L10,122 M68,95 L128,136 M68,95 L42,196 M68,95 L104,192 M46,58 L18,66 M92,62 L122,74"
+                                stroke="#fca5a5"
+                                strokeWidth="2.2"
+                                fill="none"
+                                strokeLinecap="round"
+                              />
+                            </svg>
+                            <span className="destroy-stamp">💥 ВЫБЫЛ</span>
+                            {isDestroying && (
+                              <>
+                                <span className="destroy-shockwave" />
+                                {SHARD_VECTORS.map((vec, sIdx) => (
+                                  <span
+                                    key={sIdx}
+                                    className="destroy-shard"
+                                    style={
+                                      {
+                                        '--dx': vec.dx,
+                                        '--dy': vec.dy,
+                                        '--rot': vec.rot,
+                                        animationDelay: vec.delay,
+                                      } as React.CSSProperties
+                                    }
+                                  />
+                                ))}
+                              </>
+                            )}
+                          </div>
+                        )}
                       </div>
                     );
                   })}
@@ -720,7 +911,7 @@ export const StatsRandomizerView: React.FC<StatsRandomizerViewProps> = ({
             )}
 
             {/* Intermediate Eliminated Card in Elimination Mode */}
-            {rollMode === 'elimination' && lastEliminated && !winnerId && !rolling && (
+            {rollMode === 'elimination' && lastEliminated && !winnerId && !isBusy && (
               <div className="roulette-winner-card eliminated-card" style={{ marginTop: 16 }}>
                 <div
                   className="clickable-card"
@@ -770,7 +961,7 @@ export const StatsRandomizerView: React.FC<StatsRandomizerViewProps> = ({
             )}
 
             {/* Winner Result Card with Instant Status Controls */}
-            {resolvedWinner && !rolling && (
+            {resolvedWinner && !isBusy && (
               <div className="roulette-winner-card won" style={{ marginTop: 16 }}>
                 <div
                   className="clickable-card"
@@ -940,7 +1131,7 @@ export const StatsRandomizerView: React.FC<StatsRandomizerViewProps> = ({
                             title={isOut ? 'Вернуть в пул' : 'Вычеркнуть из пула'}
                             onClick={(e) => {
                               e.stopPropagation();
-                              if (rolling) return;
+                              if (isBusy) return;
                               setEliminatedIds((prev) =>
                                 prev.includes(item.id)
                                   ? prev.filter((x) => x !== item.id)
