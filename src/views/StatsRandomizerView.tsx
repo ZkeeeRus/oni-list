@@ -1,16 +1,22 @@
-import React, { useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
+  Clock,
   Dices,
   ExternalLink,
   Play,
+  RotateCcw,
+  Skull,
   Sparkles,
   Trophy,
+  Undo2,
   Users,
 } from 'lucide-react';
 import { BacklogItem, GameItem, SiteData, WatchItem } from '../types';
 import { CoverImage } from '../components/CoverImage';
 import { OrdererAutocomplete } from '../components/OrdererAutocomplete';
 import { collectOrdererStats } from '../utils/orderers';
+import { UserPreferences } from '../utils/preferences';
+import { playRouletteResult, playRouletteTick } from '../utils/soundEffects';
 import {
   BACKLOG_STATUSES,
   GAME_STATUSES,
@@ -22,6 +28,7 @@ import {
 
 interface StatsRandomizerViewProps {
   data: SiteData;
+  prefs: UserPreferences;
   canEdit: boolean;
   onUpdateGameStatus: (gameId: string, status: string) => void;
   onUpdateWatchStatus: (watchId: string, status: string) => void;
@@ -61,11 +68,11 @@ interface RollCandidate {
 
 const CARD_WIDTH = 136;
 const CARD_GAP = 12;
-const REEL_TOTAL = 48;
-const WINNER_SLOT = 38;
+const DURATION_PRESETS = [2, 4.5, 8, 12, 16];
 
 export const StatsRandomizerView: React.FC<StatsRandomizerViewProps> = ({
   data,
+  prefs,
   canEdit,
   onUpdateGameStatus,
   onUpdateWatchStatus,
@@ -80,13 +87,19 @@ export const StatsRandomizerView: React.FC<StatsRandomizerViewProps> = ({
   const [rollSource, setRollSource] = useState<RollSource>(
     hasQueued ? 'QUEUED_GAMES' : 'BACKLOG_READY'
   );
+  const [rollMode, setRollMode] = useState<'normal' | 'elimination'>('normal');
+  const [spinSeconds, setSpinSeconds] = useState<number>(4.5);
+  const [eliminatedIds, setEliminatedIds] = useState<string[]>([]);
+  const [lastEliminated, setLastEliminated] = useState<RollCandidate | null>(null);
   const [customLines, setCustomLines] = useState(
     'Вариант 1\nВариант 2\nВариант 3'
   );
 
   // Tape animation state
   const stageRef = useRef<HTMLDivElement | null>(null);
+  const trackRef = useRef<HTMLDivElement | null>(null);
   const [reelItems, setReelItems] = useState<RollCandidate[]>([]);
+  const [activeWinnerSlot, setActiveWinnerSlot] = useState(38);
   const [translateX, setTranslateX] = useState(0);
   const [animateTransition, setAnimateTransition] = useState(false);
   const [rolling, setRolling] = useState(false);
@@ -200,29 +213,90 @@ export const StatsRandomizerView: React.FC<StatsRandomizerViewProps> = ({
     }
   }, [data, rollSource, customLines]);
 
+  const eliminatedSet = useMemo(() => new Set(eliminatedIds), [eliminatedIds]);
+  const activePool = useMemo(
+    () =>
+      rollMode === 'elimination'
+        ? pool.filter((x) => !eliminatedSet.has(x.id))
+        : pool,
+    [pool, rollMode, eliminatedSet]
+  );
+
   const handleInspectCandidate = (c: RollCandidate) => {
     if (c.kind === 'game') onInspectGame(c.id);
     else if (c.kind === 'watch') onInspectWatch(c.id);
     else if (c.kind === 'backlog') onInspectBacklog(c.id);
   };
 
-  const handleSpin = () => {
-    if (pool.length === 0 || rolling) return;
+  // Real-time sound ticks synchronized to live CSS transform of the tape!
+  useEffect(() => {
+    if (!rolling) return;
+    let raf = 0;
+    let lastIndex = -1;
+    const step = CARD_WIDTH + CARD_GAP;
+    const startTs = performance.now();
+    const totalMs = spinSeconds * 1000;
 
-    const chosen = pool[Math.floor(Math.random() * pool.length)];
+    const checkTick = () => {
+      const trackEl = trackRef.current;
+      const stageEl = stageRef.current;
+      if (trackEl && stageEl) {
+        const style = window.getComputedStyle(trackEl);
+        const matrix = new DOMMatrixReadOnly(style.transform);
+        const currentOffset = -matrix.m41 + stageEl.clientWidth / 2;
+        const idx = Math.floor(currentOffset / step);
+        if (idx !== lastIndex && idx >= 0) {
+          if (lastIndex !== -1) {
+            const progress = Math.min(1, (performance.now() - startTs) / totalMs);
+            playRouletteTick(prefs, progress);
+          }
+          lastIndex = idx;
+        }
+      }
+      raf = requestAnimationFrame(checkTick);
+    };
+
+    raf = requestAnimationFrame(checkTick);
+    return () => cancelAnimationFrame(raf);
+  }, [rolling, spinSeconds, prefs]);
+
+  const handleSpin = () => {
+    if (rolling) return;
+    const currentCandidates = rollMode === 'elimination' ? activePool : pool;
+    if (currentCandidates.length === 0) return;
+
+    // If elimination mode already has only 1 survivor left, crown it directly!
+    if (rollMode === 'elimination' && currentCandidates.length === 1) {
+      const champ = currentCandidates[0];
+      setWinnerId(champ.id);
+      setWinnerKind(champ.kind);
+      if (champ.kind === 'custom') setCustomWinnerTitle(champ.title);
+      playRouletteResult(prefs, 'win');
+      return;
+    }
+
+    const winSlot = Math.max(20, Math.min(140, Math.round(spinSeconds * 8.5)));
+    const totalSlots = winSlot + 12;
+
+    const chosen =
+      currentCandidates[Math.floor(Math.random() * currentCandidates.length)];
     const sequence: RollCandidate[] = [];
-    for (let i = 0; i < REEL_TOTAL; i++) {
-      if (i === WINNER_SLOT) {
+    for (let i = 0; i < totalSlots; i++) {
+      if (i === winSlot) {
         sequence.push(chosen);
       } else {
-        sequence.push(pool[Math.floor(Math.random() * pool.length)]);
+        sequence.push(
+          currentCandidates[Math.floor(Math.random() * currentCandidates.length)]
+        );
       }
     }
 
     setRolling(true);
+    setActiveWinnerSlot(winSlot);
     setWinnerId(null);
     setWinnerKind(null);
     setCustomWinnerTitle(null);
+    setLastEliminated(null);
     setAnimateTransition(false);
     setTranslateX(0);
     setReelItems(sequence);
@@ -231,21 +305,39 @@ export const StatsRandomizerView: React.FC<StatsRandomizerViewProps> = ({
       requestAnimationFrame(() => {
         const viewportW = stageRef.current?.clientWidth || 800;
         const step = CARD_WIDTH + CARD_GAP;
-        const cardCenter = WINNER_SLOT * step + CARD_WIDTH / 2;
+        const cardCenter = winSlot * step + CARD_WIDTH / 2;
         const jitter = (Math.random() - 0.5) * (CARD_WIDTH * 0.52);
         const target = Math.max(0, cardCenter - viewportW / 2 + jitter);
 
         setAnimateTransition(true);
         setTranslateX(target);
 
-        setTimeout(() => {
+        window.setTimeout(() => {
           setRolling(false);
-          setWinnerId(chosen.id);
-          setWinnerKind(chosen.kind);
-          if (chosen.kind === 'custom') {
-            setCustomWinnerTitle(chosen.title);
+          if (rollMode === 'elimination') {
+            const nextElim = [...eliminatedIds, chosen.id];
+            setEliminatedIds(nextElim);
+            setLastEliminated(chosen);
+
+            const survivors = currentCandidates.filter((x) => x.id !== chosen.id);
+            if (survivors.length === 1) {
+              const champ = survivors[0];
+              setWinnerId(champ.id);
+              setWinnerKind(champ.kind);
+              if (champ.kind === 'custom') setCustomWinnerTitle(champ.title);
+              playRouletteResult(prefs, 'win');
+            } else {
+              playRouletteResult(prefs, 'eliminated');
+            }
+          } else {
+            setWinnerId(chosen.id);
+            setWinnerKind(chosen.kind);
+            if (chosen.kind === 'custom') {
+              setCustomWinnerTitle(chosen.title);
+            }
+            playRouletteResult(prefs, 'win');
           }
-        }, 4450);
+        }, spinSeconds * 1000 + 60);
       });
     });
   };
@@ -278,7 +370,8 @@ export const StatsRandomizerView: React.FC<StatsRandomizerViewProps> = ({
     return null;
   }, [winnerId, winnerKind, customWinnerTitle, data]);
 
-  const dropChance = pool.length > 0 ? (100 / pool.length).toFixed(2) : '0';
+  const dropChance =
+    activePool.length > 0 ? (100 / activePool.length).toFixed(2) : '0';
 
   const allOrderers = useMemo(() => {
     const stats = collectOrdererStats(data.games, data.watchlist);
@@ -329,8 +422,18 @@ export const StatsRandomizerView: React.FC<StatsRandomizerViewProps> = ({
               Рулетка на стрим
             </h2>
             <p className="muted-sm">
-              В пуле сейчас: <strong>{pool.length}</strong> вариков • Шанс каждого:{' '}
-              <strong>{dropChance}%</strong>
+              {rollMode === 'elimination' ? (
+                <>
+                  Осталось в игре: <strong>{activePool.length}</strong> из {pool.length} • Выбыло:{' '}
+                  <strong>{eliminatedIds.length}</strong> • Шанс вылета:{' '}
+                  <strong>{dropChance}%</strong>
+                </>
+              ) : (
+                <>
+                  В пуле сейчас: <strong>{pool.length}</strong> вариков • Шанс каждого:{' '}
+                  <strong>{dropChance}%</strong>
+                </>
+              )}
             </p>
           </div>
 
@@ -343,6 +446,8 @@ export const StatsRandomizerView: React.FC<StatsRandomizerViewProps> = ({
                 setRollSource(e.target.value as RollSource);
                 setReelItems([]);
                 setWinnerId(null);
+                setEliminatedIds([]);
+                setLastEliminated(null);
               }}
             >
               <optgroup label="Игры">
@@ -447,11 +552,109 @@ export const StatsRandomizerView: React.FC<StatsRandomizerViewProps> = ({
             <button
               className="btn btn-primary"
               onClick={handleSpin}
-              disabled={rolling || pool.length === 0}
+              disabled={rolling || activePool.length === 0}
             >
-              <Sparkles size={16} /> {rolling ? 'Крутится...' : 'Крутить рулетку!'}
+              <Sparkles size={16} />{' '}
+              {rolling
+                ? 'Крутится...'
+                : rollMode === 'elimination'
+                  ? activePool.length <= 1
+                    ? 'Определить чемпиона!'
+                    : 'Крутить на выбывание!'
+                  : 'Крутить рулетку!'}
             </button>
           </div>
+        </div>
+
+        {/* Roulette Mode & Spin Duration Bar */}
+        <div className="roulette-settings-bar">
+          <div className="row-gap-sm wrap">
+            <span className="muted-xs">Режим:</span>
+            <div className="segmented">
+              <button
+                type="button"
+                disabled={rolling}
+                className={rollMode === 'normal' ? 'active' : ''}
+                onClick={() => {
+                  setRollMode('normal');
+                  setLastEliminated(null);
+                }}
+              >
+                Обычный
+              </button>
+              <button
+                type="button"
+                disabled={rolling}
+                className={rollMode === 'elimination' ? 'active' : ''}
+                onClick={() => {
+                  setRollMode('elimination');
+                  setWinnerId(null);
+                }}
+              >
+                <Skull size={14} /> На выбывание
+              </button>
+            </div>
+          </div>
+
+          <div className="row-gap-sm wrap">
+            <span className="muted-xs">
+              <Clock size={12} style={{ verticalAlign: 'middle', marginRight: 4 }} />
+              Время прокрута: <strong>{spinSeconds} сек</strong>
+            </span>
+            <div className="duration-pills">
+              {DURATION_PRESETS.map((sec) => (
+                <button
+                  key={sec}
+                  type="button"
+                  disabled={rolling}
+                  className={`dur-pill ${spinSeconds === sec ? 'active' : ''}`}
+                  onClick={() => setSpinSeconds(sec)}
+                >
+                  {sec}с
+                </button>
+              ))}
+            </div>
+            <input
+              type="range"
+              min={1.5}
+              max={20}
+              step={0.5}
+              disabled={rolling}
+              value={spinSeconds}
+              onChange={(e) => setSpinSeconds(Number(e.target.value))}
+              className="spin-range-slider"
+              title="Настроить точное время прокрутки в секундах"
+            />
+          </div>
+
+          {rollMode === 'elimination' && eliminatedIds.length > 0 && (
+            <div className="row-gap-xs wrap">
+              <button
+                type="button"
+                disabled={rolling}
+                className="btn btn-secondary btn-xs"
+                onClick={() => {
+                  setEliminatedIds((prev) => prev.slice(0, -1));
+                  setWinnerId(null);
+                  setLastEliminated(null);
+                }}
+              >
+                <Undo2 size={12} /> Вернуть последнего
+              </button>
+              <button
+                type="button"
+                disabled={rolling}
+                className="btn btn-ghost btn-xs"
+                onClick={() => {
+                  setEliminatedIds([]);
+                  setWinnerId(null);
+                  setLastEliminated(null);
+                }}
+              >
+                <RotateCcw size={12} /> Сбросить выбывших ({eliminatedIds.length})
+              </button>
+            </div>
+          )}
         </div>
 
         {rollSource === 'CUSTOM_LIST' && (
@@ -482,19 +685,25 @@ export const StatsRandomizerView: React.FC<StatsRandomizerViewProps> = ({
                 <div className="case-reel-center-line" />
                 <div
                   className="case-reel-track"
+                  ref={trackRef}
                   style={{
                     transform: `translate3d(-${translateX}px, 0, 0)`,
                     transition: animateTransition
-                      ? 'transform 4.4s cubic-bezier(0.11, 0.86, 0.16, 1)'
+                      ? `transform ${spinSeconds}s cubic-bezier(0.11, 0.86, 0.16, 1)`
                       : 'none',
                   }}
                 >
                   {reelItems.map((item, idx) => {
-                    const isWinTile = !rolling && idx === WINNER_SLOT && winnerId !== null;
+                    const isLanded = !rolling && idx === activeWinnerSlot;
+                    const isElimTile =
+                      isLanded && rollMode === 'elimination' && lastEliminated?.id === item.id;
+                    const isWinTile = isLanded && !isElimTile && winnerId !== null;
                     return (
                       <div
                         key={`${item.id}-${idx}`}
-                        className={`case-reel-card ${isWinTile ? 'is-winner' : ''}`}
+                        className={`case-reel-card ${isWinTile ? 'is-winner' : ''} ${
+                          isElimTile ? 'is-eliminated' : ''
+                        }`}
                         onClick={() => !rolling && handleInspectCandidate(item)}
                       >
                         <CoverImage
@@ -506,6 +715,56 @@ export const StatsRandomizerView: React.FC<StatsRandomizerViewProps> = ({
                       </div>
                     );
                   })}
+                </div>
+              </div>
+            )}
+
+            {/* Intermediate Eliminated Card in Elimination Mode */}
+            {rollMode === 'elimination' && lastEliminated && !winnerId && !rolling && (
+              <div className="roulette-winner-card eliminated-card" style={{ marginTop: 16 }}>
+                <div
+                  className="clickable-card"
+                  onClick={() => handleInspectCandidate(lastEliminated)}
+                >
+                  <CoverImage
+                    title={lastEliminated.title}
+                    coverUrl={lastEliminated.coverUrl}
+                    steamAppId={lastEliminated.steamAppId}
+                    className="roulette-cover"
+                  />
+                </div>
+                <div className="roulette-winner-info">
+                  <div className="row-gap-xs wrap">
+                    <span className="badge tone-dropped">❌ Выбыл из гонки!</span>
+                    <span className="muted-xs">
+                      Осталось выживших: <strong>{activePool.length}</strong>
+                    </span>
+                  </div>
+                  <h3
+                    className="winner-title-link"
+                    onClick={() => handleInspectCandidate(lastEliminated)}
+                  >
+                    {lastEliminated.title}
+                  </h3>
+                  <p className="muted-sm">{lastEliminated.sub}</p>
+                  <div className="row-gap-sm wrap" style={{ marginTop: 12 }}>
+                    <button
+                      type="button"
+                      className="btn btn-primary btn-sm"
+                      onClick={handleSpin}
+                    >
+                      <Sparkles size={14} /> Крутить следующий раунд ({activePool.length} в игре)
+                    </button>
+                    {lastEliminated.kind !== 'custom' && (
+                      <button
+                        type="button"
+                        className="btn btn-secondary btn-sm"
+                        onClick={() => handleInspectCandidate(lastEliminated)}
+                      >
+                        <ExternalLink size={14} /> Открыть карточку
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
             )}
@@ -527,7 +786,11 @@ export const StatsRandomizerView: React.FC<StatsRandomizerViewProps> = ({
 
                 <div className="roulette-winner-info">
                   <div className="row-gap-xs wrap">
-                    <span className="badge tone-active">🎉 Выпало на рулетке!</span>
+                    <span className="badge tone-active">
+                      {rollMode === 'elimination'
+                        ? '🏆 Победитель на выбывание!'
+                        : '🎉 Выпало на рулетке!'}
+                    </span>
                     <StatusBadge status={resolvedWinner.status} />
                   </div>
 
@@ -651,23 +914,48 @@ export const StatsRandomizerView: React.FC<StatsRandomizerViewProps> = ({
             {/* Pool Preview Grid */}
             <div style={{ marginTop: 18 }}>
               <div className="muted-xs" style={{ marginBottom: 8 }}>
-                Участники текущего пула ({pool.length}) - нажми на любого, чтобы посмотреть:
+                {rollMode === 'elimination'
+                  ? `Участники гонки на выбывание (в игре ${activePool.length} из ${pool.length}) - можно вручную зачеркнуть/вернуть:`
+                  : `Участники текущего пула (${pool.length}) - нажми на любого, чтобы посмотреть:`}
               </div>
               <div className="roulette-pool-preview">
-                {pool.slice(0, 24).map((item) => (
-                  <div
-                    key={item.id}
-                    className="mini-pool-card clickable-card"
-                    onClick={() => handleInspectCandidate(item)}
-                  >
-                    <CoverImage
-                      title={item.title}
-                      coverUrl={item.coverUrl}
-                      steamAppId={item.steamAppId}
-                    />
-                    <span>{item.title}</span>
-                  </div>
-                ))}
+                {pool.slice(0, 36).map((item) => {
+                  const isOut = rollMode === 'elimination' && eliminatedSet.has(item.id);
+                  return (
+                    <div
+                      key={item.id}
+                      className={`mini-pool-card clickable-card ${isOut ? 'pool-out' : ''}`}
+                      onClick={() => handleInspectCandidate(item)}
+                    >
+                      <div style={{ position: 'relative' }}>
+                        <CoverImage
+                          title={item.title}
+                          coverUrl={item.coverUrl}
+                          steamAppId={item.steamAppId}
+                        />
+                        {rollMode === 'elimination' && (
+                          <button
+                            type="button"
+                            className="pool-toggle-elim-btn"
+                            title={isOut ? 'Вернуть в пул' : 'Вычеркнуть из пула'}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (rolling) return;
+                              setEliminatedIds((prev) =>
+                                prev.includes(item.id)
+                                  ? prev.filter((x) => x !== item.id)
+                                  : [...prev, item.id]
+                              );
+                            }}
+                          >
+                            {isOut ? '↺' : '✕'}
+                          </button>
+                        )}
+                      </div>
+                      <span>{item.title}</span>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           </>

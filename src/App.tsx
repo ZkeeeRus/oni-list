@@ -9,6 +9,7 @@ import {
   ListTodo,
   LogIn,
   Redo2,
+  Settings,
   ShieldCheck,
   Undo2,
 } from 'lucide-react';
@@ -55,6 +56,18 @@ import {
 } from './components/DetailModals';
 import { collectOrdererStats } from './utils/orderers';
 import { loadGameMetaMap } from './utils/gameMeta';
+import {
+  loadUserPreferences,
+  saveUserPreferences,
+  UserPreferences,
+} from './utils/preferences';
+import { playUiClick } from './utils/soundEffects';
+import {
+  FestiveFooter,
+  HeaderGarland,
+  SnowAndParallaxLayer,
+} from './components/FestiveEffects';
+import { SettingsTabId, SiteSettingsModal } from './components/SiteSettingsModal';
 
 export const App: React.FC = () => {
   const [cfg, setCfg] = useState<RuntimeConfig>({
@@ -95,7 +108,19 @@ export const App: React.FC = () => {
   >(undefined);
   const [editingMeme, setEditingMeme] = useState<MemeItem | null>(null);
   const [lightboxMeme, setLightboxMeme] = useState<MemeItem | null>(null);
-  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [viewerAccountOpen, setViewerAccountOpen] = useState(false);
+  const [siteSettingsTab, setSiteSettingsTab] = useState<SettingsTabId | null>(null);
+  const [prefs, setPrefs] = useState<UserPreferences>(() => loadUserPreferences());
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = prefs.theme;
+    document.documentElement.dataset.perf = prefs.performanceMode;
+  }, [prefs.theme, prefs.performanceMode]);
+
+  const handleUpdatePrefs = useCallback((next: UserPreferences) => {
+    setPrefs(next);
+    saveUserPreferences(next);
+  }, []);
 
   const showToast = useCallback((text: string, canUndo = false) => {
     if (toastTimerRef.current) {
@@ -126,7 +151,12 @@ export const App: React.FC = () => {
       }
       setUser(twitchSession.user);
       if (twitchSession.justLoggedIn && twitchSession.user) {
-        setSettingsOpen(true);
+        const loggedRole = getUserRole(twitchSession.user, loadedData.data, loadedCfg);
+        if (loggedRole === 'admin' || loggedRole === 'moderator') {
+          setSiteSettingsTab('admin');
+        } else {
+          setViewerAccountOpen(true);
+        }
       }
     })();
   }, []);
@@ -271,6 +301,7 @@ export const App: React.FC = () => {
   }
 
   const handleNavigate = (tab: NavTab) => {
+    playUiClick(prefs);
     setActiveTab(tab);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -304,6 +335,8 @@ export const App: React.FC = () => {
 
   return (
     <div className="app-shell">
+      <SnowAndParallaxLayer prefs={prefs} />
+
       {/* Sticky Top Navbar */}
       <header className="top-nav">
         <div className="top-nav-inner">
@@ -387,11 +420,29 @@ export const App: React.FC = () => {
                 <Redo2 size={15} />
               </button>
             )}
+            <button
+              type="button"
+              className="settings-gear-btn"
+              onClick={() => {
+                playUiClick(prefs);
+                setSiteSettingsTab('appearance');
+              }}
+              title="Настройки сайта: оформление, новогодний режим, звуки и производительность"
+            >
+              <Settings size={16} />
+            </button>
             {user ? (
               <button
                 type="button"
                 className={`auth-pill ${canEdit ? 'is-mod' : ''}`}
-                onClick={() => setSettingsOpen(true)}
+                onClick={() => {
+                  playUiClick(prefs);
+                  if (canEdit) {
+                    setSiteSettingsTab('admin');
+                  } else {
+                    setViewerAccountOpen(true);
+                  }
+                }}
               >
                 {user.avatarUrl ? (
                   <img src={user.avatarUrl} alt={user.displayName} className="avatar-xs" />
@@ -417,6 +468,7 @@ export const App: React.FC = () => {
             )}
           </div>
         </div>
+        <HeaderGarland prefs={prefs} />
       </header>
 
       {/* Main Content */}
@@ -532,6 +584,7 @@ export const App: React.FC = () => {
         {activeTab === 'stats' && (
           <StatsRandomizerView
             data={data}
+            prefs={prefs}
             canEdit={canEdit}
             onUpdateGameStatus={(gameId, status) => {
               commitData(
@@ -683,6 +736,7 @@ export const App: React.FC = () => {
           initial={gameModalItem}
           apiBaseUrl={cfg.apiBaseUrl}
           orderers={allOrdererStats}
+          siteData={data}
           onClose={() => setGameModalItem(undefined)}
           onSave={(saved) => {
             const exists = data.games.some((x) => x.id === saved.id);
@@ -700,6 +754,7 @@ export const App: React.FC = () => {
           initial={watchModalItem}
           apiBaseUrl={cfg.apiBaseUrl}
           orderers={allOrdererStats}
+          siteData={data}
           onClose={() => setWatchModalItem(undefined)}
           onSave={(saved) => {
             const exists = data.watchlist.some((x) => x.id === saved.id);
@@ -716,6 +771,7 @@ export const App: React.FC = () => {
         <BacklogModal
           initial={backlogModalItem}
           apiBaseUrl={cfg.apiBaseUrl}
+          siteData={data}
           onClose={() => setBacklogModalItem(undefined)}
           onSave={(saved) => {
             const exists = data.backlog.some((x) => x.id === saved.id);
@@ -769,13 +825,13 @@ export const App: React.FC = () => {
         />
       )}
 
-      {settingsOpen && user && (
+      {viewerAccountOpen && user && (
         <AdminSettingsModal
           user={user}
           role={role}
           data={data}
           dataSource={dataSource}
-          onClose={() => setSettingsOpen(false)}
+          onClose={() => setViewerAccountOpen(false)}
           onLogout={() => {
             clearTwitchSession();
             setUser(null);
@@ -792,6 +848,41 @@ export const App: React.FC = () => {
           }
         />
       )}
+
+      {siteSettingsTab !== null && (
+        <SiteSettingsModal
+          initialTab={siteSettingsTab}
+          prefs={prefs}
+          onChangePrefs={handleUpdatePrefs}
+          user={user}
+          role={role}
+          data={data}
+          dataSource={dataSource}
+          onClose={() => setSiteSettingsTab(null)}
+          onLogout={() => {
+            clearTwitchSession();
+            setUser(null);
+            showToast('Вы вышли из аккаунта');
+          }}
+          onUpdateModerators={(moderators) =>
+            commitData({ ...data, moderators }, 'Список модераторов обновлён')
+          }
+          onImportJson={(imported) =>
+            commitData(imported, 'Резервная копия успешно загружена!')
+          }
+          onForceCloudPush={() =>
+            commitData(data, 'Все текущие данные отправлены в облако!')
+          }
+        />
+      )}
+
+      <FestiveFooter
+        prefs={prefs}
+        twitchUrl={data.hubConfig.twitchUrl}
+        vodUrl={data.hubConfig.vkVodUrl}
+        onOpenSettings={() => setSiteSettingsTab('appearance')}
+        onShowWish={(wish) => showToast(wish, false)}
+      />
 
       {toast && (
         <div className="toast-popup">

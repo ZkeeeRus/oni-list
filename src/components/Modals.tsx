@@ -1,5 +1,6 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
+  AlertTriangle,
   Download,
   Edit3,
   ImageOff,
@@ -46,7 +47,31 @@ import { resolveMemeImageUrl } from '../utils/builtinMemes';
 import { CoverImage } from './CoverImage';
 import { OrdererAutocomplete } from './OrdererAutocomplete';
 import { normalizeOrdererName, OrdererStat } from '../utils/orderers';
+import { ExistingMatch, findExistingMatches } from '../utils/duplicates';
 import { PERMANENT_ADMINS } from '../services/authAndStorage';
+
+const DuplicateNotice: React.FC<{ matches: ExistingMatch[] }> = ({ matches }) => {
+  if (matches.length === 0) return null;
+  return (
+    <div className="duplicate-hint-box">
+      <div className="duplicate-hint-head">
+        <AlertTriangle size={15} />
+        <strong>Похожие позиции уже есть в базе (добавление не блокируется):</strong>
+      </div>
+      <div className="duplicate-hint-list">
+        {matches.map((m) => (
+          <div key={`${m.section}-${m.id}`} className="duplicate-hint-row">
+            <span className="dup-section-pill">{m.section}</span>
+            <strong>{m.title}</strong>
+            <span className="muted-xs">
+              ({m.status} • {m.sub})
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
 
 /* ---------- Cover Picker Block ---------- */
 const CoverPicker: React.FC<{
@@ -238,10 +263,15 @@ export const GameModal: React.FC<{
   initial?: GameItem | null;
   apiBaseUrl: string;
   orderers: OrdererStat[];
+  siteData: SiteData;
   onClose: () => void;
   onSave: (game: GameItem) => void;
-}> = ({ initial, apiBaseUrl, orderers, onClose, onSave }) => {
+}> = ({ initial, apiBaseUrl, orderers, siteData, onClose, onSave }) => {
   const [title, setTitle] = useState(initial?.title ?? '');
+  const existingMatches = useMemo(
+    () => findExistingMatches(title, siteData, initial?.id),
+    [title, siteData, initial?.id]
+  );
   const [orderedBy, setOrderedBy] = useState(initial?.orderedBy ?? '');
   const [status, setStatus] = useState(initial?.status ?? 'Заказано');
   const [rating, setRating] = useState(initial?.rating ?? '');
@@ -316,6 +346,8 @@ export const GameModal: React.FC<{
               />
             </div>
           </div>
+
+          <DuplicateNotice matches={existingMatches} />
 
           <div className="form-row-3">
             <div>
@@ -452,10 +484,15 @@ export const WatchModal: React.FC<{
   initial?: WatchItem | null;
   apiBaseUrl: string;
   orderers: OrdererStat[];
+  siteData: SiteData;
   onClose: () => void;
   onSave: (item: WatchItem) => void;
-}> = ({ initial, apiBaseUrl, orderers, onClose, onSave }) => {
+}> = ({ initial, apiBaseUrl, orderers, siteData, onClose, onSave }) => {
   const [title, setTitle] = useState(initial?.title ?? '');
+  const existingMatches = useMemo(
+    () => findExistingMatches(title, siteData, initial?.id),
+    [title, siteData, initial?.id]
+  );
   const [category, setCategory] = useState<string>(initial?.category ?? 'Фильм');
   const [orderedBy, setOrderedBy] = useState(initial?.orderedBy ?? '');
   const [status, setStatus] = useState<string>(initial?.status ?? 'Заказано');
@@ -512,6 +549,8 @@ export const WatchModal: React.FC<{
               />
             </div>
           </div>
+
+          <DuplicateNotice matches={existingMatches} />
 
           <div className="form-row-3">
             <div>
@@ -851,10 +890,15 @@ export const MemeLightbox: React.FC<{
 export const BacklogModal: React.FC<{
   initial?: BacklogItem | null;
   apiBaseUrl: string;
+  siteData: SiteData;
   onClose: () => void;
   onSave: (item: BacklogItem) => void;
-}> = ({ initial, apiBaseUrl, onClose, onSave }) => {
+}> = ({ initial, apiBaseUrl, siteData, onClose, onSave }) => {
   const [title, setTitle] = useState(initial?.title ?? '');
+  const existingMatches = useMemo(
+    () => findExistingMatches(title, siteData, initial?.id),
+    [title, siteData, initial?.id]
+  );
   const [genre, setGenre] = useState(initial?.genre ?? '');
   const [idea, setIdea] = useState(initial?.idea ?? '');
   const [notes, setNotes] = useState(initial?.notes ?? '');
@@ -915,6 +959,8 @@ export const BacklogModal: React.FC<{
               />
             </div>
           </div>
+
+          <DuplicateNotice matches={existingMatches} />
 
           <div className="form-row-2">
             <div>
