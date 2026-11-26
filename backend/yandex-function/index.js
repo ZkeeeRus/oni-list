@@ -11,9 +11,14 @@ const PERMANENT_ADMINS = ['onized', 'zkeeerus'];
 const DEFAULT_TWITCH_CLIENT_ID = 'v78wuh35wmptpayuqj81a7y55y6l8s';
 
 const STATE_KEY = 'onized-hub-state.json';
+const STATE_META_KEY = 'onized-hub-meta.json';
 const AUTH_STATS_KEY = 'onized-hub-auth-stats.json';
 const ANALYTICS_KEY = 'onized-hub-analytics.json';
 const BACKUPS_INDEX_KEY = 'backups/index.json';
+
+// Короткий RAM-кэш метки версии внутри теплого контейнера функции для легкого ?action=ping
+let warmMetaCache = null;
+const WARM_META_TTL_MS = 8000;
 
 const MAX_BODY_BYTES = 4 * 1024 * 1024; // 4 МБ максимум
 const MAX_RECENT_LOGINS = 150;
@@ -439,6 +444,7 @@ export async function handler(event, context) {
       headers: CORS,
       body: JSON.stringify({
         ok: true,
+        pingSupported: true,
         authStatsSupported: true,
         telemetrySupported: true,
         backupsSupported: true,
@@ -819,6 +825,14 @@ export async function handler(event, context) {
       restored.lastUpdatedBy = auth.login;
 
       await writeJsonToBucket(STATE_KEY, JSON.stringify(restored), iamToken);
+      const metaObj = {
+        updatedAt: restored.updatedAt,
+        updatedBy: restored.lastUpdatedBy,
+      };
+      warmMetaCache = { ...metaObj, checkedAtMs: Date.now() };
+      await writeJsonToBucket(STATE_META_KEY, JSON.stringify(metaObj), iamToken).catch(
+        () => {}
+      );
 
       return {
         statusCode: 200,
@@ -834,12 +848,65 @@ export async function handler(event, context) {
     }
   }
 
+  // Легкий ~65-байтный пинг актуальной версии базы для фонового автообновления у зрителей
+  if (method === 'GET' && action === 'ping') {
+    const now = Date.now();
+    if (warmMetaCache && now - warmMetaCache.checkedAtMs < WARM_META_TTL_MS) {
+      return {
+        statusCode: 200,
+        headers: CORS,
+        body: JSON.stringify({
+          ping: true,
+          updatedAt: warmMetaCache.updatedAt,
+          updatedBy: warmMetaCache.updatedBy,
+        }),
+      };
+    }
+
+    let meta = await readJsonFromBucket(STATE_META_KEY, iamToken, () => null);
+    if (!meta || !meta.updatedAt) {
+      const state = await readJsonFromBucket(STATE_KEY, iamToken, createEmptyState);
+      meta = {
+        updatedAt: String(state.updatedAt || ''),
+        updatedBy: String(state.lastUpdatedBy || ''),
+      };
+      if (meta.updatedAt) {
+        await writeJsonToBucket(STATE_META_KEY, JSON.stringify(meta), iamToken).catch(
+          () => {}
+        );
+      }
+    }
+
+    warmMetaCache = {
+      updatedAt: String(meta.updatedAt || ''),
+      updatedBy: String(meta.updatedBy || ''),
+      checkedAtMs: now,
+    };
+
+    return {
+      statusCode: 200,
+      headers: CORS,
+      body: JSON.stringify({
+        ping: true,
+        updatedAt: warmMetaCache.updatedAt,
+        updatedBy: warmMetaCache.updatedBy,
+      }),
+    };
+  }
+
   if (method === 'GET') {
     const state = await readJsonFromBucket(
       STATE_KEY,
       iamToken,
       createEmptyState
     );
+    if (state?.updatedAt) {
+      warmMetaCache = {
+        updatedAt: String(state.updatedAt),
+        updatedBy: String(state.lastUpdatedBy || ''),
+        checkedAtMs: Date.now(),
+      };
+    }
     return { statusCode: 200, headers: CORS, body: JSON.stringify(state) };
   }
 
@@ -970,6 +1037,14 @@ export async function handler(event, context) {
       next.lastUpdatedBy = login;
 
       await writeJsonToBucket(STATE_KEY, JSON.stringify(next), iamToken);
+      const metaObj = {
+        updatedAt: next.updatedAt,
+        updatedBy: login,
+      };
+      warmMetaCache = { ...metaObj, checkedAtMs: Date.now() };
+      await writeJsonToBucket(STATE_META_KEY, JSON.stringify(metaObj), iamToken).catch(
+        () => {}
+      );
 
       return {
         statusCode: 200,

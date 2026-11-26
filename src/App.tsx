@@ -34,6 +34,7 @@ import {
   PERMANENT_ADMINS,
   PersistOptions,
   persistSiteData,
+  pollRemoteStateIfChanged,
   startTwitchOAuth,
 } from './services/authAndStorage';
 import { HubView, NavTab } from './views/HubView';
@@ -274,6 +275,62 @@ export const App: React.FC = () => {
       });
     }
   }, [data, pendingCloudMigration, canEdit, user, cfg.apiBaseUrl]);
+
+  const isDataLoaded = data !== null;
+
+  // Бесшумное фоновое автообновление списка для зрителей и модераторов без перезагрузки страницы
+  useEffect(() => {
+    if (!isDataLoaded || !cfg.apiBaseUrl) return;
+
+    let cancelled = false;
+    let timerId: number | null = null;
+    let lastCheckedAt = Date.now();
+    let currentIntervalMs = 25000;
+
+    const scheduleNext = (delayMs: number) => {
+      if (cancelled) return;
+      if (timerId !== null) window.clearTimeout(timerId);
+      timerId = window.setTimeout(runPoll, delayMs);
+    };
+
+    const runPoll = async () => {
+      if (cancelled) return;
+      if (document.hidden) {
+        scheduleNext(currentIntervalMs);
+        return;
+      }
+      lastCheckedAt = Date.now();
+      const res = await pollRemoteStateIfChanged(cfg.apiBaseUrl);
+      if (cancelled) return;
+
+      // Пока на сервере крутится старый index.js - опрашиваем раз в 45 сек; с новым ping (~65 байт) - раз в 25 сек
+      currentIntervalMs = res.legacyMode ? 45000 : 25000;
+
+      if (res.changed && res.data) {
+        setData(res.data);
+        setDataSource('remote');
+      }
+      scheduleNext(currentIntervalMs);
+    };
+
+    const handleVisibilityOrFocus = () => {
+      if (cancelled || document.hidden) return;
+      if (Date.now() - lastCheckedAt >= 12000) {
+        runPoll();
+      }
+    };
+
+    scheduleNext(currentIntervalMs);
+    document.addEventListener('visibilitychange', handleVisibilityOrFocus);
+    window.addEventListener('focus', handleVisibilityOrFocus);
+
+    return () => {
+      cancelled = true;
+      if (timerId !== null) window.clearTimeout(timerId);
+      document.removeEventListener('visibilitychange', handleVisibilityOrFocus);
+      window.removeEventListener('focus', handleVisibilityOrFocus);
+    };
+  }, [isDataLoaded, cfg.apiBaseUrl]);
 
   useEffect(() => {
     updateTelemetryAuthState(Boolean(user));

@@ -287,6 +287,9 @@ function ensurePermanentAdmins(d: SiteData): SiteData {
 }
 
 let lastKnownServerUpdatedAt = '';
+let activeSaveCount = 0;
+let saveEpoch = 0;
+let pollInFlight = false;
 
 export interface PersistOptions {
   forceOverwrite?: boolean;
@@ -299,6 +302,7 @@ export async function persistSiteData(
   user: TwitchUser | null,
   options?: PersistOptions
 ): Promise<{ savedRemote: boolean; conflict?: boolean; error?: string }> {
+  saveEpoch += 1;
   const stamped: SiteData = ensurePermanentAdmins({
     ...next,
     updatedAt: new Date().toISOString(),
@@ -321,6 +325,7 @@ export async function persistSiteData(
     };
   }
 
+  activeSaveCount += 1;
   try {
     const isYandexFn = apiBaseUrl.includes('functions.yandexcloud.net');
     const headers: Record<string, string> = {
@@ -367,6 +372,121 @@ export async function persistSiteData(
     return { savedRemote: true };
   } catch (e: any) {
     return { savedRemote: false, error: e?.message || 'Не удалось связаться с сервером БД' };
+  } finally {
+    activeSaveCount = Math.max(0, activeSaveCount - 1);
+  }
+}
+
+/**
+ * Бесшумная фоновая проверка свежих изменений в облаке.
+ * Работает сразу в двух режимах:
+ * 1) Если на сервере уже обновлен index.js (?action=ping) - скачивает только ~65 байт и тянет полную базу только при смене updatedAt.
+ * 2) Пока на сервере крутится старый index.js - принимает пришедший полный JSON без второго запроса и обновляет UI только если изменился updatedAt.
+ */
+export async function pollRemoteStateIfChanged(apiBaseUrl: string): Promise<{
+  changed: boolean;
+  data?: SiteData;
+  legacyMode: boolean;
+}> {
+  if (!apiBaseUrl || activeSaveCount > 0 || pollInFlight) {
+    return { changed: false, legacyMode: false };
+  }
+
+  pollInFlight = true;
+  const epochBefore = saveEpoch;
+
+  try {
+    const cleanBase = apiBaseUrl.replace(/\/+$/, '');
+    const pingUrl = cleanBase.includes('functions.yandexcloud.net')
+      ? `${cleanBase}?action=ping`
+      : `${cleanBase}/api/state`;
+
+    const res = await fetch(pingUrl, { cache: 'no-store' });
+    if (!res.ok) {
+      return { changed: false, legacyMode: false };
+    }
+
+    const json = await res.json();
+    if (activeSaveCount > 0 || saveEpoch !== epochBefore) {
+      return { changed: false, legacyMode: false };
+    }
+
+    // Режим 1: легкий ~65-байтный ответ { ping: true, updatedAt } от нового index.js
+    if (json && json.ping === true) {
+      const remoteStamp = String(json.updatedAt || '');
+      if (!remoteStamp) {
+        return { changed: false, legacyMode: false };
+      }
+      if (!lastKnownServerUpdatedAt) {
+        lastKnownServerUpdatedAt = remoteStamp;
+        return { changed: false, legacyMode: false };
+      }
+      if (remoteStamp === lastKnownServerUpdatedAt) {
+        return { changed: false, legacyMode: false };
+      }
+
+      const fullRes = await fetch(buildStateEndpoint(apiBaseUrl), {
+        cache: 'no-store',
+      });
+      if (!fullRes.ok) {
+        return { changed: false, legacyMode: false };
+      }
+      const remote = await fullRes.json();
+      if (activeSaveCount > 0 || saveEpoch !== epochBefore) {
+        return { changed: false, legacyMode: false };
+      }
+      if (
+        remote &&
+        Array.isArray(remote.games) &&
+        (remote.games.length > 0 ||
+          (Array.isArray(remote.watchlist) && remote.watchlist.length > 0))
+      ) {
+        const normalized = ensurePermanentAdmins(remote);
+        lastKnownServerUpdatedAt = String(remote.updatedAt || remoteStamp);
+        try {
+          localStorage.setItem(LOCAL_DATA_KEY, JSON.stringify(normalized));
+        } catch {
+          // Ignore quota
+        }
+        return { changed: true, data: normalized, legacyMode: false };
+      }
+      return { changed: false, legacyMode: false };
+    }
+
+    // Режим 2: старый index.js (пока не обновлен в консоли YC) сразу вернул полный объект базы
+    if (
+      json &&
+      Array.isArray(json.games) &&
+      (json.games.length > 0 ||
+        (Array.isArray(json.watchlist) && json.watchlist.length > 0))
+    ) {
+      const remoteStamp = String(json.updatedAt || '');
+      if (!remoteStamp) {
+        return { changed: false, legacyMode: true };
+      }
+      if (!lastKnownServerUpdatedAt) {
+        lastKnownServerUpdatedAt = remoteStamp;
+        return { changed: false, legacyMode: true };
+      }
+      if (remoteStamp === lastKnownServerUpdatedAt) {
+        return { changed: false, legacyMode: true };
+      }
+
+      const normalized = ensurePermanentAdmins(json);
+      lastKnownServerUpdatedAt = remoteStamp;
+      try {
+        localStorage.setItem(LOCAL_DATA_KEY, JSON.stringify(normalized));
+      } catch {
+        // Ignore quota
+      }
+      return { changed: true, data: normalized, legacyMode: true };
+    }
+
+    return { changed: false, legacyMode: false };
+  } catch {
+    return { changed: false, legacyMode: false };
+  } finally {
+    pollInFlight = false;
   }
 }
 
@@ -508,6 +628,8 @@ export async function restoreCloudBackupSlot(
   if (!apiBaseUrl || !user?.accessToken) {
     return { error: 'Не выполнен вход через Twitch' };
   }
+  saveEpoch += 1;
+  activeSaveCount += 1;
   try {
     const cleanBase = apiBaseUrl.replace(/\/+$/, '');
     const res = await fetch(`${cleanBase}?action=restore-backup`, {
@@ -535,5 +657,7 @@ export async function restoreCloudBackupSlot(
     return { error: 'Пустой ответ при восстановлении бэкапа' };
   } catch (e: any) {
     return { error: e?.message || 'Не удалось восстановить бэкап' };
+  } finally {
+    activeSaveCount = Math.max(0, activeSaveCount - 1);
   }
 }
