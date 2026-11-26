@@ -1,5 +1,6 @@
 import { RuntimeConfig, SiteData, TwitchUser, UserRole } from '../types';
 import { normalizeOrdererName } from '../utils/orderers';
+import { resolveMemeImageUrl } from '../utils/builtinMemes';
 
 const LOCAL_DATA_KEY = 'onized_hub_local_state_v1';
 const LOCAL_USER_KEY = 'onized_hub_twitch_user_v1';
@@ -173,13 +174,35 @@ export function buildStateEndpoint(apiBaseUrl: string): string {
   return `${cleanBase}/api/state`;
 }
 
+function createEmptyFallbackData(): SiteData {
+  return {
+    version: 2,
+    updatedAt: new Date().toISOString(),
+    admins: PERMANENT_ADMINS,
+    moderators: [],
+    hubConfig: {
+      headline: 'OniZeD Hub',
+      subheadline: 'База прохождений, заказов зрителей, просмотрового и тир-листов',
+      freezeBanner: '',
+      currentPlanNote: '',
+      twitchUrl: 'https://www.twitch.tv/onized',
+      vkVodUrl: 'https://vkvideo.ru/@onized',
+    },
+    games: [],
+    watchlist: [],
+    memes: [],
+    backlog: [],
+    ratingScale: [],
+    rules: [],
+    customTierLists: [],
+  };
+}
+
 export async function loadInitialSiteData(apiBaseUrl: string): Promise<{
   data: SiteData;
   source: 'remote' | 'local' | 'seed';
+  needsMigration?: boolean;
 }> {
-  const seedRes = await fetch('./seed-data.json');
-  const seedData = (await seedRes.json()) as SiteData;
-
   if (apiBaseUrl) {
     try {
       const res = await fetch(buildStateEndpoint(apiBaseUrl), { cache: 'no-store' });
@@ -190,11 +213,30 @@ export async function loadInitialSiteData(apiBaseUrl: string): Promise<{
           Array.isArray(remote.games) &&
           (remote.games.length > 0 || (remote.watchlist && remote.watchlist.length > 0))
         ) {
-          return { data: ensurePermanentAdmins(remote), source: 'remote' };
+          const hadLegacyMemes = (remote.memes || []).some(
+            (m: any) => m?.imageUrl && !String(m.imageUrl).startsWith('data:') && String(m.imageUrl).includes('memes/')
+          );
+          const hadLegacyStreamer = [...(remote.games || []), ...(remote.watchlist || [])].some(
+            (x: any) => {
+              const low = String(x?.orderedBy || '').trim().toLowerCase();
+              return low === 'я' || low === 'onized';
+            }
+          );
+          const normalized = ensurePermanentAdmins(remote);
+          try {
+            localStorage.setItem(LOCAL_DATA_KEY, JSON.stringify(normalized));
+          } catch {
+            // Ignore quota
+          }
+          return {
+            data: normalized,
+            source: 'remote',
+            needsMigration: hadLegacyMemes || hadLegacyStreamer,
+          };
         }
       }
     } catch {
-      // Fallback to local / seed if remote temporarily unreachable
+      // Fallback to local cache if remote temporarily unreachable
     }
   }
 
@@ -202,11 +244,7 @@ export async function loadInitialSiteData(apiBaseUrl: string): Promise<{
     const localRaw = localStorage.getItem(LOCAL_DATA_KEY);
     if (localRaw) {
       const localData = JSON.parse(localRaw) as SiteData;
-      if (
-        localData &&
-        Array.isArray(localData.games) &&
-        (localData.version || 1) >= (seedData.version || 1)
-      ) {
+      if (localData && Array.isArray(localData.games)) {
         return { data: ensurePermanentAdmins(localData), source: 'local' };
       }
     }
@@ -214,7 +252,7 @@ export async function loadInitialSiteData(apiBaseUrl: string): Promise<{
     // Ignore
   }
 
-  return { data: ensurePermanentAdmins(seedData), source: 'seed' };
+  return { data: createEmptyFallbackData(), source: 'seed' };
 }
 
 function ensurePermanentAdmins(d: SiteData): SiteData {
@@ -234,7 +272,10 @@ function ensurePermanentAdmins(d: SiteData): SiteData {
       orderedBy: normalizeOrdererName(w.orderedBy),
     })),
     customTierLists: d.customTierLists || [],
-    memes: d.memes || [],
+    memes: (d.memes || []).map((m) => ({
+      ...m,
+      imageUrl: resolveMemeImageUrl(m.imageUrl),
+    })),
   };
 }
 

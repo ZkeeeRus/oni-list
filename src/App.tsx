@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   BookOpen,
   Dices,
@@ -8,7 +8,9 @@ import {
   Layers,
   ListTodo,
   LogIn,
+  Redo2,
   ShieldCheck,
+  Undo2,
 } from 'lucide-react';
 import {
   BacklogItem,
@@ -65,7 +67,13 @@ export const App: React.FC = () => {
   const [user, setUser] = useState<TwitchUser | null>(null);
   const [activeTab, setActiveTab] = useState<NavTab>('hub');
   const [gamesOrdererPreset, setGamesOrdererPreset] = useState<string>('');
-  const [toast, setToast] = useState<string | null>(null);
+  const [toast, setToast] = useState<{ text: string; canUndo?: boolean } | null>(null);
+  const toastTimerRef = useRef<number | null>(null);
+
+  // Undo / Redo history stack
+  const [undoStack, setUndoStack] = useState<Array<{ snapshot: SiteData; label: string }>>([]);
+  const [redoStack, setRedoStack] = useState<Array<{ snapshot: SiteData; label: string }>>([]);
+  const [pendingCloudMigration, setPendingCloudMigration] = useState(false);
 
   // Global Detail Inspection Modals (openable from ANY page!)
   const [inspectGameId, setInspectGameId] = useState<string | null>(null);
@@ -89,12 +97,18 @@ export const App: React.FC = () => {
   const [lightboxMeme, setLightboxMeme] = useState<MemeItem | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
 
-  const showToast = (msg: string) => {
-    setToast(msg);
-    setTimeout(() => {
-      setToast((prev) => (prev === msg ? null : prev));
-    }, 3200);
-  };
+  const showToast = useCallback((text: string, canUndo = false) => {
+    if (toastTimerRef.current) {
+      window.clearTimeout(toastTimerRef.current);
+    }
+    setToast({ text, canUndo });
+    toastTimerRef.current = window.setTimeout(
+      () => {
+        setToast((prev) => (prev?.text === text ? null : prev));
+      },
+      canUndo ? 6500 : 3200
+    );
+  }, []);
 
   useEffect(() => {
     loadGameMetaMap();
@@ -107,6 +121,9 @@ export const App: React.FC = () => {
       ]);
       setData(loadedData.data);
       setDataSource(loadedData.source);
+      if (loadedData.needsMigration) {
+        setPendingCloudMigration(true);
+      }
       setUser(twitchSession.user);
       if (twitchSession.justLoggedIn && twitchSession.user) {
         setSettingsOpen(true);
@@ -117,39 +134,106 @@ export const App: React.FC = () => {
   const role = getUserRole(user, data, cfg);
   const canEdit = role === 'admin' || role === 'moderator';
 
-  // Auto-initialize cloud bucket with seed data on first real Twitch login of an admin
+  // Auto-persist one-time migration (inline WebP memes + normalized orderer names) into cloud
   useEffect(() => {
     if (
       data &&
-      dataSource === 'seed' &&
+      pendingCloudMigration &&
       canEdit &&
       user &&
       !user.isPreview &&
       user.accessToken &&
       cfg.apiBaseUrl
     ) {
+      setPendingCloudMigration(false);
       persistSiteData(data, cfg.apiBaseUrl, user).then((res) => {
         if (res.savedRemote) {
           setDataSource('remote');
-          showToast('Стартовая база синхронизирована с облаком!');
         }
       });
     }
-  }, [dataSource, canEdit, user, cfg.apiBaseUrl]);
+  }, [data, pendingCloudMigration, canEdit, user, cfg.apiBaseUrl]);
 
   const commitData = async (next: SiteData, message?: string) => {
+    if (data) {
+      setUndoStack((prev) => [
+        ...prev.slice(-24),
+        { snapshot: data, label: message || 'Изменение' },
+      ]);
+      setRedoStack([]);
+    }
     setData(next);
     const res = await persistSiteData(next, cfg.apiBaseUrl, user);
     if (res.savedRemote) {
       setDataSource('remote');
-      showToast(message || 'Сохранено в облачную БД');
+      showToast(message || 'Сохранено в облачную БД', true);
     } else if (res.error) {
-      showToast(res.error);
+      showToast(res.error, true);
     } else {
       setDataSource('local');
-      if (message) showToast(`${message} (черновик в браузере)`);
+      showToast(`${message || 'Сохранено'} (черновик в браузере)`, true);
     }
   };
+
+  const handleUndo = useCallback(async () => {
+    if (!data || undoStack.length === 0) return;
+    const last = undoStack[undoStack.length - 1];
+    setUndoStack((prev) => prev.slice(0, -1));
+    setRedoStack((prev) => [...prev.slice(-24), { snapshot: data, label: last.label }]);
+    setData(last.snapshot);
+    const res = await persistSiteData(last.snapshot, cfg.apiBaseUrl, user);
+    if (res.savedRemote) {
+      setDataSource('remote');
+    }
+    showToast(`Отменено: ${last.label}`, false);
+  }, [data, undoStack, cfg.apiBaseUrl, user, showToast]);
+
+  const handleRedo = useCallback(async () => {
+    if (!data || redoStack.length === 0) return;
+    const nextEntry = redoStack[redoStack.length - 1];
+    setRedoStack((prev) => prev.slice(0, -1));
+    setUndoStack((prev) => [
+      ...prev.slice(-24),
+      { snapshot: data, label: nextEntry.label },
+    ]);
+    setData(nextEntry.snapshot);
+    const res = await persistSiteData(nextEntry.snapshot, cfg.apiBaseUrl, user);
+    if (res.savedRemote) {
+      setDataSource('remote');
+    }
+    showToast(`Возвращено: ${nextEntry.label}`, false);
+  }, [data, redoStack, cfg.apiBaseUrl, user, showToast]);
+
+  // Ctrl+Z / Ctrl+Shift+Z / Ctrl+Y support outside text inputs
+  useEffect(() => {
+    if (!canEdit) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (!(e.ctrlKey || e.metaKey)) return;
+      const active = document.activeElement as HTMLElement | null;
+      if (
+        active &&
+        (active.tagName === 'INPUT' ||
+          active.tagName === 'TEXTAREA' ||
+          active.tagName === 'SELECT' ||
+          active.isContentEditable)
+      ) {
+        return;
+      }
+      if (e.code === 'KeyZ' && !e.shiftKey) {
+        if (undoStack.length > 0) {
+          e.preventDefault();
+          handleUndo();
+        }
+      } else if ((e.code === 'KeyZ' && e.shiftKey) || e.code === 'KeyY') {
+        if (redoStack.length > 0) {
+          e.preventDefault();
+          handleRedo();
+        }
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [canEdit, undoStack.length, redoStack.length, handleUndo, handleRedo]);
 
   const inspectedGame = useMemo(
     () => (inspectGameId && data ? data.games.find((g) => g.id === inspectGameId) || null : null),
@@ -282,6 +366,27 @@ export const App: React.FC = () => {
           </nav>
 
           <div className="nav-right">
+            {canEdit && undoStack.length > 0 && (
+              <button
+                type="button"
+                className="undo-nav-btn"
+                onClick={handleUndo}
+                title={`Отменить: ${undoStack[undoStack.length - 1].label} (Ctrl+Z)`}
+              >
+                <Undo2 size={15} />
+                <span className="undo-nav-label">Отменить</span>
+              </button>
+            )}
+            {canEdit && redoStack.length > 0 && (
+              <button
+                type="button"
+                className="undo-nav-btn redo-only"
+                onClick={handleRedo}
+                title={`Вернуть: ${redoStack[redoStack.length - 1].label} (Ctrl+Y)`}
+              >
+                <Redo2 size={15} />
+              </button>
+            )}
             {user ? (
               <button
                 type="button"
@@ -688,7 +793,16 @@ export const App: React.FC = () => {
         />
       )}
 
-      {toast && <div className="toast-popup">{toast}</div>}
+      {toast && (
+        <div className="toast-popup">
+          <span>{toast.text}</span>
+          {toast.canUndo && canEdit && undoStack.length > 0 && (
+            <button type="button" className="toast-undo-btn" onClick={handleUndo}>
+              <Undo2 size={14} /> Отменить
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 };
