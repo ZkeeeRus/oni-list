@@ -102,97 +102,33 @@ function isSameCandidate(a?: RollCandidate, b?: RollCandidate): boolean {
   return a.title.trim().toLowerCase() === b.title.trim().toLowerCase();
 }
 
-// Строит ленту рулетки без идущих подряд одинаковых карточек (строгое чередование при 2 вариантах и перемешанные колоды без стыков при 3+)
+// Перемешивает весь пул вариантов один раз за прокрут и зацикливает его по кругу (напр. 3-4-2-1-3-4-2-1...) с точным попаданием победителя в winSlot
 function buildAlternatingReelSequence(
   candidates: RollCandidate[],
   chosen: RollCandidate,
   totalSlots: number,
   winSlot: number
 ): RollCandidate[] {
-  if (candidates.length === 0) return [];
-  if (candidates.length === 1) {
+  const n = candidates.length;
+  if (n === 0) return [];
+  if (n === 1) {
     return Array.from({ length: totalSlots }, () => candidates[0]);
   }
 
-  // При 2 вариантах строго чередуем A, B, A, B... с точным попаданием chosen в winSlot
-  const distinctOthers = candidates.filter((c) => !isSameCandidate(c, chosen));
-  if (distinctOthers.length === 0) {
-    return Array.from({ length: totalSlots }, (_, i) =>
-      i === winSlot ? chosen : candidates[i % candidates.length]
-    );
+  const cycle = shuffleCandidates(candidates);
+  let chosenIdx = cycle.findIndex((c) => c.id === chosen.id);
+  if (chosenIdx === -1) {
+    chosenIdx = cycle.findIndex((c) => isSameCandidate(c, chosen));
   }
-  if (candidates.length === 2 || distinctOthers.length === 1) {
-    const other = distinctOthers[0];
-    return Array.from({ length: totalSlots }, (_, i) =>
-      Math.abs(winSlot - i) % 2 === 0 ? chosen : other
-    );
+  if (chosenIdx === -1) {
+    chosenIdx = 0;
+    cycle[0] = chosen;
   }
 
-  // При 3 и более вариантах тянем карточки из перемешанных колод без повторов на границах
-  const sequence: RollCandidate[] = [];
-  let deck: RollCandidate[] = [];
-
-  for (let i = 0; i < totalSlots; i++) {
-    if (deck.length === 0) {
-      deck = shuffleCandidates(candidates);
-    }
-    const prev1 = sequence[i - 1];
-    const prev2 = sequence[i - 2];
-
-    let pickIdx = deck.findIndex(
-      (c) =>
-        !isSameCandidate(c, prev1) &&
-        (candidates.length < 4 || !isSameCandidate(c, prev2))
-    );
-    if (pickIdx === -1) {
-      pickIdx = deck.findIndex((c) => !isSameCandidate(c, prev1));
-    }
-
-    if (pickIdx !== -1) {
-      const [picked] = deck.splice(pickIdx, 1);
-      sequence.push(picked);
-    } else {
-      // В остатке колоды лежал тот же элемент, что и prev1 - сбрасываем остаток и берем другой вариант
-      deck = [];
-      const fallbackPool = candidates.filter(
-        (c) =>
-          !isSameCandidate(c, prev1) &&
-          (candidates.length < 4 || !isSameCandidate(c, prev2))
-      );
-      const poolToUse =
-        fallbackPool.length > 0
-          ? fallbackPool
-          : candidates.filter((c) => !isSameCandidate(c, prev1));
-      sequence.push(poolToUse[Math.floor(Math.random() * poolToUse.length)]);
-    }
-  }
-
-  // Ставим выбранный вариант ровно в winSlot и чиним соседей слева/справа, чтобы не возникло повтора
-  sequence[winSlot] = chosen;
-
-  if (winSlot >= 1 && isSameCandidate(sequence[winSlot - 1], chosen)) {
-    const prevLeft = sequence[winSlot - 2];
-    const validLeft = candidates.filter(
-      (c) => !isSameCandidate(c, chosen) && !isSameCandidate(c, prevLeft)
-    );
-    if (validLeft.length > 0) {
-      sequence[winSlot - 1] =
-        validLeft[Math.floor(Math.random() * validLeft.length)];
-    }
-  }
-
-  if (winSlot + 1 < totalSlots && isSameCandidate(sequence[winSlot + 1], chosen)) {
-    const nextRight = sequence[winSlot + 2];
-    const validRight = candidates.filter(
-      (c) => !isSameCandidate(c, chosen) && !isSameCandidate(c, nextRight)
-    );
-    if (validRight.length > 0) {
-      sequence[winSlot + 1] =
-        validRight[Math.floor(Math.random() * validRight.length)];
-    }
-  }
-
-  return sequence;
+  return Array.from({ length: totalSlots }, (_, i) => {
+    const pos = (((i - winSlot + chosenIdx) % n) + n) % n;
+    return cycle[pos];
+  });
 }
 
 export const StatsRandomizerView: React.FC<StatsRandomizerViewProps> = ({

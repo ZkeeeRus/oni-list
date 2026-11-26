@@ -11,12 +11,10 @@ import {
   Clock,
   Edit3,
   ExternalLink,
-  ImagePlus,
   LayoutGrid,
   List,
   Plus,
   Search,
-  Trash2,
   Video,
   X,
 } from 'lucide-react';
@@ -245,23 +243,6 @@ const GameGridCard: React.FC<GameGridCardProps> = memo(
                 onClick={() => onEditGame(g)}
               >
                 <Edit3 size={13} /> Править
-              </button>
-              <button
-                className="btn btn-ghost btn-xs"
-                onClick={() => onAddMemeForGame(g)}
-                title="Прикрепить мем со стрима"
-              >
-                <ImagePlus size={13} /> + Мем
-              </button>
-              <button
-                className="btn btn-ghost btn-xs danger-text"
-                onClick={() => {
-                  if (confirm(`Удалить «${g.title}» из списка?`)) {
-                    onDeleteGame(g.id);
-                  }
-                }}
-              >
-                <Trash2 size={13} />
               </button>
             </div>
           )}
@@ -673,13 +654,12 @@ export const GamesView: React.FC<GamesViewProps> = memo(
             <table className="data-table">
               <thead>
                 <tr>
-                  <th>Игра</th>
-                  <th>Кто заказал</th>
-                  <th>Статус / Дроп / Возврат</th>
-                  <th>Оценка</th>
-                  <th>Условия и комментарий</th>
-                  <th>Часы / Ссылки</th>
-                  {canEdit && <th>Действия</th>}
+                  <th className="col-game">Игра</th>
+                  <th className="col-orderer">Заказчик</th>
+                  <th className="col-status">Статус</th>
+                  <th className="col-rating">Оценка</th>
+                  <th className="col-notes">Условия и отзыв</th>
+                  <th className="col-links">Ссылки</th>
                 </tr>
               </thead>
               <tbody>
@@ -689,10 +669,11 @@ export const GamesView: React.FC<GamesViewProps> = memo(
                   const hltbUrl = extra?.hltbUrl ?? getGameHltbUrl(g.title);
                   const displayTime =
                     extra?.displayTime ?? (g.hours ? `${g.hours}ч` : '');
+                  const metaLine = extra?.metaLine || '';
 
                   return (
                     <tr key={g.id} onClick={() => onInspectGame(g.id)}>
-                      <td>
+                      <td className="col-game">
                         <div className="table-title-cell">
                           <CoverImage
                             title={g.title}
@@ -700,10 +681,15 @@ export const GamesView: React.FC<GamesViewProps> = memo(
                             steamAppId={g.steamAppId}
                             className="table-thumb"
                           />
-                          <strong>{g.title}</strong>
+                          <div className="table-game-meta">
+                            <strong className="table-game-name">{g.title}</strong>
+                            {metaLine && (
+                              <span className="table-sub-meta">{metaLine}</span>
+                            )}
+                          </div>
                         </div>
                       </td>
-                      <td>
+                      <td className="col-orderer">
                         <button
                           type="button"
                           className="link-inline"
@@ -715,12 +701,14 @@ export const GamesView: React.FC<GamesViewProps> = memo(
                           {g.orderedBy}
                         </button>
                       </td>
-                      <td onClick={(e) => canEdit && e.stopPropagation()}>
-                        <div className="row-gap-xs wrap">
+                      <td
+                        className="col-status"
+                        onClick={(e) => canEdit && e.stopPropagation()}
+                      >
+                        <div className="table-status-stack">
                           {canEdit ? (
                             <select
-                              className="input input-xs"
-                              style={{ width: 'auto' }}
+                              className="input table-select"
                               value={g.status}
                               onChange={(e) =>
                                 onQuickUpdateGame({ ...g, status: e.target.value })
@@ -735,20 +723,27 @@ export const GamesView: React.FC<GamesViewProps> = memo(
                           ) : (
                             <StatusBadge status={g.status} />
                           )}
-                          <DropPriceBadge price={g.dropPrice} />
-                          <ReturnPriceBadge price={g.returnPrice} />
+                          {(g.dropPrice || g.returnPrice) && (
+                            <div className="row-gap-xs wrap">
+                              <DropPriceBadge price={g.dropPrice} />
+                              <ReturnPriceBadge price={g.returnPrice} />
+                            </div>
+                          )}
                         </div>
                       </td>
-                      <td onClick={(e) => canEdit && e.stopPropagation()}>
+                      <td
+                        className="col-rating"
+                        onClick={(e) => canEdit && e.stopPropagation()}
+                      >
                         {canEdit ? (
                           <select
-                            className="input input-xs"
+                            className="input table-select table-select-rating"
                             value={g.rating}
                             onChange={(e) =>
                               onQuickUpdateGame({ ...g, rating: e.target.value })
                             }
                           >
-                            <option value="">-</option>
+                            <option value="">Без оценки</option>
                             {RATINGS_ORDER.map((r) => (
                               <option key={r} value={r}>
                                 {r}
@@ -759,27 +754,35 @@ export const GamesView: React.FC<GamesViewProps> = memo(
                           <RatingBadge rating={g.rating} />
                         )}
                       </td>
-                      <td className="table-notes-cell">
+                      <td className="col-notes table-notes-cell">
                         {g.conditions && (
-                          <div className="conditions-inline">
+                          <div className="conditions-inline clamp-2">
                             <strong>Условия:</strong> {g.conditions}
                           </div>
                         )}
-                        {g.comment && <div className="muted-sm">{g.comment}</div>}
+                        {g.comment && (
+                          <div className="muted-sm clamp-2">{g.comment}</div>
+                        )}
+                        {!g.conditions && !g.comment && (
+                          <span className="muted-xs">-</span>
+                        )}
                       </td>
-                      <td onClick={(e) => e.stopPropagation()}>
-                        <div className="row-gap-xs wrap">
+                      <td
+                        className="col-links"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <div className="table-links-wrap">
                           {displayTime && (
-                            <span className="muted-sm">{displayTime}</span>
+                            <span className="badge">{displayTime}</span>
                           )}
                           {g.vodUrl && (
                             <a
                               href={g.vodUrl}
                               target="_blank"
                               rel="noreferrer"
-                              className="btn btn-secondary btn-xs"
+                              className="ext-chip"
                             >
-                              VOD
+                              <Video size={11} /> VOD
                             </a>
                           )}
                           {steamUrl && (
@@ -787,47 +790,33 @@ export const GamesView: React.FC<GamesViewProps> = memo(
                               href={steamUrl}
                               target="_blank"
                               rel="noreferrer"
-                              className="btn btn-ghost btn-xs"
+                              className="ext-chip steam-chip"
                               title="Открыть в Steam"
                             >
-                              Steam
+                              Steam <ExternalLink size={11} />
                             </a>
                           )}
                           <a
                             href={hltbUrl}
                             target="_blank"
                             rel="noreferrer"
-                            className="btn btn-ghost btn-xs"
+                            className="ext-chip hltb-chip"
                             title="HowLongToBeat"
                           >
-                            HLTB
+                            HLTB <Clock size={11} />
                           </a>
-                        </div>
-                      </td>
-                      {canEdit && (
-                        <td onClick={(e) => e.stopPropagation()}>
-                          <div className="row-gap-xs">
+                          {canEdit && (
                             <button
-                              className="icon-btn"
+                              type="button"
+                              className="icon-btn header-edit-btn"
                               onClick={() => onEditGame(g)}
                               title="Редактировать"
                             >
-                              <Edit3 size={15} />
+                              <Edit3 size={14} />
                             </button>
-                            <button
-                              className="icon-btn danger-text"
-                              onClick={() => {
-                                if (confirm(`Удалить «${g.title}»?`)) {
-                                  onDeleteGame(g.id);
-                                }
-                              }}
-                              title="Удалить"
-                            >
-                              <Trash2 size={15} />
-                            </button>
-                          </div>
-                        </td>
-                      )}
+                          )}
+                        </div>
+                      </td>
                     </tr>
                   );
                 })}

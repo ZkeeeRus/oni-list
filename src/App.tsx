@@ -268,11 +268,15 @@ export const App: React.FC = () => {
       : 'false';
   }, [prefs]);
 
+  const role = getUserRole(user, data, cfg);
+  const canEdit = role === 'admin' || role === 'moderator';
+
   const activeTab = route.tab;
   const inspectGameId = route.inspectGameId;
   const inspectWatchId = route.inspectWatchId;
   const inspectBacklogId = route.inspectBacklogId;
-  const siteSettingsTab = route.settingsTab;
+  const siteSettingsTab =
+    route.settingsTab === 'admin' && !canEdit ? 'appearance' : route.settingsTab;
 
   const activeLightboxMeme = useMemo(() => {
     if (route.memeId && data) {
@@ -442,9 +446,6 @@ export const App: React.FC = () => {
       }
     })();
   }, [navigateRoute]);
-
-  const role = getUserRole(user, data, cfg);
-  const canEdit = role === 'admin' || role === 'moderator';
 
   // Auto-persist one-time migration (inline WebP memes + normalized orderer names) into cloud
   useEffect(() => {
@@ -1067,7 +1068,7 @@ export const App: React.FC = () => {
             )}
           </div>
         </div>
-        <HeaderGarland prefs={prefs} />
+        <HeaderGarland prefs={prefs} onUpdatePrefs={handleUpdatePrefs} />
       </header>
 
       {/* Main Content */}
@@ -1287,7 +1288,6 @@ export const App: React.FC = () => {
               'Игра обновлена'
             )
           }
-          onAddMeme={handleAddMemeForGame}
           onViewMeme={handleViewMeme}
           onEditMeme={(m) => {
             setEditingMeme(m);
@@ -1321,9 +1321,6 @@ export const App: React.FC = () => {
               },
               'Тайтл обновлен'
             )
-          }
-          onAddMeme={(w) =>
-            handleOpenMemeForTarget({ type: 'watch', id: w.id, title: w.title })
           }
           onViewMeme={handleViewMeme}
           onEditMeme={(m) => {
@@ -1380,6 +1377,23 @@ export const App: React.FC = () => {
               closeOverlayRoute((r) => ({ ...r, editorModal: null }));
             }
           }}
+          onDelete={(id) => {
+            handleDeleteGame(id);
+            setGameModalItem(undefined);
+            navigateRoute(
+              (r) => ({
+                ...r,
+                editorModal: null,
+                inspectGameId: r.inspectGameId === id ? null : r.inspectGameId,
+              }),
+              { replace: true }
+            );
+          }}
+          onAddMeme={(g) => {
+            setGameModalItem(undefined);
+            setMemeModalTarget({ type: 'game', id: g.id, title: g.title });
+            navigateRoute((r) => ({ ...r, editorModal: 'meme' }), { replace: true });
+          }}
         />
       )}
 
@@ -1406,6 +1420,23 @@ export const App: React.FC = () => {
               closeOverlayRoute((r) => ({ ...r, editorModal: null }));
             }
           }}
+          onDelete={(id) => {
+            handleDeleteWatch(id);
+            setWatchModalItem(undefined);
+            navigateRoute(
+              (r) => ({
+                ...r,
+                editorModal: null,
+                inspectWatchId: r.inspectWatchId === id ? null : r.inspectWatchId,
+              }),
+              { replace: true }
+            );
+          }}
+          onAddMeme={(w) => {
+            setWatchModalItem(undefined);
+            setMemeModalTarget({ type: 'watch', id: w.id, title: w.title });
+            navigateRoute((r) => ({ ...r, editorModal: 'meme' }), { replace: true });
+          }}
         />
       )}
 
@@ -1430,6 +1461,21 @@ export const App: React.FC = () => {
             if (routeRef.current.editorModal === 'backlog') {
               closeOverlayRoute((r) => ({ ...r, editorModal: null }));
             }
+          }}
+          onDelete={(id) => {
+            commitData(
+              { ...data, backlog: data.backlog.filter((x) => x.id !== id) },
+              'Идея удалена из бэклога'
+            );
+            setBacklogModalItem(undefined);
+            navigateRoute(
+              (r) => ({
+                ...r,
+                editorModal: null,
+                inspectBacklogId: r.inspectBacklogId === id ? null : r.inspectBacklogId,
+              }),
+              { replace: true }
+            );
           }}
         />
       )}
@@ -1463,6 +1509,25 @@ export const App: React.FC = () => {
               closeOverlayRoute((r) => ({ ...r, editorModal: null }));
             }
           }}
+          onDelete={(id) => {
+            commitData(
+              { ...data, memes: data.memes.filter((m) => m.id !== id) },
+              'Мем удален'
+            );
+            setMemeModalTarget(undefined);
+            setEditingMeme(null);
+            if (routeRef.current.memeId === id) {
+              setLightboxMemeFallback(null);
+            }
+            navigateRoute(
+              (r) => ({
+                ...r,
+                editorModal: null,
+                memeId: r.memeId === id ? null : r.memeId,
+              }),
+              { replace: true }
+            );
+          }}
         />
       )}
 
@@ -1478,23 +1543,12 @@ export const App: React.FC = () => {
             setEditingMeme(m);
             navigateRoute((r) => ({ ...r, editorModal: 'meme' }));
           }}
-          onDelete={(id) => {
-            commitData(
-              { ...data, memes: data.memes.filter((m) => m.id !== id) },
-              'Мем удален'
-            );
-            setLightboxMemeFallback(null);
-            closeOverlayRoute((r) => ({ ...r, memeId: null }));
-          }}
         />
       )}
 
       {viewerAccountOpen && user && (
         <AdminSettingsModal
           user={user}
-          role={role}
-          data={data}
-          dataSource={dataSource}
           onClose={() => {
             setViewerAccountOpen(false);
             if (routeRef.current.editorModal === 'account') {
@@ -1510,15 +1564,6 @@ export const App: React.FC = () => {
             }
             showToast('Вы вышли из аккаунта');
           }}
-          onUpdateModerators={(moderators) =>
-            commitData({ ...data, moderators }, 'Список модераторов обновлен')
-          }
-          onImportJson={(imported) =>
-            commitData(imported, 'Резервная копия успешно загружена!')
-          }
-          onForceCloudPush={() =>
-            commitData(data, 'Все текущие данные отправлены в облако!')
-          }
         />
       )}
 
@@ -1568,6 +1613,7 @@ export const App: React.FC = () => {
               forceOverwrite: true,
             })
           }
+          onShowToast={(msg) => showToast(msg, false)}
         />
       )}
 

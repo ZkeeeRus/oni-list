@@ -1,67 +1,21 @@
-import React, { useRef, useState } from 'react';
+import React from 'react';
 import {
   Clock,
   Edit3,
   ExternalLink,
-  ImageOff,
-  ImagePlus,
   Play,
-  Upload,
   Video,
   X,
 } from 'lucide-react';
 import { BacklogItem, GameItem, MemeItem, WatchItem } from '../types';
 import { CoverImage } from './CoverImage';
 import { resolveMemeImageUrl } from '../utils/builtinMemes';
-import { isForcedNoCover, NO_COVER_TOKEN } from '../utils/covers';
-import { compressCoverToWebpDataUrl } from '../utils/imageCompress';
 import {
   getGameHltbUrl,
   getGameSteamStoreUrl,
   lookupGameMeta,
   useGameMetaMap,
 } from '../utils/gameMeta';
-
-const QuickCoverUploadButton: React.FC<{
-  onUploaded: (webpDataUrl: string) => void;
-}> = ({ onUploaded }) => {
-  const inputRef = useRef<HTMLInputElement | null>(null);
-  const [busy, setBusy] = useState(false);
-
-  return (
-    <>
-      <button
-        type="button"
-        className="btn btn-secondary btn-sm"
-        disabled={busy}
-        onClick={() => inputRef.current?.click()}
-        title="Загрузить свою обложку из файла с сильным сжатием (~12-18 КБ WebP)"
-      >
-        <Upload size={14} /> {busy ? 'Сжимаем...' : 'Обложка из файла'}
-      </button>
-      <input
-        ref={inputRef}
-        type="file"
-        accept="image/*"
-        hidden
-        onChange={async (e) => {
-          const f = e.target.files?.[0];
-          e.target.value = '';
-          if (!f) return;
-          setBusy(true);
-          try {
-            const webp = await compressCoverToWebpDataUrl(f);
-            onUploaded(webp);
-          } catch (err: any) {
-            alert(err?.message || 'Не удалось сжать картинку');
-          } finally {
-            setBusy(false);
-          }
-        }}
-      />
-    </>
-  );
-};
 import {
   BACKLOG_STATUSES,
   DropPriceBadge,
@@ -81,7 +35,6 @@ export const GameDetailModal: React.FC<{
   onClose: () => void;
   onEdit: (g: GameItem) => void;
   onQuickUpdate: (g: GameItem) => void;
-  onAddMeme: (g: GameItem) => void;
   onViewMeme: (m: MemeItem) => void;
   onEditMeme?: (m: MemeItem) => void;
   onFilterByOrderer?: (orderer: string) => void;
@@ -92,7 +45,6 @@ export const GameDetailModal: React.FC<{
   onClose,
   onEdit,
   onQuickUpdate,
-  onAddMeme,
   onViewMeme,
   onEditMeme,
   onFilterByOrderer,
@@ -108,11 +60,24 @@ export const GameDetailModal: React.FC<{
     <div className="modal-backdrop" onClick={onClose}>
       <div className="modal-card modal-lg" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
-          <h3>{game.title}</h3>
+          <div className="modal-title-group">
+            <h3>{game.title}</h3>
+            {canEdit && (
+              <button
+                type="button"
+                className="icon-btn header-edit-btn"
+                onClick={() => onEdit(game)}
+                title="Редактировать игру"
+              >
+                <Edit3 size={16} />
+              </button>
+            )}
+          </div>
           <button className="icon-btn" onClick={onClose}>
             <X size={18} />
           </button>
         </div>
+
         <div className="modal-body detail-modal-grid">
           <CoverImage
             title={game.title}
@@ -149,10 +114,7 @@ export const GameDetailModal: React.FC<{
                 <button
                   type="button"
                   className="link-inline"
-                  onClick={() => {
-                    onClose();
-                    onFilterByOrderer(game.orderedBy);
-                  }}
+                  onClick={() => onFilterByOrderer(game.orderedBy)}
                 >
                   {game.orderedBy}
                 </button>
@@ -235,7 +197,7 @@ export const GameDetailModal: React.FC<{
                         <button
                           type="button"
                           className="meme-card-edit-btn"
-                          title="Редактировать описание мема"
+                          title="Редактировать мем"
                           onClick={() => onEditMeme(m)}
                         >
                           <Edit3 size={12} />
@@ -286,48 +248,6 @@ export const GameDetailModal: React.FC<{
                   <ExternalLink size={14} /> Ссылка / моды
                 </a>
               )}
-              {canEdit && (
-                <>
-                  <button
-                    className="btn btn-secondary btn-sm"
-                    onClick={() => onAddMeme(game)}
-                  >
-                    <ImagePlus size={14} /> + Мем (Ctrl+V)
-                  </button>
-                  <QuickCoverUploadButton
-                    onUploaded={(webp) =>
-                      onQuickUpdate({
-                        ...game,
-                        coverUrl: webp,
-                        steamAppId: null,
-                      })
-                    }
-                  />
-                  {!isForcedNoCover(game.coverUrl) && Boolean(game.coverUrl || game.steamAppId) && (
-                    <button
-                      className="btn btn-secondary btn-sm"
-                      onClick={() =>
-                        onQuickUpdate({
-                          ...game,
-                          coverUrl: NO_COVER_TOKEN,
-                          steamAppId: null,
-                        })
-                      }
-                    >
-                      <ImageOff size={14} /> Поставить заглушку
-                    </button>
-                  )}
-                  <button
-                    className="btn btn-secondary btn-sm"
-                    onClick={() => {
-                      onClose();
-                      onEdit(game);
-                    }}
-                  >
-                    <Edit3 size={14} /> Полное редактирование
-                  </button>
-                </>
-              )}
             </div>
           </div>
         </div>
@@ -343,7 +263,6 @@ export const WatchDetailModal: React.FC<{
   onClose: () => void;
   onEdit: (w: WatchItem) => void;
   onQuickUpdate: (w: WatchItem) => void;
-  onAddMeme: (w: WatchItem) => void;
   onViewMeme: (m: MemeItem) => void;
   onEditMeme?: (m: MemeItem) => void;
 }> = ({
@@ -353,7 +272,6 @@ export const WatchDetailModal: React.FC<{
   onClose,
   onEdit,
   onQuickUpdate,
-  onAddMeme,
   onViewMeme,
   onEditMeme,
 }) => {
@@ -361,11 +279,24 @@ export const WatchDetailModal: React.FC<{
     <div className="modal-backdrop" onClick={onClose}>
       <div className="modal-card modal-lg" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
-          <h3>{item.title}</h3>
+          <div className="modal-title-group">
+            <h3>{item.title}</h3>
+            {canEdit && (
+              <button
+                type="button"
+                className="icon-btn header-edit-btn"
+                onClick={() => onEdit(item)}
+                title="Редактировать тайтл"
+              >
+                <Edit3 size={16} />
+              </button>
+            )}
+          </div>
           <button className="icon-btn" onClick={onClose}>
             <X size={18} />
           </button>
         </div>
+
         <div className="modal-body detail-modal-grid">
           <CoverImage
             title={item.title}
@@ -458,7 +389,7 @@ export const WatchDetailModal: React.FC<{
                         <button
                           type="button"
                           className="meme-card-edit-btn"
-                          title="Редактировать описание мема"
+                          title="Редактировать мем"
                           onClick={() => onEditMeme(m)}
                         >
                           <Edit3 size={12} />
@@ -467,47 +398,6 @@ export const WatchDetailModal: React.FC<{
                     </div>
                   ))}
                 </div>
-              </div>
-            )}
-
-            {canEdit && (
-              <div className="row-gap-sm wrap" style={{ marginTop: 10 }}>
-                <button
-                  className="btn btn-secondary btn-sm"
-                  onClick={() => onAddMeme(item)}
-                >
-                  <ImagePlus size={14} /> + Прикрепить мем (Ctrl+V)
-                </button>
-                <QuickCoverUploadButton
-                  onUploaded={(webp) =>
-                    onQuickUpdate({
-                      ...item,
-                      coverUrl: webp,
-                    })
-                  }
-                />
-                {!isForcedNoCover(item.coverUrl) && Boolean(item.coverUrl) && (
-                  <button
-                    className="btn btn-secondary btn-sm"
-                    onClick={() =>
-                      onQuickUpdate({
-                        ...item,
-                        coverUrl: NO_COVER_TOKEN,
-                      })
-                    }
-                  >
-                    <ImageOff size={14} /> Поставить заглушку
-                  </button>
-                )}
-                <button
-                  className="btn btn-secondary btn-sm"
-                  onClick={() => {
-                    onClose();
-                    onEdit(item);
-                  }}
-                >
-                  <Edit3 size={14} /> Полное редактирование
-                </button>
               </div>
             )}
           </div>
@@ -529,11 +419,24 @@ export const BacklogDetailModal: React.FC<{
     <div className="modal-backdrop" onClick={onClose}>
       <div className="modal-card modal-lg" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
-          <h3>{item.title}</h3>
+          <div className="modal-title-group">
+            <h3>{item.title}</h3>
+            {canEdit && (
+              <button
+                type="button"
+                className="icon-btn header-edit-btn"
+                onClick={() => onEdit(item)}
+                title="Редактировать идею"
+              >
+                <Edit3 size={16} />
+              </button>
+            )}
+          </div>
           <button className="icon-btn" onClick={onClose}>
             <X size={18} />
           </button>
         </div>
+
         <div className="modal-body detail-modal-grid">
           <CoverImage
             title={item.title}
@@ -581,19 +484,19 @@ export const BacklogDetailModal: React.FC<{
               </div>
             )}
 
-            <div className="row-gap-sm wrap" style={{ marginTop: 10 }}>
-              {item.link && (
-                <a
-                  href={item.link}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="btn btn-secondary btn-sm"
-                >
-                  <ExternalLink size={14} /> Источник / ссылка
-                </a>
-              )}
-              {canEdit && (
-                <>
+            {(item.link || canEdit) && (
+              <div className="row-gap-sm wrap" style={{ marginTop: 10 }}>
+                {item.link && (
+                  <a
+                    href={item.link}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="btn btn-secondary btn-sm"
+                  >
+                    <ExternalLink size={14} /> Источник / ссылка
+                  </a>
+                )}
+                {canEdit && (
                   <button
                     className="btn btn-primary btn-sm"
                     onClick={() => {
@@ -603,41 +506,9 @@ export const BacklogDetailModal: React.FC<{
                   >
                     <Play size={14} /> Взять на стрим (в Список игр)
                   </button>
-                  <QuickCoverUploadButton
-                    onUploaded={(webp) =>
-                      onQuickUpdate({
-                        ...item,
-                        coverUrl: webp,
-                        steamAppId: null,
-                      })
-                    }
-                  />
-                  {!isForcedNoCover(item.coverUrl) && Boolean(item.coverUrl || item.steamAppId) && (
-                    <button
-                      className="btn btn-secondary btn-sm"
-                      onClick={() =>
-                        onQuickUpdate({
-                          ...item,
-                          coverUrl: NO_COVER_TOKEN,
-                          steamAppId: null,
-                        })
-                      }
-                    >
-                      <ImageOff size={14} /> Поставить заглушку
-                    </button>
-                  )}
-                  <button
-                    className="btn btn-secondary btn-sm"
-                    onClick={() => {
-                      onClose();
-                      onEdit(item);
-                    }}
-                  >
-                    <Edit3 size={14} /> Редактировать
-                  </button>
-                </>
-              )}
-            </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </div>

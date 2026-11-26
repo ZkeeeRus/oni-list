@@ -79,7 +79,11 @@ export async function validateTwitchToken(
     const valData = await valRes.json();
     const login = String(valData.login || '').toLowerCase();
     const userId = String(valData.user_id || '');
-    const effectiveClientId = clientId || String(valData.client_id || '');
+    const tokenClientId = String(valData.client_id || '').trim();
+    if (clientId && tokenClientId && tokenClientId !== clientId.trim()) {
+      return null;
+    }
+    const effectiveClientId = clientId || tokenClientId;
     if (!login || !userId) return null;
 
     let displayName = valData.login || login;
@@ -175,7 +179,7 @@ export function getUserRole(
   data: SiteData | null,
   cfg: RuntimeConfig
 ): UserRole {
-  if (!user) return 'viewer';
+  if (!user || user.isPreview || !user.accessToken) return 'viewer';
   const login = user.login.toLowerCase().trim();
   const admins = new Set([
     ...PERMANENT_ADMINS,
@@ -312,6 +316,8 @@ let lastKnownServerUpdatedAt = '';
 let activeSaveCount = 0;
 let saveEpoch = 0;
 let pollInFlight = false;
+let lastPollAttemptMs = 0;
+const MIN_POLL_GAP_MS = 8000;
 
 export interface PersistOptions {
   forceOverwrite?: boolean;
@@ -410,10 +416,17 @@ export async function pollRemoteStateIfChanged(apiBaseUrl: string): Promise<{
   data?: SiteData;
   legacyMode: boolean;
 }> {
-  if (!apiBaseUrl || activeSaveCount > 0 || pollInFlight) {
+  const now = Date.now();
+  if (
+    !apiBaseUrl ||
+    activeSaveCount > 0 ||
+    pollInFlight ||
+    now - lastPollAttemptMs < MIN_POLL_GAP_MS
+  ) {
     return { changed: false, legacyMode: false };
   }
 
+  lastPollAttemptMs = now;
   pollInFlight = true;
   const epochBefore = saveEpoch;
 

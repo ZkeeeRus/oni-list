@@ -279,7 +279,18 @@ export const GameModal: React.FC<{
   siteData: SiteData;
   onClose: () => void;
   onSave: (game: GameItem) => void;
-}> = ({ initial, apiBaseUrl, orderers, siteData, onClose, onSave }) => {
+  onDelete?: (id: string) => void;
+  onAddMeme?: (game: GameItem) => void;
+}> = ({
+  initial,
+  apiBaseUrl,
+  orderers,
+  siteData,
+  onClose,
+  onSave,
+  onDelete,
+  onAddMeme,
+}) => {
   const [title, setTitle] = useState(initial?.title ?? '');
   const existingMatches = useMemo(
     () => findExistingMatches(title, siteData, initial?.id),
@@ -482,13 +493,40 @@ export const GameModal: React.FC<{
             </div>
           </div>
 
-          <div className="modal-footer">
-            <button type="button" className="btn btn-ghost" onClick={onClose}>
-              Отмена
-            </button>
-            <button type="submit" className="btn btn-primary">
-              Сохранить
-            </button>
+          <div className="modal-footer modal-footer-split">
+            <div className="row-gap-xs wrap">
+              {initial && onDelete && (
+                <button
+                  type="button"
+                  className="btn btn-danger btn-sm"
+                  onClick={() => {
+                    if (confirm(`Удалить «${initial.title}» из списка игр?`)) {
+                      onDelete(initial.id);
+                      onClose();
+                    }
+                  }}
+                >
+                  <Trash2 size={14} /> Удалить
+                </button>
+              )}
+              {initial && onAddMeme && (
+                <button
+                  type="button"
+                  className="btn btn-secondary btn-sm"
+                  onClick={() => onAddMeme(initial)}
+                >
+                  <ImagePlus size={14} /> + Мем
+                </button>
+              )}
+            </div>
+            <div className="row-gap-sm">
+              <button type="button" className="btn btn-ghost" onClick={onClose}>
+                Отмена
+              </button>
+              <button type="submit" className="btn btn-primary">
+                Сохранить
+              </button>
+            </div>
           </div>
         </form>
       </div>
@@ -504,7 +542,18 @@ export const WatchModal: React.FC<{
   siteData: SiteData;
   onClose: () => void;
   onSave: (item: WatchItem) => void;
-}> = ({ initial, apiBaseUrl, orderers, siteData, onClose, onSave }) => {
+  onDelete?: (id: string) => void;
+  onAddMeme?: (item: WatchItem) => void;
+}> = ({
+  initial,
+  apiBaseUrl,
+  orderers,
+  siteData,
+  onClose,
+  onSave,
+  onDelete,
+  onAddMeme,
+}) => {
   const [title, setTitle] = useState(initial?.title ?? '');
   const existingMatches = useMemo(
     () => findExistingMatches(title, siteData, initial?.id),
@@ -640,13 +689,40 @@ export const WatchModal: React.FC<{
             </div>
           </div>
 
-          <div className="modal-footer">
-            <button type="button" className="btn btn-ghost" onClick={onClose}>
-              Отмена
-            </button>
-            <button type="submit" className="btn btn-primary">
-              Сохранить
-            </button>
+          <div className="modal-footer modal-footer-split">
+            <div className="row-gap-xs wrap">
+              {initial && onDelete && (
+                <button
+                  type="button"
+                  className="btn btn-danger btn-sm"
+                  onClick={() => {
+                    if (confirm(`Удалить «${initial.title}» из просмотрового?`)) {
+                      onDelete(initial.id);
+                      onClose();
+                    }
+                  }}
+                >
+                  <Trash2 size={14} /> Удалить
+                </button>
+              )}
+              {initial && onAddMeme && (
+                <button
+                  type="button"
+                  className="btn btn-secondary btn-sm"
+                  onClick={() => onAddMeme(initial)}
+                >
+                  <ImagePlus size={14} /> + Мем
+                </button>
+              )}
+            </div>
+            <div className="row-gap-sm">
+              <button type="button" className="btn btn-ghost" onClick={onClose}>
+                Отмена
+              </button>
+              <button type="submit" className="btn btn-primary">
+                Сохранить
+              </button>
+            </div>
           </div>
         </form>
       </div>
@@ -663,6 +739,7 @@ export const MemeModal: React.FC<{
   authorName: string;
   onClose: () => void;
   onSave: (meme: MemeItem) => void;
+  onDelete?: (id: string) => void;
 }> = ({
   watchlist,
   games,
@@ -671,6 +748,7 @@ export const MemeModal: React.FC<{
   authorName,
   onClose,
   onSave,
+  onDelete,
 }) => {
   const [targetType, setTargetType] = useState<'watch' | 'game' | 'general'>(
     initialMeme?.targetType ?? preselectedTarget?.type ?? 'watch'
@@ -836,17 +914,35 @@ export const MemeModal: React.FC<{
             />
           </div>
 
-          <div className="modal-footer">
-            <button type="button" className="btn btn-ghost" onClick={onClose}>
-              Отмена
-            </button>
-            <button
-              type="submit"
-              className="btn btn-primary"
-              disabled={compressing || !imageUrl.trim()}
-            >
-              {compressing ? 'Сжимаем...' : 'Сохранить мем'}
-            </button>
+          <div className="modal-footer modal-footer-split">
+            <div>
+              {initialMeme && onDelete && (
+                <button
+                  type="button"
+                  className="btn btn-danger btn-sm"
+                  onClick={() => {
+                    if (confirm('Удалить этот мем?')) {
+                      onDelete(initialMeme.id);
+                      onClose();
+                    }
+                  }}
+                >
+                  <Trash2 size={14} /> Удалить
+                </button>
+              )}
+            </div>
+            <div className="row-gap-sm">
+              <button type="button" className="btn btn-ghost" onClick={onClose}>
+                Отмена
+              </button>
+              <button
+                type="submit"
+                className="btn btn-primary"
+                disabled={compressing || !imageUrl.trim()}
+              >
+                {compressing ? 'Сжимаем...' : 'Сохранить мем'}
+              </button>
+            </div>
           </div>
         </form>
       </div>
@@ -860,45 +956,33 @@ export const MemeLightbox: React.FC<{
   canEdit: boolean;
   onClose: () => void;
   onEdit: (meme: MemeItem) => void;
-  onDelete: (id: string) => void;
-}> = ({ meme, canEdit, onClose, onEdit, onDelete }) => {
+}> = ({ meme, canEdit, onClose, onEdit }) => {
   return (
     <div className="modal-backdrop" onClick={onClose}>
       <div className="lightbox-card" onClick={(e) => e.stopPropagation()}>
         <div className="lightbox-top">
-          <div>
+          <div className="modal-title-group">
             <strong>{meme.caption || meme.targetTitle}</strong>
             {meme.targetTitle && meme.caption !== meme.targetTitle && (
               <span className="lightbox-sub"> • {meme.targetTitle}</span>
             )}
-          </div>
-          <div className="row-gap-sm">
             {canEdit && (
-              <>
-                <button
-                  className="btn btn-secondary btn-sm"
-                  onClick={() => {
-                    onClose();
-                    onEdit(meme);
-                  }}
-                >
-                  <Edit3 size={14} /> Править
-                </button>
-                <button
-                  className="btn btn-danger btn-sm"
-                  onClick={() => {
-                    onDelete(meme.id);
-                    onClose();
-                  }}
-                >
-                  <Trash2 size={14} /> Удалить
-                </button>
-              </>
+              <button
+                type="button"
+                className="icon-btn header-edit-btn"
+                onClick={() => {
+                  onClose();
+                  onEdit(meme);
+                }}
+                title="Редактировать или удалить мем"
+              >
+                <Edit3 size={15} />
+              </button>
             )}
-            <button className="icon-btn" onClick={onClose}>
-              <X size={20} />
-            </button>
           </div>
+          <button className="icon-btn" onClick={onClose}>
+            <X size={20} />
+          </button>
         </div>
         <div className="lightbox-img-wrap">
           <img src={resolveMemeImageUrl(meme.imageUrl)} alt={meme.caption} referrerPolicy="no-referrer" />
@@ -918,7 +1002,8 @@ export const BacklogModal: React.FC<{
   siteData: SiteData;
   onClose: () => void;
   onSave: (item: BacklogItem) => void;
-}> = ({ initial, apiBaseUrl, siteData, onClose, onSave }) => {
+  onDelete?: (id: string) => void;
+}> = ({ initial, apiBaseUrl, siteData, onClose, onSave, onDelete }) => {
   const [title, setTitle] = useState(initial?.title ?? '');
   const existingMatches = useMemo(
     () => findExistingMatches(title, siteData, initial?.id),
@@ -1061,13 +1146,31 @@ export const BacklogModal: React.FC<{
             />
           </div>
 
-          <div className="modal-footer">
-            <button type="button" className="btn btn-ghost" onClick={onClose}>
-              Отмена
-            </button>
-            <button type="submit" className="btn btn-primary">
-              Сохранить
-            </button>
+          <div className="modal-footer modal-footer-split">
+            <div>
+              {initial && onDelete && (
+                <button
+                  type="button"
+                  className="btn btn-danger btn-sm"
+                  onClick={() => {
+                    if (confirm(`Удалить «${initial.title}» из бэклога?`)) {
+                      onDelete(initial.id);
+                      onClose();
+                    }
+                  }}
+                >
+                  <Trash2 size={14} /> Удалить
+                </button>
+              )}
+            </div>
+            <div className="row-gap-sm">
+              <button type="button" className="btn btn-ghost" onClick={onClose}>
+                Отмена
+              </button>
+              <button type="submit" className="btn btn-primary">
+                Сохранить
+              </button>
+            </div>
           </div>
         </form>
       </div>
@@ -1075,256 +1178,64 @@ export const BacklogModal: React.FC<{
   );
 };
 
-/* ---------- Account / Admin Panel Modal ---------- */
+/* ---------- Viewer Account Modal (без админ-элементов) ---------- */
 export const AdminSettingsModal: React.FC<{
   user: TwitchUser;
-  role: UserRole;
-  data: SiteData;
-  dataSource: 'remote' | 'local' | 'seed';
   onClose: () => void;
   onLogout: () => void;
-  onUpdateModerators: (mods: string[]) => void;
-  onImportJson: (imported: SiteData) => void;
-  onForceCloudPush: () => void;
-}> = ({
-  user,
-  role,
-  data,
-  dataSource,
-  onClose,
-  onLogout,
-  onUpdateModerators,
-  onImportJson,
-  onForceCloudPush,
-}) => {
-  const [newMod, setNewMod] = useState('');
-  const importRef = useRef<HTMLInputElement | null>(null);
-
-  const isEditor = role === 'admin' || role === 'moderator';
-
-  const handleExport = () => {
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = `onized-hub-backup-${new Date().toISOString().slice(0, 10)}.json`;
-    a.click();
-  };
-
-  const handleFileImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const f = e.target.files?.[0];
-    if (!f) return;
-    try {
-      const txt = await f.text();
-      const parsed = JSON.parse(txt) as SiteData;
-      if (Array.isArray(parsed.games) && Array.isArray(parsed.watchlist)) {
-        onImportJson(parsed);
-        onClose();
-      }
-    } catch {
-      alert('Не удалось прочитать JSON-файл резервной копии.');
-    }
-  };
-
-  // Обычный зритель: компактное окно с предложением выйти из аккаунта
-  if (!isEditor) {
-    return (
-      <div className="modal-backdrop" onClick={onClose}>
-        <div
-          className="modal-card"
-          style={{ maxWidth: 420 }}
-          onClick={(e) => e.stopPropagation()}
-        >
-          <div className="modal-header">
-            <h3>Аккаунт Twitch</h3>
-            <button className="icon-btn" onClick={onClose}>
-              <X size={18} />
-            </button>
-          </div>
-
-          <div className="modal-body form-grid">
-            <div className="user-status-row">
-              <div className="row-gap-sm">
-                {user.avatarUrl ? (
-                  <img src={user.avatarUrl} alt={user.displayName} className="avatar-md" />
-                ) : (
-                  <div className="avatar-placeholder">{user.displayName[0]?.toUpperCase()}</div>
-                )}
-                <div>
-                  <div>
-                    <strong>{user.displayName}</strong>{' '}
-                    <span className="muted">(@{user.login})</span>
-                  </div>
-                  <div className="muted-sm">Зритель канала</div>
-                </div>
-              </div>
-            </div>
-
-            <p className="muted-sm">
-              Пока вы в аккаунте, в разделах «Игры» и «Просмотровое» доступен фильтр «Мои заказы».
-            </p>
-
-            <div className="modal-footer">
-              <button type="button" className="btn btn-ghost" onClick={onClose}>
-                Остаться
-              </button>
-              <button
-                type="button"
-                className="btn btn-twitch"
-                onClick={() => {
-                  onLogout();
-                  onClose();
-                }}
-              >
-                <LogOut size={15} /> Выйти из аккаунта
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // Панель админа / модератора (без технических настроек подключения)
+}> = ({ user, onClose, onLogout }) => {
   return (
     <div className="modal-backdrop" onClick={onClose}>
-      <div className="modal-card modal-lg" onClick={(e) => e.stopPropagation()}>
+      <div
+        className="modal-card"
+        style={{ maxWidth: 420 }}
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="modal-header">
-          <h3>
-            <Shield size={18} style={{ verticalAlign: 'middle', marginRight: 8 }} />
-            {role === 'admin' ? 'Панель админа' : 'Панель модератора'}
-          </h3>
+          <h3>Аккаунт Twitch</h3>
           <button className="icon-btn" onClick={onClose}>
             <X size={18} />
           </button>
         </div>
 
         <div className="modal-body form-grid">
-          <div className="settings-section">
-            <div className="user-status-row">
-              <div className="row-gap-sm">
-                {user.avatarUrl ? (
-                  <img src={user.avatarUrl} alt={user.displayName} className="avatar-md" />
-                ) : (
-                  <div className="avatar-placeholder">{user.displayName[0]?.toUpperCase()}</div>
-                )}
-                <div>
-                  <div>
-                    <strong>{user.displayName}</strong>{' '}
-                    <span className="muted">(@{user.login})</span>
-                  </div>
-                  <div className="muted-sm">
-                    Роль:{' '}
-                    <strong>
-                      {role === 'admin'
-                        ? 'Админ (Стример / Владелец)'
-                        : 'Модератор (полный доступ редактора)'}
-                    </strong>
-                  </div>
+          <div className="user-status-row">
+            <div className="row-gap-sm">
+              {user.avatarUrl ? (
+                <img src={user.avatarUrl} alt={user.displayName} className="avatar-md" />
+              ) : (
+                <div className="avatar-placeholder">
+                  {user.displayName[0]?.toUpperCase()}
                 </div>
+              )}
+              <div>
+                <div>
+                  <strong>{user.displayName}</strong>{' '}
+                  <span className="muted">(@{user.login})</span>
+                </div>
+                <div className="muted-sm">Зритель канала</div>
               </div>
-              <button
-                className="btn btn-ghost btn-sm"
-                onClick={() => {
-                  onLogout();
-                  onClose();
-                }}
-              >
-                <LogOut size={14} /> Выйти из аккаунта
-              </button>
             </div>
           </div>
 
-          <div className="settings-section">
-            <h4>Админы и модераторы</h4>
-            <div className="chips-wrap">
-              {PERMANENT_ADMINS.map((adm) => (
-                <span key={adm} className="mod-chip owner-chip">
-                  👑 {adm} <small>(админ)</small>
-                </span>
-              ))}
-              {data.moderators.map((mod) => (
-                <span key={mod} className="mod-chip">
-                  ⚔️ {mod}
-                  <button
-                    type="button"
-                    className="chip-del"
-                    onClick={() =>
-                      onUpdateModerators(data.moderators.filter((m) => m !== mod))
-                    }
-                    title="Убрать модератора"
-                  >
-                    <X size={12} />
-                  </button>
-                </span>
-              ))}
-            </div>
+          <p className="muted-sm">
+            Пока вы в аккаунте, в разделах «Игры» и «Просмотровое» доступен фильтр «Мои заказы».
+          </p>
 
-            <div className="inline-search-row" style={{ marginTop: 10 }}>
-              <input
-                className="input input-sm"
-                placeholder="Ник модератора на Twitch (напр. samarhik, s1men5)"
-                value={newMod}
-                onChange={(e) => setNewMod(e.target.value)}
-              />
-              <button
-                type="button"
-                className="btn btn-secondary btn-sm"
-                onClick={() => {
-                  const clean = newMod.toLowerCase().trim().replace(/^@/, '');
-                  if (
-                    clean &&
-                    !PERMANENT_ADMINS.includes(clean) &&
-                    !data.moderators.includes(clean)
-                  ) {
-                    onUpdateModerators([...data.moderators, clean]);
-                    setNewMod('');
-                  }
-                }}
-              >
-                <UserPlus size={14} /> Добавить модератора
-              </button>
-            </div>
-          </div>
-
-          <div className="settings-section">
-            <h4>База данных и резервные копии</h4>
-            <p className="muted-sm" style={{ marginBottom: 10 }}>
-              Статус:{' '}
-              <strong>
-                {dataSource === 'remote'
-                  ? 'Облачная БД (синхронизировано для всех)'
-                  : 'Локальный черновик браузера'}
-              </strong>
-            </p>
-            <div className="row-between wrap">
-              <button
-                type="button"
-                className="btn btn-twitch btn-sm"
-                onClick={onForceCloudPush}
-              >
-                <Upload size={14} /> Синхронизировать с облаком
-              </button>
-
-              <div className="row-gap-sm wrap">
-                <button type="button" className="btn btn-secondary btn-sm" onClick={handleExport}>
-                  <Download size={14} /> Скачать JSON бэкап
-                </button>
-                <button
-                  type="button"
-                  className="btn btn-secondary btn-sm"
-                  onClick={() => importRef.current?.click()}
-                >
-                  <Upload size={14} /> Импорт JSON
-                </button>
-                <input
-                  ref={importRef}
-                  type="file"
-                  accept="application/json"
-                  hidden
-                  onChange={handleFileImport}
-                />
-              </div>
-            </div>
+          <div className="modal-footer">
+            <button type="button" className="btn btn-ghost" onClick={onClose}>
+              Остаться
+            </button>
+            <button
+              type="button"
+              className="btn btn-twitch"
+              onClick={() => {
+                onLogout();
+                onClose();
+              }}
+            >
+              <LogOut size={15} /> Выйти из аккаунта
+            </button>
           </div>
         </div>
       </div>

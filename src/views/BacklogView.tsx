@@ -6,7 +6,6 @@ import {
   Play,
   Plus,
   Search,
-  Trash2,
   X,
 } from 'lucide-react';
 import { BacklogItem } from '../types';
@@ -194,16 +193,6 @@ export const BacklogView: React.FC<BacklogViewProps> = ({
                     onClick={() => onEditBacklog(b)}
                   >
                     <Edit3 size={13} /> Править
-                  </button>
-                  <button
-                    className="btn btn-ghost btn-xs danger-text"
-                    onClick={() => {
-                      if (confirm(`Удалить «${b.title}» из бэклога?`)) {
-                        onDeleteBacklog(b.id);
-                      }
-                    }}
-                  >
-                    <Trash2 size={13} />
                   </button>
                 </div>
               )}

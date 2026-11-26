@@ -9,10 +9,8 @@ import React, {
 } from 'react';
 import {
   Edit3,
-  ImagePlus,
   Plus,
   Search,
-  Trash2,
   X,
 } from 'lucide-react';
 import { MemeItem, TwitchUser, WatchItem } from '../types';
@@ -150,22 +148,6 @@ const WatchGridCard: React.FC<WatchGridCardProps> = memo(
               onClick={() => onEditWatch(w)}
             >
               <Edit3 size={13} /> Править
-            </button>
-            <button
-              className="btn btn-ghost btn-xs"
-              onClick={() =>
-                onAddMeme({ type: 'watch', id: w.id, title: w.title })
-              }
-            >
-              <ImagePlus size={13} /> + Мем
-            </button>
-            <button
-              className="btn btn-ghost btn-xs danger-text"
-              onClick={() => {
-                if (confirm(`Удалить «${w.title}»?`)) onDeleteWatch(w.id);
-              }}
-            >
-              <Trash2 size={13} />
             </button>
           </div>
         )}

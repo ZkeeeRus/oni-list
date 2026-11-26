@@ -1,4 +1,4 @@
-export const APP_VERSION = '2.5.3';
+export const APP_VERSION = '2.6.0';
 
 export type ThemeId = 'default' | 'winter' | 'ruby' | 'emerald';
 export type ColorMode = 'dark' | 'light';
@@ -19,6 +19,7 @@ export interface UserPreferences {
   dismissedHolidaySeason: string | null;
   snowIntensity: SnowIntensity;
   garlandEnabled: boolean;
+  garlandBroken: boolean;
   footerTreeEnabled: boolean;
   parallaxEnabled: boolean;
   performanceMode: PerformanceMode;
@@ -46,6 +47,7 @@ export const DEFAULT_PREFERENCES: UserPreferences = {
   dismissedHolidaySeason: null,
   snowIntensity: 'light',
   garlandEnabled: true,
+  garlandBroken: false,
   footerTreeEnabled: true,
   parallaxEnabled: true,
   performanceMode: 'high',

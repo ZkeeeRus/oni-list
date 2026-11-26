@@ -1,6 +1,10 @@
 import React, { memo, useEffect, useRef, useState } from 'react';
 import { isHolidayActive, UserPreferences } from '../utils/preferences';
-import { playBellJingle } from '../utils/soundEffects';
+import {
+  playBellJingle,
+  playGarlandShatter,
+  playGarlandSpark,
+} from '../utils/soundEffects';
 import { trackSiteAction } from '../utils/analytics';
 
 /* ---------- Новогодние векторные рисунки для параллакса ---------- */
@@ -394,12 +398,84 @@ const SWAG_COUNT = 4;
 const BULBS_PER_SWAG = 6;
 const CTRL_Y_DELTA = 36; // Провисание кривой Безье (в нижней точке ~20px ниже шапки)
 
+const SPARK_RAYS = [
+  { dx: '-18px', dy: '-14px', rot: '-38deg' },
+  { dx: '19px', dy: '-13px', rot: '35deg' },
+  { dx: '-22px', dy: '9px', rot: '-155deg' },
+  { dx: '21px', dy: '11px', rot: '150deg' },
+  { dx: '-5px', dy: '20px', rot: '-96deg' },
+  { dx: '8px', dy: '-20px', rot: '78deg' },
+];
+
 export const HeaderGarland: React.FC<{
   prefs: UserPreferences;
-}> = memo(({ prefs }) => {
+  onUpdatePrefs: (next: UserPreferences) => void;
+}> = memo(({ prefs, onUpdatePrefs }) => {
   const [flash, setFlash] = useState(false);
+  const [shattering, setShattering] = useState(false);
+  const [sparks, setSparks] = useState<
+    Array<{ id: number; leftPct: number; topPx: number }>
+  >([]);
+  const drapeRef = useRef<HTMLDivElement | null>(null);
+  const rapidClicksRef = useRef<number[]>([]);
+  const sparkIdRef = useRef(1);
+
   const holiday = isHolidayActive(prefs);
   if (!holiday || !prefs.garlandEnabled) return null;
+
+  const isBroken = Boolean(prefs.garlandBroken);
+
+  const spawnSparkAt = (leftPct: number, topPx: number) => {
+    const id = sparkIdRef.current++;
+    setSparks((prev) => [...prev.slice(-10), { id, leftPct, topPx }]);
+    window.setTimeout(() => {
+      setSparks((prev) => prev.filter((s) => s.id !== id));
+    }, 460);
+  };
+
+  const handleGarlandClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    const rect = drapeRef.current?.getBoundingClientRect();
+    let clickPct = 50;
+    if (rect && rect.width > 0) {
+      clickPct = Math.max(
+        2,
+        Math.min(98, ((e.clientX - rect.left) / rect.width) * 100)
+      );
+    }
+    // Вычисляем точный Y на провисающей дуге для искры
+    const swagLocalT = ((clickPct / 100) * SWAG_COUNT) % 1;
+    const wireY = 2 + 2 * swagLocalT * (1 - swagLocalT) * CTRL_Y_DELTA;
+
+    if (isBroken) {
+      playGarlandSpark(prefs);
+      spawnSparkAt(clickPct, wireY + 4);
+      return;
+    }
+
+    const now = performance.now();
+    const recent = rapidClicksRef.current.filter((t) => now - t < 2600);
+    recent.push(now);
+    rapidClicksRef.current = recent;
+
+    // 7 быстрых кликов подряд - гирлянда лопается и перегорает!
+    if (recent.length >= 7) {
+      rapidClicksRef.current = [];
+      playGarlandShatter(prefs);
+      setShattering(true);
+      window.setTimeout(() => setShattering(false), 800);
+      [14, 32, 50, 68, 86].forEach((pct, i) => {
+        const lt = ((pct / 100) * SWAG_COUNT) % 1;
+        const wy = 2 + 2 * lt * (1 - lt) * CTRL_Y_DELTA;
+        window.setTimeout(() => spawnSparkAt(pct, wy + 4), i * 45);
+      });
+      onUpdatePrefs({ ...prefs, garlandBroken: true });
+      return;
+    }
+
+    playBellJingle(prefs);
+    setFlash(true);
+    window.setTimeout(() => setFlash(false), 750);
+  };
 
   const bulbs: Array<{
     key: string;
@@ -412,7 +488,7 @@ export const HeaderGarland: React.FC<{
 
   for (let s = 0; s < SWAG_COUNT; s++) {
     for (let k = 1; k <= BULBS_PER_SWAG; k++) {
-      const t = k / (BULBS_PER_SWAG + 1); // 0..1 внутри одной дуги
+      const t = k / (BULBS_PER_SWAG + 1);
       const leftPct = ((s + t) / SWAG_COUNT) * 100;
       const topPx = 2 + 2 * t * (1 - t) * CTRL_Y_DELTA;
       const tiltDeg = (0.5 - t) * 26;
@@ -438,12 +514,11 @@ export const HeaderGarland: React.FC<{
 
   return (
     <div
-      className={`header-garland-drape ${flash ? 'garland-flash' : ''}`}
-      onClick={() => {
-        playBellJingle(prefs);
-        setFlash(true);
-        setTimeout(() => setFlash(false), 950);
-      }}
+      ref={drapeRef}
+      className={`header-garland-drape ${flash ? 'garland-flash' : ''} ${
+        isBroken ? 'is-broken' : ''
+      } ${shattering ? 'is-shattering' : ''}`}
+      onClick={handleGarlandClick}
     >
       {/* Провисающие провода с хвойной мишурой */}
       <svg
@@ -454,6 +529,10 @@ export const HeaderGarland: React.FC<{
       >
         <path
           d="M0,2 Q150,38 300,2 Q450,38 600,2 Q750,38 900,2 Q1050,38 1200,2"
+          className="garland-hit-stroke"
+        />
+        <path
+          d="M0,2 Q150,38 300,2 Q450,38 600,2 Q750,38 900,2 Q1050,38 1200,2"
           className="garland-pine-glow"
         />
         <path
@@ -462,7 +541,7 @@ export const HeaderGarland: React.FC<{
         />
       </svg>
 
-      {/* Свисающие огоньки вдоль дуг */}
+      {/* Свисающие огоньки вдоль дуг (целые либо лопнувшие осколки) */}
       {bulbs.map((b) => (
         <span
           key={b.key}
@@ -494,6 +573,30 @@ export const HeaderGarland: React.FC<{
           {c.kind === 'star' && <span className="dangling-charm star">★</span>}
           {c.kind === 'bauble' && <span className="dangling-charm bauble" />}
           {c.kind === 'flake' && <span className="dangling-charm flake">❄</span>}
+        </span>
+      ))}
+
+      {/* Одиночные вспышки искр при клике по сломанной гирлянде */}
+      {sparks.map((sp) => (
+        <span
+          key={sp.id}
+          className="garland-spark-burst"
+          style={{ left: `${sp.leftPct}%`, top: `${sp.topPx}px` }}
+          aria-hidden="true"
+        >
+          {SPARK_RAYS.map((r, rIdx) => (
+            <i
+              key={rIdx}
+              className="garland-spark-ray"
+              style={
+                {
+                  '--sx': r.dx,
+                  '--sy': r.dy,
+                  '--srot': r.rot,
+                } as React.CSSProperties
+              }
+            />
+          ))}
         </span>
       ))}
     </div>

@@ -168,3 +168,142 @@ export function playBellJingle(prefs: UserPreferences): void {
     osc.stop(t0 + 0.38);
   });
 }
+
+// Звук лопнувшей и перегоревшей гирлянды (хлопок + звон осколков стекла + падение питания)
+export function playGarlandShatter(prefs: UserPreferences): void {
+  if (!prefs.soundEnabled) return;
+  const ctx = getAudioContext();
+  if (!ctx) return;
+
+  const now = ctx.currentTime;
+  const vol = Math.max(0.04, prefs.soundVolume * 0.36);
+
+  // 1. Хлопок перегорания и треск
+  const popDur = 0.28;
+  const bufLen = Math.floor(ctx.sampleRate * popDur);
+  const buf = ctx.createBuffer(1, bufLen, ctx.sampleRate);
+  const ch = buf.getChannelData(0);
+  for (let i = 0; i < bufLen; i++) {
+    ch[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / bufLen, 2.2);
+  }
+  const noise = ctx.createBufferSource();
+  noise.buffer = buf;
+
+  const bp = ctx.createBiquadFilter();
+  bp.type = 'bandpass';
+  bp.frequency.setValueAtTime(1900, now);
+  bp.Q.setValueAtTime(1.1, now);
+
+  const nGain = ctx.createGain();
+  nGain.gain.setValueAtTime(vol, now);
+  nGain.gain.exponentialRampToValueAtTime(0.001, now + popDur);
+
+  noise.connect(bp);
+  bp.connect(nGain);
+  nGain.connect(ctx.destination);
+  noise.start(now);
+  noise.stop(now + popDur);
+
+  // 2. Звон разлетающегося стекла лампочек
+  const glassFreqs = [3150, 4180, 2680, 3690, 4820, 2940];
+  glassFreqs.forEach((f, idx) => {
+    const osc = ctx.createOscillator();
+    const g = ctx.createGain();
+    osc.type = 'sine';
+    const t0 = now + 0.02 + idx * 0.032;
+    osc.frequency.setValueAtTime(f, t0);
+    osc.frequency.exponentialRampToValueAtTime(f * 0.72, t0 + 0.09);
+    g.gain.setValueAtTime(vol * 0.42, t0);
+    g.gain.exponentialRampToValueAtTime(0.001, t0 + 0.1);
+    osc.connect(g);
+    g.connect(ctx.destination);
+    osc.start(t0);
+    osc.stop(t0 + 0.11);
+  });
+
+  // 3. Короткое гудение потухшего трансформатора
+  const zap = ctx.createOscillator();
+  const zGain = ctx.createGain();
+  zap.type = 'sawtooth';
+  zap.frequency.setValueAtTime(210, now);
+  zap.frequency.exponentialRampToValueAtTime(42, now + 0.32);
+  zGain.gain.setValueAtTime(vol * 0.55, now);
+  zGain.gain.exponentialRampToValueAtTime(0.001, now + 0.34);
+  zap.connect(zGain);
+  zGain.connect(ctx.destination);
+  zap.start(now);
+  zap.stop(now + 0.35);
+}
+
+// Короткий треск одиночной электрической искры при клике по сломанной гирлянде
+export function playGarlandSpark(prefs: UserPreferences): void {
+  if (!prefs.soundEnabled) return;
+  const ctx = getAudioContext();
+  if (!ctx) return;
+
+  const now = ctx.currentTime;
+  const vol = Math.max(0.03, prefs.soundVolume * 0.25);
+
+  const dur = 0.09;
+  const bufLen = Math.floor(ctx.sampleRate * dur);
+  const buf = ctx.createBuffer(1, bufLen, ctx.sampleRate);
+  const ch = buf.getChannelData(0);
+  for (let i = 0; i < bufLen; i++) {
+    ch[i] = (Math.random() * 2 - 1) * (1 - i / bufLen);
+  }
+
+  const noise = ctx.createBufferSource();
+  noise.buffer = buf;
+
+  const hp = ctx.createBiquadFilter();
+  hp.type = 'highpass';
+  hp.frequency.setValueAtTime(2200, now);
+
+  const nGain = ctx.createGain();
+  nGain.gain.setValueAtTime(vol, now);
+  nGain.gain.exponentialRampToValueAtTime(0.001, now + dur);
+
+  noise.connect(hp);
+  hp.connect(nGain);
+  nGain.connect(ctx.destination);
+  noise.start(now);
+  noise.stop(now + dur);
+
+  const zap = ctx.createOscillator();
+  const zGain = ctx.createGain();
+  zap.type = 'sawtooth';
+  zap.frequency.setValueAtTime(1650, now);
+  zap.frequency.exponentialRampToValueAtTime(340, now + 0.065);
+  zGain.gain.setValueAtTime(vol * 0.48, now);
+  zGain.gain.exponentialRampToValueAtTime(0.001, now + 0.07);
+  zap.connect(zGain);
+  zGain.connect(ctx.destination);
+  zap.start(now);
+  zap.stop(now + 0.075);
+}
+
+// Звук починки и зажигания гирлянды (по пасхалке ZkeeeRus)
+export function playGarlandRepair(prefs: UserPreferences): void {
+  if (!prefs.soundEnabled) return;
+  const ctx = getAudioContext();
+  if (!ctx) return;
+
+  const now = ctx.currentTime;
+  const vol = Math.max(0.03, prefs.soundVolume * 0.24);
+  const notes = [392.0, 523.25, 659.25, 783.99, 1046.5, 1318.5];
+
+  notes.forEach((freq, i) => {
+    const osc = ctx.createOscillator();
+    const g = ctx.createGain();
+    osc.type = 'triangle';
+    const t0 = now + i * 0.055;
+    osc.frequency.setValueAtTime(freq, t0);
+    g.gain.setValueAtTime(0.001, t0);
+    g.gain.linearRampToValueAtTime(vol, t0 + 0.015);
+    g.gain.exponentialRampToValueAtTime(0.001, t0 + 0.28);
+    osc.connect(g);
+    g.connect(ctx.destination);
+    osc.start(t0);
+    osc.stop(t0 + 0.3);
+  });
+}

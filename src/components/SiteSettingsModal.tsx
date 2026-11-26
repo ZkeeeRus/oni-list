@@ -47,7 +47,11 @@ import {
   ThemeId,
   UserPreferences,
 } from '../utils/preferences';
-import { playBellJingle, playUiClick } from '../utils/soundEffects';
+import {
+  playBellJingle,
+  playGarlandRepair,
+  playUiClick,
+} from '../utils/soundEffects';
 
 export type SettingsTabId =
   | 'appearance'
@@ -77,6 +81,7 @@ interface SiteSettingsModalProps {
   onImportJson: (imported: SiteData) => void;
   onRestoreCloudBackup: (restored: SiteData) => void;
   onForceCloudPush: () => void;
+  onShowToast?: (msg: string) => void;
 }
 
 const ACCENT_THEMES: Array<{
@@ -183,11 +188,16 @@ export const SiteSettingsModal: React.FC<SiteSettingsModalProps> = ({
   onImportJson,
   onRestoreCloudBackup,
   onForceCloudPush,
+  onShowToast,
 }) => {
-  const canEdit = role === 'admin' || role === 'moderator';
+  const canEdit =
+    (role === 'admin' || role === 'moderator') &&
+    Boolean(user && !user.isPreview && user.accessToken);
   const [tab, setTab] = useState<SettingsTabId>(
     initialTab === 'admin' && !canEdit ? 'appearance' : initialTab
   );
+  const zkClicksRef = useRef<number[]>([]);
+  const [repairFlash, setRepairFlash] = useState(false);
 
   useEffect(() => {
     setTab(initialTab === 'admin' && !canEdit ? 'appearance' : initialTab);
@@ -317,7 +327,10 @@ export const SiteSettingsModal: React.FC<SiteSettingsModalProps> = ({
 
   return (
     <div className="modal-backdrop" onClick={onClose}>
-      <div className="modal-card modal-lg" onClick={(e) => e.stopPropagation()}>
+      <div
+        className="modal-card modal-settings"
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="modal-header">
           <h3>Настройки портала</h3>
           <button className="icon-btn" onClick={onClose}>
@@ -325,54 +338,55 @@ export const SiteSettingsModal: React.FC<SiteSettingsModalProps> = ({
           </button>
         </div>
 
-        <div className="settings-tabs-bar">
-          <button
-            type="button"
-            className={tab === 'appearance' ? 'active' : ''}
-            onClick={() => switchTab('appearance')}
-          >
-            <Palette size={15} /> Оформление
-          </button>
-          <button
-            type="button"
-            className={tab === 'sound' ? 'active' : ''}
-            onClick={() => switchTab('sound')}
-          >
-            <Volume2 size={15} /> Звуки
-          </button>
-          <button
-            type="button"
-            className={tab === 'perf' ? 'active' : ''}
-            onClick={() => switchTab('perf')}
-          >
-            <Cpu size={15} /> Производительность
-          </button>
-          <button
-            type="button"
-            className={tab === 'privacy' ? 'active' : ''}
-            onClick={() => switchTab('privacy')}
-          >
-            <Cookie size={15} /> Cookie и стата
-          </button>
-          {canEdit && (
+        <div className="settings-split-layout">
+          <aside className="settings-sidebar">
             <button
               type="button"
-              className={tab === 'admin' ? 'active' : ''}
-              onClick={() => switchTab('admin')}
+              className={tab === 'appearance' ? 'active' : ''}
+              onClick={() => switchTab('appearance')}
             >
-              <Shield size={15} /> Админка
+              <Palette size={16} /> <span>Оформление</span>
             </button>
-          )}
-          <button
-            type="button"
-            className={tab === 'credits' ? 'active' : ''}
-            onClick={() => switchTab('credits')}
-          >
-            <HeartHandshake size={15} /> Авторы
-          </button>
-        </div>
+            <button
+              type="button"
+              className={tab === 'sound' ? 'active' : ''}
+              onClick={() => switchTab('sound')}
+            >
+              <Volume2 size={16} /> <span>Звуки</span>
+            </button>
+            <button
+              type="button"
+              className={tab === 'perf' ? 'active' : ''}
+              onClick={() => switchTab('perf')}
+            >
+              <Cpu size={16} /> <span>Производительность</span>
+            </button>
+            <button
+              type="button"
+              className={tab === 'privacy' ? 'active' : ''}
+              onClick={() => switchTab('privacy')}
+            >
+              <Cookie size={16} /> <span>Cookie и стата</span>
+            </button>
+            {canEdit && (
+              <button
+                type="button"
+                className={tab === 'admin' ? 'active' : ''}
+                onClick={() => switchTab('admin')}
+              >
+                <Shield size={16} /> <span>Админка</span>
+              </button>
+            )}
+            <button
+              type="button"
+              className={tab === 'credits' ? 'active' : ''}
+              onClick={() => switchTab('credits')}
+            >
+              <HeartHandshake size={16} /> <span>Авторы</span>
+            </button>
+          </aside>
 
-        <div className="modal-body form-grid">
+          <div className="settings-content-pane form-grid">
           {tab === 'appearance' && (
             <>
               <div className="settings-section form-grid">
@@ -765,7 +779,10 @@ export const SiteSettingsModal: React.FC<SiteSettingsModalProps> = ({
                   type="button"
                   className="btn btn-ghost btn-sm"
                   onClick={() => {
-                    onChangePrefs(DEFAULT_PREFERENCES);
+                    onChangePrefs({
+                      ...DEFAULT_PREFERENCES,
+                      garlandBroken: prefs.garlandBroken,
+                    });
                     onChangeCustomWallpaper('');
                     setBgUrlDraft('');
                   }}
@@ -1435,7 +1452,33 @@ export const SiteSettingsModal: React.FC<SiteSettingsModalProps> = ({
                   </div>
                 </div>
 
-                <div className="credit-card">
+                <div
+                  className={`credit-card zkeeerus-easter-card ${
+                    repairFlash ? 'repaired-glow' : ''
+                  }`}
+                  onClick={(e) => {
+                    if ((e.target as HTMLElement).closest('a')) return;
+                    if (!prefs.garlandBroken) return;
+                    const now = performance.now();
+                    const recent = zkClicksRef.current.filter(
+                      (t) => now - t < 2600
+                    );
+                    recent.push(now);
+                    zkClicksRef.current = recent;
+                    if (recent.length >= 5) {
+                      zkClicksRef.current = [];
+                      playGarlandRepair(prefs);
+                      setRepairFlash(true);
+                      window.setTimeout(() => setRepairFlash(false), 1200);
+                      onChangePrefs({ ...prefs, garlandBroken: false });
+                      onShowToast?.(
+                        '🔧 ZkeeeRus починил проводку и вкрутил новые лампочки!'
+                      );
+                    } else {
+                      playUiClick(prefs);
+                    }
+                  }}
+                >
                   <span className="credit-badge cyan">РАЗРАБОТКА И ДИЗАЙН</span>
                   <strong>ZkeeeRus</strong>
                   <p className="muted-sm">
@@ -1502,6 +1545,7 @@ export const SiteSettingsModal: React.FC<SiteSettingsModalProps> = ({
               </div>
             </div>
           )}
+          </div>
         </div>
       </div>
     </div>

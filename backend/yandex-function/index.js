@@ -16,9 +16,28 @@ const AUTH_STATS_KEY = 'onized-hub-auth-stats.json';
 const ANALYTICS_KEY = 'onized-hub-analytics.json';
 const BACKUPS_INDEX_KEY = 'backups/index.json';
 
-// Короткий RAM-кэш метки версии внутри теплого контейнера функции для легкого ?action=ping
+// Короткие RAM-кэши внутри теплого контейнера функции для защиты S3 от частых запросов и ботов
 let warmMetaCache = null;
 const WARM_META_TTL_MS = 8000;
+
+let warmStateJsonCache = null; // { body: string, cachedAtMs: number }
+const WARM_STATE_TTL_MS = 6000;
+
+let warmAnalyticsCache = null; // { data: object, loadedAtMs: number, lastFlushedMs: number, dirty: boolean }
+const ANALYTICS_FLUSH_INTERVAL_MS = 25000;
+
+const steamSearchCache = new Map(); // query -> { body: string, expiresAt: number }
+const STEAM_CACHE_TTL_MS = 60000;
+
+// Легкий per-IP rate limiter в памяти процесса (сырые IP не хранятся даже в ОЗУ - только короткий хэш с разовой солью)
+const EPHEMERAL_IP_SALT = crypto.randomBytes(16).toString('hex');
+const rateBuckets = new Map();
+const MAX_RATE_BUCKETS = 4000;
+const RATE_WINDOW_MS = 60000;
+
+// Короткий кэш проверки Twitch-токенов (защита id.twitch.tv от спама поддельными токенами)
+const validTokensCache = new Map(); // tokenHash -> { login: string, expiresAt: number }
+const invalidTokensCache = new Map(); // tokenHash -> expiresAt
 
 const MAX_BODY_BYTES = 4 * 1024 * 1024; // 4 МБ максимум
 const MAX_RECENT_LOGINS = 150;
@@ -96,21 +115,10 @@ function createS3Client() {
 
 const s3 = createS3Client();
 
-function buildCorsHeaders(event) {
-  const origin = String(event?.headers?.Origin || event?.headers?.origin || '').trim();
-  return {
-    'Access-Control-Allow-Origin': origin || '*',
-    'Access-Control-Allow-Methods': 'GET, PUT, POST, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Twitch-Token',
-    'Content-Type': 'application/json; charset=utf-8',
-  };
-}
-
 function isAllowedOrigin(event) {
   const origin = String(event?.headers?.Origin || event?.headers?.origin || '')
     .trim()
     .toLowerCase();
-  // Если заголовок Origin отсутствует (например серверная диагностика), разрешаем; если браузер прислал чужой домен - проверяем белый список
   if (!origin) return true;
   if (
     origin === 'https://onihub.ru' ||
@@ -126,6 +134,74 @@ function isAllowedOrigin(event) {
   const extraOrigin = cleanEnv(process.env.ALLOWED_ORIGIN).toLowerCase();
   if (extraOrigin && origin === extraOrigin) return true;
   return false;
+}
+
+function hasExplicitAllowedOrigin(event) {
+  const origin = String(event?.headers?.Origin || event?.headers?.origin || '').trim();
+  return Boolean(origin) && isAllowedOrigin(event);
+}
+
+function buildCorsHeaders(event) {
+  const origin = String(event?.headers?.Origin || event?.headers?.origin || '').trim();
+  const safeOrigin = origin && isAllowedOrigin(event) ? origin : 'https://onihub.ru';
+  return {
+    'Access-Control-Allow-Origin': safeOrigin,
+    'Access-Control-Allow-Methods': 'GET, PUT, POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Twitch-Token',
+    'Vary': 'Origin',
+    'Content-Type': 'application/json; charset=utf-8',
+  };
+}
+
+function checkRateLimit(event, group, limitPerWindow) {
+  const rawIp =
+    event?.headers?.['X-Real-Ip'] ||
+    event?.headers?.['x-real-ip'] ||
+    String(
+      event?.headers?.['X-Forwarded-For'] || event?.headers?.['x-forwarded-for'] || ''
+    ).split(',')[0] ||
+    event?.requestContext?.identity?.sourceIp ||
+    'unknown';
+  const ipHash = crypto
+    .createHash('sha256')
+    .update(`${EPHEMERAL_IP_SALT}:${String(rawIp).trim()}`)
+    .digest('hex')
+    .slice(0, 14);
+
+  const key = `${group}:${ipHash}`;
+  const now = Date.now();
+  const existing = rateBuckets.get(key);
+
+  if (!existing || now >= existing.resetAt) {
+    if (rateBuckets.size >= MAX_RATE_BUCKETS) {
+      for (const [k, v] of rateBuckets) {
+        if (now >= v.resetAt) rateBuckets.delete(k);
+        if (rateBuckets.size < MAX_RATE_BUCKETS - 500) break;
+      }
+      if (rateBuckets.size >= MAX_RATE_BUCKETS) {
+        const oldestKey = rateBuckets.keys().next().value;
+        if (oldestKey) rateBuckets.delete(oldestKey);
+      }
+    }
+    rateBuckets.set(key, { count: 1, resetAt: now + RATE_WINDOW_MS });
+    return true;
+  }
+
+  existing.count += 1;
+  return existing.count <= limitPerWindow;
+}
+
+function rateLimitResponse(corsHeaders) {
+  return {
+    statusCode: 429,
+    headers: {
+      ...corsHeaders,
+      'Retry-After': '30',
+    },
+    body: JSON.stringify({
+      error: 'Слишком много запросов подряд. Подождите немного и попробуйте снова.',
+    }),
+  };
 }
 
 function createEmptyState() {
@@ -295,13 +371,37 @@ function extractToken(event, bodyObj) {
 }
 
 async function verifyTwitchToken(token) {
-  if (!token) {
+  if (!token || token.length < 12 || token.length > 140) {
     return { ok: false, status: 401, error: 'Войдите через Twitch' };
   }
+
+  const now = Date.now();
+  const tokHash = crypto
+    .createHash('sha256')
+    .update(`${EPHEMERAL_IP_SALT}:${token}`)
+    .digest('hex')
+    .slice(0, 24);
+
+  const badExp = invalidTokensCache.get(tokHash);
+  if (badExp && now < badExp) {
+    return {
+      ok: false,
+      status: 401,
+      error: 'Сессия Twitch истекла, перезайдите на сайте',
+    };
+  }
+
+  const goodCached = validTokensCache.get(tokHash);
+  if (goodCached && now < goodCached.expiresAt) {
+    return { ok: true, login: goodCached.login };
+  }
+
   const vRes = await fetch('https://id.twitch.tv/oauth2/validate', {
     headers: { Authorization: `OAuth ${token}` },
   });
   if (!vRes.ok) {
+    if (invalidTokensCache.size >= 500) invalidTokensCache.clear();
+    invalidTokensCache.set(tokHash, now + 120000);
     return {
       ok: false,
       status: 401,
@@ -314,15 +414,22 @@ async function verifyTwitchToken(token) {
   const expectedClientId = getExpectedClientId();
 
   if (!login) {
+    if (invalidTokensCache.size >= 500) invalidTokensCache.clear();
+    invalidTokensCache.set(tokHash, now + 120000);
     return { ok: false, status: 401, error: 'Некорректный ответ Twitch OAuth' };
   }
-  if (expectedClientId && clientId && clientId !== expectedClientId) {
+  if (expectedClientId && (!clientId || clientId !== expectedClientId)) {
+    if (invalidTokensCache.size >= 500) invalidTokensCache.clear();
+    invalidTokensCache.set(tokHash, now + 120000);
     return {
       ok: false,
       status: 403,
       error: 'Токен выдан сторонним приложением Twitch',
     };
   }
+
+  if (validTokensCache.size >= 200) validTokensCache.clear();
+  validTokensCache.set(tokHash, { login, expiresAt: now + 45000 });
   return { ok: true, login };
 }
 
@@ -400,6 +507,9 @@ export async function handler(event, context) {
   const action = event.queryStringParameters?.action || '';
 
   if (method === 'GET' && action === 'diag') {
+    if (!checkRateLimit(event, 'diag', 10)) {
+      return rateLimitResponse(CORS);
+    }
     const bucket = getBucketName();
     const { accessKeyId, secretAccessKey } = getStaticCredentials();
     let storageCheck = 'untested';
@@ -445,6 +555,7 @@ export async function handler(event, context) {
       body: JSON.stringify({
         ok: true,
         pingSupported: true,
+        rateLimitSupported: true,
         authStatsSupported: true,
         telemetrySupported: true,
         backupsSupported: true,
@@ -458,8 +569,27 @@ export async function handler(event, context) {
   }
 
   if (method === 'GET' && (action === 'steam' || path.includes('/covers/steam'))) {
-    const q = event.queryStringParameters?.q || '';
+    if (!isAllowedOrigin(event)) {
+      return {
+        statusCode: 403,
+        headers: CORS,
+        body: JSON.stringify({ error: 'Запрос с неразрешенного домена отклонен' }),
+      };
+    }
+    if (!checkRateLimit(event, 'steam', 20)) {
+      return rateLimitResponse(CORS);
+    }
+    const q = String(event.queryStringParameters?.q || '')
+      .trim()
+      .slice(0, 80);
     if (!q) return { statusCode: 200, headers: CORS, body: '{"items":[]}' };
+
+    const normKey = q.toLowerCase();
+    const cachedSteam = steamSearchCache.get(normKey);
+    if (cachedSteam && Date.now() < cachedSteam.expiresAt) {
+      return { statusCode: 200, headers: CORS, body: cachedSteam.body };
+    }
+
     const r = await fetch(
       `https://store.steampowered.com/api/storesearch/?term=${encodeURIComponent(q)}&l=russian&cc=US`
     );
@@ -470,7 +600,13 @@ export async function handler(event, context) {
       url: `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${it.id}/library_600x900.jpg`,
       source: 'Steam CDN',
     }));
-    return { statusCode: 200, headers: CORS, body: JSON.stringify({ items }) };
+    const respBody = JSON.stringify({ items });
+    if (steamSearchCache.size >= 60) steamSearchCache.clear();
+    steamSearchCache.set(normKey, {
+      body: respBody,
+      expiresAt: Date.now() + STEAM_CACHE_TTL_MS,
+    });
+    return { statusCode: 200, headers: CORS, body: respBody };
   }
 
   if (method !== 'GET' && !isAllowedOrigin(event)) {
@@ -483,13 +619,32 @@ export async function handler(event, context) {
 
   // 1. Обезличенная телеметрия посещаемости сайта, вкладок и активности (без IP, без User-Agent, с необратимым хэшем анонимного cookie-ID)
   if (method === 'POST' && action === 'telemetry') {
+    if (!hasExplicitAllowedOrigin(event)) {
+      return { statusCode: 200, headers: CORS, body: '{"ok":false}' };
+    }
+    if (!checkRateLimit(event, 'telemetry', 15)) {
+      return rateLimitResponse(CORS);
+    }
     try {
       const body = parseEventBody(event);
-      const analytics = await readJsonFromBucket(
-        ANALYTICS_KEY,
-        iamToken,
-        createEmptyAnalytics
-      );
+      const nowMs = Date.now();
+      if (
+        !warmAnalyticsCache ||
+        (!warmAnalyticsCache.dirty && nowMs - warmAnalyticsCache.loadedAtMs > 300000)
+      ) {
+        const loaded = await readJsonFromBucket(
+          ANALYTICS_KEY,
+          iamToken,
+          createEmptyAnalytics
+        );
+        warmAnalyticsCache = {
+          data: loaded,
+          loadedAtMs: nowMs,
+          lastFlushedMs: nowMs,
+          dirty: false,
+        };
+      }
+      const analytics = warmAnalyticsCache.data;
 
       const todayKey = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
       if (!analytics.daily || typeof analytics.daily !== 'object') analytics.daily = {};
@@ -586,7 +741,12 @@ export async function handler(event, context) {
         }
       }
 
-      await writeJsonToBucket(ANALYTICS_KEY, JSON.stringify(analytics), iamToken);
+      warmAnalyticsCache.dirty = true;
+      if (nowMs - warmAnalyticsCache.lastFlushedMs >= ANALYTICS_FLUSH_INTERVAL_MS) {
+        await writeJsonToBucket(ANALYTICS_KEY, JSON.stringify(analytics), iamToken);
+        warmAnalyticsCache.lastFlushedMs = nowMs;
+        warmAnalyticsCache.dirty = false;
+      }
       return { statusCode: 200, headers: CORS, body: '{"ok":true}' };
     } catch {
       return { statusCode: 200, headers: CORS, body: '{"ok":false}' };
@@ -595,6 +755,9 @@ export async function handler(event, context) {
 
   // 2. Запись факта авторизации через Twitch
   if (method === 'POST' && action === 'auth-log') {
+    if (!checkRateLimit(event, 'write', 25)) {
+      return rateLimitResponse(CORS);
+    }
     try {
       const body = parseEventBody(event);
       const token = extractToken(event, body);
@@ -662,6 +825,9 @@ export async function handler(event, context) {
 
   // 3. Единая сводка админки: входы Twitch + обезличенная аналитика сайта + список облачных авто-бэкапов
   if (method === 'POST' && (action === 'auth-stats' || action === 'admin-dashboard')) {
+    if (!checkRateLimit(event, 'write', 25)) {
+      return rateLimitResponse(CORS);
+    }
     try {
       const body = parseEventBody(event);
       const token = extractToken(event, body);
@@ -691,6 +857,16 @@ export async function handler(event, context) {
           headers: CORS,
           body: JSON.stringify({ error: 'Доступно только админам и модераторам' }),
         };
+      }
+
+      if (warmAnalyticsCache && warmAnalyticsCache.dirty) {
+        await writeJsonToBucket(
+          ANALYTICS_KEY,
+          JSON.stringify(warmAnalyticsCache.data),
+          iamToken
+        ).catch(() => {});
+        warmAnalyticsCache.lastFlushedMs = Date.now();
+        warmAnalyticsCache.dirty = false;
       }
 
       const [authStats, analytics, backupsIdx] = await Promise.all([
@@ -764,6 +940,9 @@ export async function handler(event, context) {
 
   // 4. Восстановление базы из облачного авто-бэкапа (только главные админы)
   if (method === 'POST' && action === 'restore-backup') {
+    if (!checkRateLimit(event, 'write', 10)) {
+      return rateLimitResponse(CORS);
+    }
     try {
       const body = parseEventBody(event);
       const token = extractToken(event, body);
@@ -824,12 +1003,15 @@ export async function handler(event, context) {
       restored.updatedAt = new Date().toISOString();
       restored.lastUpdatedBy = auth.login;
 
-      await writeJsonToBucket(STATE_KEY, JSON.stringify(restored), iamToken);
+      const restoredJson = JSON.stringify(restored);
+      await writeJsonToBucket(STATE_KEY, restoredJson, iamToken);
+      const nowAfterRestore = Date.now();
+      warmStateJsonCache = { body: restoredJson, cachedAtMs: nowAfterRestore };
       const metaObj = {
         updatedAt: restored.updatedAt,
         updatedBy: restored.lastUpdatedBy,
       };
-      warmMetaCache = { ...metaObj, checkedAtMs: Date.now() };
+      warmMetaCache = { ...metaObj, checkedAtMs: nowAfterRestore };
       await writeJsonToBucket(STATE_META_KEY, JSON.stringify(metaObj), iamToken).catch(
         () => {}
       );
@@ -850,6 +1032,9 @@ export async function handler(event, context) {
 
   // Легкий ~65-байтный пинг актуальной версии базы для фонового автообновления у зрителей
   if (method === 'GET' && action === 'ping') {
+    if (!checkRateLimit(event, 'read', 60)) {
+      return rateLimitResponse(CORS);
+    }
     const now = Date.now();
     if (warmMetaCache && now - warmMetaCache.checkedAtMs < WARM_META_TTL_MS) {
       return {
@@ -895,11 +1080,20 @@ export async function handler(event, context) {
   }
 
   if (method === 'GET') {
+    if (!checkRateLimit(event, 'read', 60)) {
+      return rateLimitResponse(CORS);
+    }
+    const now = Date.now();
+    if (warmStateJsonCache && now - warmStateJsonCache.cachedAtMs < WARM_STATE_TTL_MS) {
+      return { statusCode: 200, headers: CORS, body: warmStateJsonCache.body };
+    }
     const state = await readJsonFromBucket(
       STATE_KEY,
       iamToken,
       createEmptyState
     );
+    const stateBody = JSON.stringify(state);
+    warmStateJsonCache = { body: stateBody, cachedAtMs: Date.now() };
     if (state?.updatedAt) {
       warmMetaCache = {
         updatedAt: String(state.updatedAt),
@@ -907,10 +1101,13 @@ export async function handler(event, context) {
         checkedAtMs: Date.now(),
       };
     }
-    return { statusCode: 200, headers: CORS, body: JSON.stringify(state) };
+    return { statusCode: 200, headers: CORS, body: stateBody };
   }
 
   if (method === 'PUT' || method === 'POST') {
+    if (!checkRateLimit(event, 'write', 25)) {
+      return rateLimitResponse(CORS);
+    }
     try {
       const next = parseEventBody(event);
       const token = extractToken(event, next);
@@ -1036,12 +1233,15 @@ export async function handler(event, context) {
       next.updatedAt = new Date().toISOString();
       next.lastUpdatedBy = login;
 
-      await writeJsonToBucket(STATE_KEY, JSON.stringify(next), iamToken);
+      const nextBody = JSON.stringify(next);
+      await writeJsonToBucket(STATE_KEY, nextBody, iamToken);
+      const nowAfterPut = Date.now();
+      warmStateJsonCache = { body: nextBody, cachedAtMs: nowAfterPut };
       const metaObj = {
         updatedAt: next.updatedAt,
         updatedBy: login,
       };
-      warmMetaCache = { ...metaObj, checkedAtMs: Date.now() };
+      warmMetaCache = { ...metaObj, checkedAtMs: nowAfterPut };
       await writeJsonToBucket(STATE_META_KEY, JSON.stringify(metaObj), iamToken).catch(
         () => {}
       );
