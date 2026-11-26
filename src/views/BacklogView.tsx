@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   ArrowUpRight,
   Edit3,
@@ -21,6 +21,8 @@ import {
 interface BacklogViewProps {
   backlog: BacklogItem[];
   canEdit: boolean;
+  statusTag?: string;
+  onSelectStatusTag?: (status: string) => void;
   onAddBacklog: () => void;
   onInspectBacklog: (id: string) => void;
   onEditBacklog: (item: BacklogItem) => void;
@@ -31,6 +33,8 @@ interface BacklogViewProps {
 export const BacklogView: React.FC<BacklogViewProps> = ({
   backlog,
   canEdit,
+  statusTag = 'ALL',
+  onSelectStatusTag,
   onAddBacklog,
   onInspectBacklog,
   onEditBacklog,
@@ -38,8 +42,17 @@ export const BacklogView: React.FC<BacklogViewProps> = ({
   onPromoteToGame,
 }) => {
   const [search, setSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState('ALL');
+  const [statusFilter, setStatusFilter] = useState(statusTag || 'ALL');
   const [prioFilter, setPrioFilter] = useState('ALL');
+
+  useEffect(() => {
+    setStatusFilter(statusTag || 'ALL');
+  }, [statusTag]);
+
+  const handleChangeStatus = (nextStatus: string) => {
+    setStatusFilter(nextStatus);
+    onSelectStatusTag?.(nextStatus);
+  };
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -102,7 +115,7 @@ export const BacklogView: React.FC<BacklogViewProps> = ({
       <div className="status-pills-row">
         <button
           className={`status-tab ${statusFilter === 'ALL' ? 'active' : ''}`}
-          onClick={() => setStatusFilter('ALL')}
+          onClick={() => handleChangeStatus('ALL')}
         >
           Все <span>{backlog.length}</span>
         </button>
@@ -112,7 +125,7 @@ export const BacklogView: React.FC<BacklogViewProps> = ({
             <button
               key={s}
               className={`status-tab ${statusFilter === s ? 'active' : ''}`}
-              onClick={() => setStatusFilter(s)}
+              onClick={() => handleChangeStatus(s)}
             >
               {s} <span>{cnt}</span>
             </button>

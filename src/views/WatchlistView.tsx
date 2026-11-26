@@ -33,6 +33,10 @@ interface WatchlistViewProps {
   memes: MemeItem[];
   canEdit: boolean;
   currentUser: TwitchUser | null;
+  catTag?: string;
+  onSelectCatTag?: (cat: string) => void;
+  ordererTag?: string;
+  onSelectOrdererTag?: (orderer: string, pushHistory?: boolean) => void;
   onAddWatch: () => void;
   onInspectWatch: (id: string) => void;
   onEditWatch: (item: WatchItem) => void;
@@ -176,6 +180,10 @@ export const WatchlistView: React.FC<WatchlistViewProps> = memo(
     memes,
     canEdit,
     currentUser,
+    catTag = 'ALL',
+    onSelectCatTag,
+    ordererTag = '',
+    onSelectOrdererTag,
     onAddWatch,
     onInspectWatch,
     onEditWatch,
@@ -184,11 +192,19 @@ export const WatchlistView: React.FC<WatchlistViewProps> = memo(
     onViewMeme,
   }) => {
     const [search, setSearch] = useState('');
-    const [catFilter, setCatFilter] = useState('ALL');
+    const [catFilter, setCatFilter] = useState(catTag || 'ALL');
     const [statusFilter, setStatusFilter] = useState('ALL');
     const [ratingFilter, setRatingFilter] = useState('ALL');
     const [onlyMine, setOnlyMine] = useState(false);
-    const [ordererFilter, setOrdererFilter] = useState('');
+    const [ordererFilter, setOrdererFilter] = useState(ordererTag || '');
+
+    useEffect(() => {
+      setCatFilter(catTag || 'ALL');
+    }, [catTag]);
+
+    useEffect(() => {
+      setOrdererFilter(ordererTag || '');
+    }, [ordererTag]);
 
     const deferredSearch = useDeferredValue(search);
     const deferredOrderer = useDeferredValue(ordererFilter);
@@ -320,9 +336,21 @@ export const WatchlistView: React.FC<WatchlistViewProps> = memo(
       [filtered, visibleCount]
     );
 
-    const handleSelectOrderer = useCallback((ord: string) => {
-      setOrdererFilter(ord);
-    }, []);
+    const handleSelectOrderer = useCallback(
+      (ord: string) => {
+        setOrdererFilter(ord);
+        onSelectOrdererTag?.(ord, true);
+      },
+      [onSelectOrdererTag]
+    );
+
+    const handleChangeCat = useCallback(
+      (nextCat: string) => {
+        setCatFilter(nextCat);
+        onSelectCatTag?.(nextCat);
+      },
+      [onSelectCatTag]
+    );
 
     return (
       <div className="view-stack">
@@ -365,7 +393,10 @@ export const WatchlistView: React.FC<WatchlistViewProps> = memo(
 
           <OrdererAutocomplete
             value={ordererFilter}
-            onChange={setOrdererFilter}
+            onChange={(val) => {
+              setOrdererFilter(val);
+              onSelectOrdererTag?.(val, false);
+            }}
             orderers={ordererStats}
             placeholder="Заказчик (подсказки)..."
           />
@@ -410,7 +441,12 @@ export const WatchlistView: React.FC<WatchlistViewProps> = memo(
           {ordererFilter && (
             <span className="active-filter-tag">
               Заказчик: <strong>{ordererFilter}</strong>
-              <button onClick={() => setOrdererFilter('')}>
+              <button
+                onClick={() => {
+                  setOrdererFilter('');
+                  onSelectOrdererTag?.('', true);
+                }}
+              >
                 <X size={12} />
               </button>
             </span>
@@ -420,7 +456,7 @@ export const WatchlistView: React.FC<WatchlistViewProps> = memo(
         <div className="status-pills-row">
           <button
             className={`status-tab ${catFilter === 'ALL' ? 'active' : ''}`}
-            onClick={() => setCatFilter('ALL')}
+            onClick={() => handleChangeCat('ALL')}
           >
             Все <span>{watchlist.length}</span>
           </button>
@@ -428,7 +464,7 @@ export const WatchlistView: React.FC<WatchlistViewProps> = memo(
             <button
               key={c}
               className={`status-tab ${catFilter === c ? 'active' : ''}`}
-              onClick={() => setCatFilter(c)}
+              onClick={() => handleChangeCat(c)}
             >
               {c} <span>{catCounts[c] || 0}</span>
             </button>
@@ -436,7 +472,7 @@ export const WatchlistView: React.FC<WatchlistViewProps> = memo(
           {memesByWatchId.size > 0 && (
             <button
               className={`status-tab ${catFilter === 'WITH_MEMES' ? 'active' : ''}`}
-              onClick={() => setCatFilter('WITH_MEMES')}
+              onClick={() => handleChangeCat('WITH_MEMES')}
             >
               🖼 С мемами <span>{memesByWatchId.size}</span>
             </button>

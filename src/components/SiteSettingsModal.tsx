@@ -59,6 +59,7 @@ export type SettingsTabId =
 
 interface SiteSettingsModalProps {
   initialTab?: SettingsTabId;
+  onSelectTab?: (tab: SettingsTabId) => void;
   prefs: UserPreferences;
   onChangePrefs: (next: UserPreferences) => void;
   customWallpaperUrl: string;
@@ -164,6 +165,7 @@ const REF_LABELS: Record<string, string> = {
 
 export const SiteSettingsModal: React.FC<SiteSettingsModalProps> = ({
   initialTab = 'appearance',
+  onSelectTab,
   prefs,
   onChangePrefs,
   customWallpaperUrl,
@@ -186,6 +188,15 @@ export const SiteSettingsModal: React.FC<SiteSettingsModalProps> = ({
   const [tab, setTab] = useState<SettingsTabId>(
     initialTab === 'admin' && !canEdit ? 'appearance' : initialTab
   );
+
+  useEffect(() => {
+    setTab(initialTab === 'admin' && !canEdit ? 'appearance' : initialTab);
+  }, [initialTab, canEdit]);
+
+  const switchTab = (nextTab: SettingsTabId) => {
+    setTab(nextTab);
+    onSelectTab?.(nextTab);
+  };
   const [newMod, setNewMod] = useState('');
   const [bgUrlDraft, setBgUrlDraft] = useState(
     customWallpaperUrl.startsWith('data:') ? '' : customWallpaperUrl
@@ -318,28 +329,28 @@ export const SiteSettingsModal: React.FC<SiteSettingsModalProps> = ({
           <button
             type="button"
             className={tab === 'appearance' ? 'active' : ''}
-            onClick={() => setTab('appearance')}
+            onClick={() => switchTab('appearance')}
           >
             <Palette size={15} /> Оформление
           </button>
           <button
             type="button"
             className={tab === 'sound' ? 'active' : ''}
-            onClick={() => setTab('sound')}
+            onClick={() => switchTab('sound')}
           >
             <Volume2 size={15} /> Звуки
           </button>
           <button
             type="button"
             className={tab === 'perf' ? 'active' : ''}
-            onClick={() => setTab('perf')}
+            onClick={() => switchTab('perf')}
           >
             <Cpu size={15} /> Производительность
           </button>
           <button
             type="button"
             className={tab === 'privacy' ? 'active' : ''}
-            onClick={() => setTab('privacy')}
+            onClick={() => switchTab('privacy')}
           >
             <Cookie size={15} /> Cookie и стата
           </button>
@@ -347,7 +358,7 @@ export const SiteSettingsModal: React.FC<SiteSettingsModalProps> = ({
             <button
               type="button"
               className={tab === 'admin' ? 'active' : ''}
-              onClick={() => setTab('admin')}
+              onClick={() => switchTab('admin')}
             >
               <Shield size={15} /> Админка
             </button>
@@ -355,7 +366,7 @@ export const SiteSettingsModal: React.FC<SiteSettingsModalProps> = ({
           <button
             type="button"
             className={tab === 'credits' ? 'active' : ''}
-            onClick={() => setTab('credits')}
+            onClick={() => switchTab('credits')}
           >
             <HeartHandshake size={15} /> Авторы
           </button>

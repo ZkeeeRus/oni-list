@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   ChevronDown,
   ChevronUp,
@@ -41,6 +41,8 @@ interface TierListViewProps {
   canEdit: boolean;
   authorName: string;
   apiBaseUrl: string;
+  boardTag?: string;
+  onSelectBoardTag?: (boardId: string) => void;
   onMoveAutoTierItem: (payload: AutoTierMovePayload) => void;
   onSaveCustomTierLists: (lists: CustomTierList[]) => void;
   onInspectGame: (id: string) => void;
@@ -105,16 +107,29 @@ export const TierListView: React.FC<TierListViewProps> = ({
   canEdit,
   authorName,
   apiBaseUrl,
+  boardTag = 'AUTO_GAMES',
+  onSelectBoardTag,
   onMoveAutoTierItem,
   onSaveCustomTierLists,
   onInspectGame,
   onInspectWatch,
 }) => {
-  const [selectedBoardId, setSelectedBoardId] = useState<string>('AUTO_GAMES');
+  const [selectedBoardId, setSelectedBoardId] = useState<string>(
+    boardTag || 'AUTO_GAMES'
+  );
   const [autoFilter, setAutoFilter] = useState('');
   const [ordererFilter, setOrdererFilter] = useState('');
   const [statusScope, setStatusScope] = useState<'ALL' | 'COMPLETED'>('ALL');
   const [showUnratedPool, setShowUnratedPool] = useState(false);
+
+  useEffect(() => {
+    setSelectedBoardId(boardTag || 'AUTO_GAMES');
+  }, [boardTag]);
+
+  const handleSelectBoard = (boardId: string) => {
+    setSelectedBoardId(boardId);
+    onSelectBoardTag?.(boardId);
+  };
 
   const ordererStats = useMemo(
     () => collectOrdererStats(games, watchlist),
@@ -337,7 +352,7 @@ export const TierListView: React.FC<TierListViewProps> = ({
       pool: [],
     };
     onSaveCustomTierLists([...customTierLists, newBoard]);
-    setSelectedBoardId(newBoard.id);
+    handleSelectBoard(newBoard.id);
   };
 
   const updateCurrentBoard = (updater: (b: CustomTierList) => CustomTierList) => {
@@ -510,19 +525,19 @@ export const TierListView: React.FC<TierListViewProps> = ({
       <div className="status-pills-row">
         <button
           className={`status-tab ${selectedBoardId === 'AUTO_GAMES' ? 'active' : ''}`}
-          onClick={() => setSelectedBoardId('AUTO_GAMES')}
+          onClick={() => handleSelectBoard('AUTO_GAMES')}
         >
           🎮 Авто-тирлист игр
         </button>
         <button
           className={`status-tab ${selectedBoardId === 'AUTO_WATCH' ? 'active' : ''}`}
-          onClick={() => setSelectedBoardId('AUTO_WATCH')}
+          onClick={() => handleSelectBoard('AUTO_WATCH')}
         >
           🎬 Авто-тирлист просмотрового
         </button>
         <button
           className={`status-tab ${selectedBoardId === 'AUTO_ALL' ? 'active' : ''}`}
-          onClick={() => setSelectedBoardId('AUTO_ALL')}
+          onClick={() => handleSelectBoard('AUTO_ALL')}
         >
           ⭐ Всё вместе
         </button>
@@ -531,7 +546,7 @@ export const TierListView: React.FC<TierListViewProps> = ({
           <button
             key={tl.id}
             className={`status-tab custom-tab ${selectedBoardId === tl.id ? 'active' : ''}`}
-            onClick={() => setSelectedBoardId(tl.id)}
+            onClick={() => handleSelectBoard(tl.id)}
           >
             <Layers size={13} /> {tl.title}
           </button>

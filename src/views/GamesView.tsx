@@ -46,7 +46,10 @@ interface GamesViewProps {
   memes: MemeItem[];
   canEdit: boolean;
   currentUser: TwitchUser | null;
+  statusTag?: string;
+  onSelectStatusTag?: (status: string) => void;
   initialOrdererFilter?: string;
+  onSelectOrdererTag?: (orderer: string, pushHistory?: boolean) => void;
   onClearInitialOrderer?: () => void;
   onAddGame: () => void;
   onInspectGame: (id: string) => void;
@@ -274,7 +277,10 @@ export const GamesView: React.FC<GamesViewProps> = memo(
     memes,
     canEdit,
     currentUser,
+    statusTag = 'ALL',
+    onSelectStatusTag,
     initialOrdererFilter,
+    onSelectOrdererTag,
     onClearInitialOrderer,
     onAddGame,
     onInspectGame,
@@ -285,7 +291,7 @@ export const GamesView: React.FC<GamesViewProps> = memo(
     onViewMeme,
   }) => {
     const [search, setSearch] = useState('');
-    const [statusFilter, setStatusFilter] = useState<string>('ALL');
+    const [statusFilter, setStatusFilter] = useState<string>(statusTag || 'ALL');
     const [ratingFilter, setRatingFilter] = useState<string>('ALL');
     const [onlyVod, setOnlyVod] = useState(false);
     const [onlyReturned, setOnlyReturned] = useState(false);
@@ -300,6 +306,10 @@ export const GamesView: React.FC<GamesViewProps> = memo(
     const batchSize = viewMode === 'grid' ? GRID_BATCH : TABLE_BATCH;
     const [visibleCount, setVisibleCount] = useState(batchSize);
     const loadMoreRef = useRef<HTMLDivElement | null>(null);
+
+    useEffect(() => {
+      setStatusFilter(statusTag || 'ALL');
+    }, [statusTag]);
 
     useEffect(() => {
       if (initialOrdererFilter !== undefined) {
@@ -456,9 +466,21 @@ export const GamesView: React.FC<GamesViewProps> = memo(
       return c;
     }, [games]);
 
-    const handleSelectOrderer = useCallback((ord: string) => {
-      setOrdererFilter(ord);
-    }, []);
+    const handleSelectOrderer = useCallback(
+      (ord: string) => {
+        setOrdererFilter(ord);
+        onSelectOrdererTag?.(ord, true);
+      },
+      [onSelectOrdererTag]
+    );
+
+    const handleChangeStatus = useCallback(
+      (nextStatus: string) => {
+        setStatusFilter(nextStatus);
+        onSelectStatusTag?.(nextStatus);
+      },
+      [onSelectStatusTag]
+    );
 
     return (
       <div className="view-stack">
@@ -519,6 +541,7 @@ export const GamesView: React.FC<GamesViewProps> = memo(
             value={ordererFilter}
             onChange={(val) => {
               setOrdererFilter(val);
+              onSelectOrdererTag?.(val, false);
               if (!val) onClearInitialOrderer?.();
             }}
             orderers={ordererStats}
@@ -584,6 +607,7 @@ export const GamesView: React.FC<GamesViewProps> = memo(
               <button
                 onClick={() => {
                   setOrdererFilter('');
+                  onSelectOrdererTag?.('', true);
                   onClearInitialOrderer?.();
                 }}
               >
@@ -597,7 +621,7 @@ export const GamesView: React.FC<GamesViewProps> = memo(
         <div className="status-pills-row">
           <button
             className={`status-tab ${statusFilter === 'ALL' ? 'active' : ''}`}
-            onClick={() => setStatusFilter('ALL')}
+            onClick={() => handleChangeStatus('ALL')}
           >
             Все <span>{statusCounts.ALL}</span>
           </button>
@@ -605,7 +629,7 @@ export const GamesView: React.FC<GamesViewProps> = memo(
             <button
               key={s}
               className={`status-tab ${statusFilter === s ? 'active' : ''}`}
-              onClick={() => setStatusFilter(s)}
+              onClick={() => handleChangeStatus(s)}
             >
               {s} <span>{statusCounts[s]}</span>
             </button>

@@ -85,6 +85,18 @@ import {
   trackTabView,
   updateTelemetryAuthState,
 } from './utils/analytics';
+import {
+  buildHashFromRoute,
+  canStepBackToRoute,
+  commitRouteNavigation,
+  getTabHref,
+  handleBrowserPopState,
+  initRouterHistory,
+  isTwitchOAuthHash,
+  parseRouteFromHash,
+  RouteState,
+  stripOverlays,
+} from './utils/router';
 
 export const App: React.FC = () => {
   const [cfg, setCfg] = useState<RuntimeConfig>({
@@ -95,8 +107,12 @@ export const App: React.FC = () => {
   const [data, setData] = useState<SiteData | null>(null);
   const [dataSource, setDataSource] = useState<'remote' | 'local' | 'seed'>('seed');
   const [user, setUser] = useState<TwitchUser | null>(null);
-  const [activeTab, setActiveTab] = useState<NavTab>('hub');
-  const [gamesOrdererPreset, setGamesOrdererPreset] = useState<string>('');
+
+  // Единое состояние маршрута (#games, #watchlist, теги статусов/категорий и открытые окна)
+  const [route, setRoute] = useState<RouteState>(() => initRouterHistory());
+  const routeRef = useRef<RouteState>(route);
+  routeRef.current = route;
+
   const [toast, setToast] = useState<{ text: string; canUndo?: boolean } | null>(null);
   const toastTimerRef = useRef<number | null>(null);
 
@@ -105,12 +121,7 @@ export const App: React.FC = () => {
   const [redoStack, setRedoStack] = useState<Array<{ snapshot: SiteData; label: string }>>([]);
   const [pendingCloudMigration, setPendingCloudMigration] = useState(false);
 
-  // Global Detail Inspection Modals (openable from ANY page!)
-  const [inspectGameId, setInspectGameId] = useState<string | null>(null);
-  const [inspectWatchId, setInspectWatchId] = useState<string | null>(null);
-  const [inspectBacklogId, setInspectBacklogId] = useState<string | null>(null);
-
-  // Add/Edit Modals state
+  // Локальные черновики форм редактора (само открытие/закрытие синхронизировано с историей браузера)
   const [gameModalItem, setGameModalItem] = useState<GameItem | null | undefined>(
     undefined
   );
@@ -124,14 +135,105 @@ export const App: React.FC = () => {
     { type: 'watch' | 'game' | 'general'; id: string; title: string } | null | undefined
   >(undefined);
   const [editingMeme, setEditingMeme] = useState<MemeItem | null>(null);
-  const [lightboxMeme, setLightboxMeme] = useState<MemeItem | null>(null);
+  const [lightboxMemeFallback, setLightboxMemeFallback] = useState<MemeItem | null>(
+    null
+  );
   const [viewerAccountOpen, setViewerAccountOpen] = useState(false);
-  const [siteSettingsTab, setSiteSettingsTab] = useState<SettingsTabId | null>(null);
+
   const [prefs, setPrefs] = useState<UserPreferences>(() => loadUserPreferences());
   const [customWallpaperUrl, setCustomWallpaperUrl] = useState<string>('');
   const [privacyPrefs, setPrivacyPrefs] = useState<TelemetryPrivacyPrefs>(() =>
     loadPrivacyPrefs()
   );
+
+  // Навигация с записью шага в историю браузера (кнопки Назад / Вперед)
+  const navigateRoute = useCallback(
+    (
+      updater: (prev: RouteState) => RouteState,
+      options?: { replace?: boolean; scrollTop?: boolean }
+    ) => {
+      const next = updater(routeRef.current);
+      routeRef.current = next;
+      commitRouteNavigation(next, options);
+      setRoute(next);
+    },
+    []
+  );
+
+  // Закрытие модального окна: если предыдущая запись истории - эта же страница без модалки, делаем history.back()
+  const closeOverlayRoute = useCallback(
+    (updater: (prev: RouteState) => RouteState) => {
+      const target = updater(routeRef.current);
+      if (canStepBackToRoute(target)) {
+        window.history.back();
+      } else {
+        routeRef.current = target;
+        commitRouteNavigation(target, { replace: true });
+        setRoute(target);
+      }
+    },
+    []
+  );
+
+  // Обработка кнопок браузера «Назад» / «Вперед» и свайпа назад на телефоне
+  useEffect(() => {
+    const onPopState = (e: PopStateEvent) => {
+      const prevTab = routeRef.current.tab;
+      const { route: popped, restoredScrollY } = handleBrowserPopState(e.state);
+      routeRef.current = popped;
+      setRoute(popped);
+
+      if (!popped.memeId) {
+        setLightboxMemeFallback(null);
+      }
+      if (popped.editorModal !== 'game') {
+        setGameModalItem(undefined);
+      }
+      if (popped.editorModal !== 'watch') {
+        setWatchModalItem(undefined);
+      }
+      if (popped.editorModal !== 'backlog') {
+        setBacklogModalItem(undefined);
+      }
+      if (popped.editorModal !== 'meme') {
+        setMemeModalTarget(undefined);
+        setEditingMeme(null);
+      }
+      if (popped.editorModal !== 'account') {
+        setViewerAccountOpen(false);
+      }
+
+      if (popped.tab !== prevTab) {
+        trackTabView(popped.tab);
+        requestAnimationFrame(() => {
+          window.scrollTo(0, restoredScrollY ?? 0);
+        });
+      }
+    };
+
+    const onHashChange = () => {
+      if (isTwitchOAuthHash(window.location.hash)) return;
+      const expectedHash = buildHashFromRoute(routeRef.current);
+      const actualParsed = parseRouteFromHash(window.location.hash);
+      const actualCanonical = buildHashFromRoute(actualParsed);
+      if (actualCanonical !== expectedHash) {
+        const prevTab = routeRef.current.tab;
+        routeRef.current = actualParsed;
+        setRoute(actualParsed);
+        if (actualParsed.tab !== prevTab) {
+          trackTabView(actualParsed.tab);
+          window.scrollTo(0, 0);
+        }
+      }
+    };
+
+    window.addEventListener('popstate', onPopState);
+    window.addEventListener('hashchange', onHashChange);
+    return () => {
+      window.removeEventListener('popstate', onPopState);
+      window.removeEventListener('hashchange', onHashChange);
+    };
+  }, []);
 
   useEffect(() => {
     loadCustomWallpaper().then((saved) => {
@@ -166,6 +268,20 @@ export const App: React.FC = () => {
       : 'false';
   }, [prefs]);
 
+  const activeTab = route.tab;
+  const inspectGameId = route.inspectGameId;
+  const inspectWatchId = route.inspectWatchId;
+  const inspectBacklogId = route.inspectBacklogId;
+  const siteSettingsTab = route.settingsTab;
+
+  const activeLightboxMeme = useMemo(() => {
+    if (route.memeId && data) {
+      const found = data.memes.find((m) => m.id === route.memeId);
+      if (found) return found;
+    }
+    return route.memeId ? lightboxMemeFallback : null;
+  }, [route.memeId, data, lightboxMemeFallback]);
+
   // Блокировка прокрутки основного окна колесиком при открытии любого модального окна
   const anyModalOpen =
     inspectGameId !== null ||
@@ -176,7 +292,7 @@ export const App: React.FC = () => {
     backlogModalItem !== undefined ||
     memeModalTarget !== undefined ||
     editingMeme !== null ||
-    lightboxMeme !== null ||
+    activeLightboxMeme !== null ||
     viewerAccountOpen ||
     siteSettingsTab !== null;
 
@@ -201,6 +317,65 @@ export const App: React.FC = () => {
     };
   }, [anyModalOpen]);
 
+  // Закрытие верхнего открытого модального окна по клавише Escape
+  useEffect(() => {
+    if (!anyModalOpen) return;
+    const onEsc = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return;
+      if (routeRef.current.memeId) {
+        setLightboxMemeFallback(null);
+        closeOverlayRoute((r) => ({ ...r, memeId: null }));
+        return;
+      }
+      if (
+        gameModalItem !== undefined ||
+        watchModalItem !== undefined ||
+        backlogModalItem !== undefined ||
+        memeModalTarget !== undefined ||
+        editingMeme !== null ||
+        viewerAccountOpen
+      ) {
+        setGameModalItem(undefined);
+        setWatchModalItem(undefined);
+        setBacklogModalItem(undefined);
+        setMemeModalTarget(undefined);
+        setEditingMeme(null);
+        setViewerAccountOpen(false);
+        if (routeRef.current.editorModal) {
+          closeOverlayRoute((r) => ({ ...r, editorModal: null }));
+        }
+        return;
+      }
+      if (routeRef.current.settingsTab !== null) {
+        closeOverlayRoute((r) => ({ ...r, settingsTab: null }));
+        return;
+      }
+      if (
+        routeRef.current.inspectGameId ||
+        routeRef.current.inspectWatchId ||
+        routeRef.current.inspectBacklogId
+      ) {
+        closeOverlayRoute((r) => ({
+          ...r,
+          inspectGameId: null,
+          inspectWatchId: null,
+          inspectBacklogId: null,
+        }));
+      }
+    };
+    window.addEventListener('keydown', onEsc);
+    return () => window.removeEventListener('keydown', onEsc);
+  }, [
+    anyModalOpen,
+    gameModalItem,
+    watchModalItem,
+    backlogModalItem,
+    memeModalTarget,
+    editingMeme,
+    viewerAccountOpen,
+    closeOverlayRoute,
+  ]);
+
   const handleUpdatePrefs = useCallback((next: UserPreferences) => {
     setPrefs(next);
     saveUserPreferences(next);
@@ -220,6 +395,7 @@ export const App: React.FC = () => {
   }, []);
 
   useEffect(() => {
+    const hadOAuthHash = isTwitchOAuthHash(window.location.hash);
     loadGameMetaMap();
     (async () => {
       const loadedCfg = await loadRuntimeConfig();
@@ -234,7 +410,20 @@ export const App: React.FC = () => {
         setPendingCloudMigration(true);
       }
       setUser(twitchSession.user);
+
+      let activeInitialTab = routeRef.current.tab;
+      if (hadOAuthHash) {
+        const restored = initRouterHistory();
+        routeRef.current = restored;
+        setRoute(restored);
+        activeInitialTab = restored.tab;
+      }
+
       initTelemetrySession(loadedCfg.apiBaseUrl, Boolean(twitchSession.user));
+      if (activeInitialTab !== 'hub') {
+        trackTabView(activeInitialTab);
+      }
+
       if (twitchSession.user) {
         logTwitchAuthEvent(
           twitchSession.user,
@@ -245,13 +434,14 @@ export const App: React.FC = () => {
       if (twitchSession.justLoggedIn && twitchSession.user) {
         const loggedRole = getUserRole(twitchSession.user, loadedData.data, loadedCfg);
         if (loggedRole === 'admin' || loggedRole === 'moderator') {
-          setSiteSettingsTab('admin');
+          navigateRoute((r) => ({ ...r, settingsTab: 'admin' }));
         } else {
           setViewerAccountOpen(true);
+          navigateRoute((r) => ({ ...r, editorModal: 'account' }));
         }
       }
     })();
-  }, []);
+  }, [navigateRoute]);
 
   const role = getUserRole(user, data, cfg);
   const canEdit = role === 'admin' || role === 'moderator';
@@ -459,10 +649,83 @@ export const App: React.FC = () => {
   const commitDataRef = useRef(commitData);
   commitDataRef.current = commitData;
 
-  const handleClearInitialOrderer = useCallback(() => setGamesOrdererPreset(''), []);
-  const handleOpenAddGame = useCallback(() => setGameModalItem(null), []);
-  const handleInspectGame = useCallback((id: string) => setInspectGameId(id), []);
-  const handleEditGame = useCallback((g: GameItem) => setGameModalItem(g), []);
+  const handleClearInitialOrderer = useCallback(() => {
+    navigateRoute((r) => ({ ...r, gameOrderer: '' }), { replace: true });
+  }, [navigateRoute]);
+
+  const handleSelectGameStatusTag = useCallback(
+    (status: string) => {
+      navigateRoute((r) => ({ ...r, gameStatus: status || 'ALL' }));
+    },
+    [navigateRoute]
+  );
+
+  const handleSelectGameOrdererTag = useCallback(
+    (orderer: string, pushHistory = false) => {
+      navigateRoute(
+        (r) => ({ ...r, gameOrderer: orderer }),
+        { replace: !pushHistory }
+      );
+    },
+    [navigateRoute]
+  );
+
+  const handleSelectWatchCatTag = useCallback(
+    (cat: string) => {
+      navigateRoute((r) => ({ ...r, watchCat: cat || 'ALL' }));
+    },
+    [navigateRoute]
+  );
+
+  const handleSelectWatchOrdererTag = useCallback(
+    (orderer: string, pushHistory = false) => {
+      navigateRoute(
+        (r) => ({ ...r, watchOrderer: orderer }),
+        { replace: !pushHistory }
+      );
+    },
+    [navigateRoute]
+  );
+
+  const handleSelectTierBoardTag = useCallback(
+    (boardId: string) => {
+      navigateRoute((r) => ({ ...r, tierBoard: boardId || 'AUTO_GAMES' }));
+    },
+    [navigateRoute]
+  );
+
+  const handleSelectBacklogStatusTag = useCallback(
+    (status: string) => {
+      navigateRoute((r) => ({ ...r, backlogStatus: status || 'ALL' }));
+    },
+    [navigateRoute]
+  );
+
+  const handleOpenAddGame = useCallback(() => {
+    setGameModalItem(null);
+    navigateRoute((r) => ({ ...r, editorModal: 'game' }));
+  }, [navigateRoute]);
+
+  const handleInspectGame = useCallback(
+    (id: string) => {
+      navigateRoute((r) => ({
+        ...r,
+        inspectGameId: id,
+        inspectWatchId: null,
+        inspectBacklogId: null,
+      }));
+    },
+    [navigateRoute]
+  );
+
+  const handleEditGame = useCallback(
+    (g: GameItem) => {
+      setGameModalItem(g);
+      navigateRoute((r) => ({ ...r, editorModal: 'game' }));
+    },
+    [navigateRoute]
+  );
+
   const handleDeleteGame = useCallback((id: string) => {
     const cur = dataRef.current;
     if (!cur) return;
@@ -471,6 +734,7 @@ export const App: React.FC = () => {
       'Игра удалена'
     );
   }, []);
+
   const handleQuickUpdateGame = useCallback((updated: GameItem) => {
     const cur = dataRef.current;
     if (!cur) return;
@@ -482,13 +746,40 @@ export const App: React.FC = () => {
       'Статус/оценка обновлены'
     );
   }, []);
+
   const handleAddMemeForGame = useCallback(
-    (g: GameItem) => setMemeModalTarget({ type: 'game', id: g.id, title: g.title }),
-    []
+    (g: GameItem) => {
+      setMemeModalTarget({ type: 'game', id: g.id, title: g.title });
+      navigateRoute((r) => ({ ...r, editorModal: 'meme' }));
+    },
+    [navigateRoute]
   );
-  const handleOpenAddWatch = useCallback(() => setWatchModalItem(null), []);
-  const handleInspectWatch = useCallback((id: string) => setInspectWatchId(id), []);
-  const handleEditWatch = useCallback((w: WatchItem) => setWatchModalItem(w), []);
+
+  const handleOpenAddWatch = useCallback(() => {
+    setWatchModalItem(null);
+    navigateRoute((r) => ({ ...r, editorModal: 'watch' }));
+  }, [navigateRoute]);
+
+  const handleInspectWatch = useCallback(
+    (id: string) => {
+      navigateRoute((r) => ({
+        ...r,
+        inspectWatchId: id,
+        inspectGameId: null,
+        inspectBacklogId: null,
+      }));
+    },
+    [navigateRoute]
+  );
+
+  const handleEditWatch = useCallback(
+    (w: WatchItem) => {
+      setWatchModalItem(w);
+      navigateRoute((r) => ({ ...r, editorModal: 'watch' }));
+    },
+    [navigateRoute]
+  );
+
   const handleDeleteWatch = useCallback((id: string) => {
     const cur = dataRef.current;
     if (!cur) return;
@@ -497,12 +788,63 @@ export const App: React.FC = () => {
       'Тайтл удален'
     );
   }, []);
-  const handleOpenMemeForTarget = useCallback(
-    (target: { type: 'watch' | 'game' | 'general'; id: string; title: string }) =>
-      setMemeModalTarget(target),
-    []
+
+  const handleInspectBacklog = useCallback(
+    (id: string) => {
+      navigateRoute((r) => ({
+        ...r,
+        inspectBacklogId: id,
+        inspectGameId: null,
+        inspectWatchId: null,
+      }));
+    },
+    [navigateRoute]
   );
-  const handleViewMeme = useCallback((m: MemeItem) => setLightboxMeme(m), []);
+
+  const handleOpenAddBacklog = useCallback(() => {
+    setBacklogModalItem(null);
+    navigateRoute((r) => ({ ...r, editorModal: 'backlog' }));
+  }, [navigateRoute]);
+
+  const handleEditBacklog = useCallback(
+    (b: BacklogItem) => {
+      setBacklogModalItem(b);
+      navigateRoute((r) => ({ ...r, editorModal: 'backlog' }));
+    },
+    [navigateRoute]
+  );
+
+  const handleOpenMemeForTarget = useCallback(
+    (target: { type: 'watch' | 'game' | 'general'; id: string; title: string }) => {
+      setMemeModalTarget(target);
+      navigateRoute((r) => ({ ...r, editorModal: 'meme' }));
+    },
+    [navigateRoute]
+  );
+
+  const handleViewMeme = useCallback(
+    (m: MemeItem) => {
+      setLightboxMemeFallback(m);
+      navigateRoute((r) => ({ ...r, memeId: m.id }));
+    },
+    [navigateRoute]
+  );
+
+  const handleJumpToOrdererInGames = useCallback(
+    (orderer: string) => {
+      navigateRoute(
+        (r) => ({
+          ...stripOverlays(r),
+          tab: 'games',
+          gameStatus: 'ALL',
+          gameOrderer: orderer,
+        }),
+        { scrollTop: true }
+      );
+      trackTabView('games');
+    },
+    [navigateRoute]
+  );
 
   if (!data) {
     return (
@@ -515,9 +857,44 @@ export const App: React.FC = () => {
 
   const handleNavigate = (tab: NavTab) => {
     playUiClick(prefs);
-    setActiveTab(tab);
-    trackTabView(tab);
-    window.scrollTo(0, 0);
+    const prevTab = routeRef.current.tab;
+    navigateRoute(
+      (r) => ({
+        ...stripOverlays(r),
+        tab,
+        // Повторный клик по уже открытой вкладке сбрасывает ее быстрые теги к дефолту
+        ...(prevTab === tab && tab === 'games'
+          ? { gameStatus: 'ALL', gameOrderer: '' }
+          : {}),
+        ...(prevTab === tab && tab === 'watchlist'
+          ? { watchCat: 'ALL', watchOrderer: '' }
+          : {}),
+        ...(prevTab === tab && tab === 'backlog'
+          ? { backlogStatus: 'ALL' }
+          : {}),
+      }),
+      { scrollTop: true }
+    );
+    if (prevTab !== tab) {
+      trackTabView(tab);
+    }
+  };
+
+  const onNavAnchorClick = (
+    e: React.MouseEvent<HTMLAnchorElement>,
+    tab: NavTab
+  ) => {
+    if (
+      e.button !== 0 ||
+      e.metaKey ||
+      e.ctrlKey ||
+      e.shiftKey ||
+      e.altKey
+    ) {
+      return; // Разрешаем открытие в новой вкладке колесиком мыши / Ctrl+кликом
+    }
+    e.preventDefault();
+    handleNavigate(tab);
   };
 
   const handlePromoteBacklog = (b: BacklogItem) => {
@@ -554,62 +931,69 @@ export const App: React.FC = () => {
       {/* Sticky Top Navbar */}
       <header className="top-nav">
         <div className="top-nav-inner">
-          <button
-            type="button"
+          <a
+            href="#hub"
             className="brand-btn"
-            onClick={() => handleNavigate('hub')}
+            onClick={(e) => onNavAnchorClick(e, 'hub')}
           >
             <span className="brand-dot" />
             <strong>OniZeD</strong>
             <span className="brand-tag">HUB</span>
-          </button>
+          </a>
 
           <nav className="nav-links">
-            <button
+            <a
+              href={getTabHref('hub')}
               className={activeTab === 'hub' ? 'active' : ''}
-              onClick={() => handleNavigate('hub')}
+              onClick={(e) => onNavAnchorClick(e, 'hub')}
             >
               <Home size={15} /> Хаб
-            </button>
-            <button
+            </a>
+            <a
+              href={getTabHref('games')}
               className={activeTab === 'games' ? 'active' : ''}
-              onClick={() => handleNavigate('games')}
+              onClick={(e) => onNavAnchorClick(e, 'games')}
             >
               <Gamepad2 size={15} /> Игры
               <span className="nav-count">{data.games.length}</span>
-            </button>
-            <button
+            </a>
+            <a
+              href={getTabHref('watchlist')}
               className={activeTab === 'watchlist' ? 'active' : ''}
-              onClick={() => handleNavigate('watchlist')}
+              onClick={(e) => onNavAnchorClick(e, 'watchlist')}
             >
               <Film size={15} /> Просмотровое
               <span className="nav-count">{data.watchlist.length}</span>
-            </button>
-            <button
+            </a>
+            <a
+              href={getTabHref('tierlist')}
               className={activeTab === 'tierlist' ? 'active' : ''}
-              onClick={() => handleNavigate('tierlist')}
+              onClick={(e) => onNavAnchorClick(e, 'tierlist')}
             >
               <Layers size={15} /> Тир-листы
-            </button>
-            <button
+            </a>
+            <a
+              href={getTabHref('backlog')}
               className={activeTab === 'backlog' ? 'active' : ''}
-              onClick={() => handleNavigate('backlog')}
+              onClick={(e) => onNavAnchorClick(e, 'backlog')}
             >
               <ListTodo size={15} /> Бэклог
               <span className="nav-count">{data.backlog.length}</span>
-            </button>
-            <button
+            </a>
+            <a
+              href={getTabHref('stats')}
               className={activeTab === 'stats' ? 'active' : ''}
-              onClick={() => handleNavigate('stats')}
+              onClick={(e) => onNavAnchorClick(e, 'stats')}
             >
               <Dices size={15} /> Рулетка / Стата
-            </button>
-            <button
+            </a>
+            <a
+              href={getTabHref('rules')}
               className={activeTab === 'rules' ? 'active' : ''}
-              onClick={() => handleNavigate('rules')}
+              onClick={(e) => onNavAnchorClick(e, 'rules')}
             >
               <BookOpen size={15} /> Правила
-            </button>
+            </a>
           </nav>
 
           <div className="nav-right">
@@ -639,7 +1023,7 @@ export const App: React.FC = () => {
               className="settings-gear-btn"
               onClick={() => {
                 playUiClick(prefs);
-                setSiteSettingsTab('appearance');
+                navigateRoute((r) => ({ ...r, settingsTab: 'appearance' }));
               }}
               title="Настройки сайта: оформление, новогодний режим, звуки и производительность"
             >
@@ -652,9 +1036,10 @@ export const App: React.FC = () => {
                 onClick={() => {
                   playUiClick(prefs);
                   if (canEdit) {
-                    setSiteSettingsTab('admin');
+                    navigateRoute((r) => ({ ...r, settingsTab: 'admin' }));
                   } else {
                     setViewerAccountOpen(true);
+                    navigateRoute((r) => ({ ...r, editorModal: 'account' }));
                   }
                 }}
               >
@@ -692,19 +1077,15 @@ export const App: React.FC = () => {
             data={data}
             canEdit={canEdit}
             onNavigate={handleNavigate}
-            onFilterByOrderer={(orderer) => {
-              setGamesOrdererPreset(orderer);
-              setActiveTab('games');
-              window.scrollTo({ top: 0, behavior: 'smooth' });
-            }}
+            onFilterByOrderer={handleJumpToOrdererInGames}
             onUpdateHubConfig={(hubConfig) =>
               commitData({ ...data, hubConfig }, 'Планы хаба обновлены')
             }
-            onOpenAddGame={() => setGameModalItem(null)}
-            onOpenAddWatch={() => setWatchModalItem(null)}
-            onInspectGame={(id) => setInspectGameId(id)}
-            onInspectWatch={(id) => setInspectWatchId(id)}
-            onInspectBacklog={(id) => setInspectBacklogId(id)}
+            onOpenAddGame={handleOpenAddGame}
+            onOpenAddWatch={handleOpenAddWatch}
+            onInspectGame={handleInspectGame}
+            onInspectWatch={handleInspectWatch}
+            onInspectBacklog={handleInspectBacklog}
           />
         )}
 
@@ -714,7 +1095,10 @@ export const App: React.FC = () => {
             memes={data.memes}
             canEdit={canEdit}
             currentUser={user}
-            initialOrdererFilter={gamesOrdererPreset}
+            statusTag={route.gameStatus}
+            onSelectStatusTag={handleSelectGameStatusTag}
+            initialOrdererFilter={route.gameOrderer}
+            onSelectOrdererTag={handleSelectGameOrdererTag}
             onClearInitialOrderer={handleClearInitialOrderer}
             onAddGame={handleOpenAddGame}
             onInspectGame={handleInspectGame}
@@ -732,6 +1116,10 @@ export const App: React.FC = () => {
             memes={data.memes}
             canEdit={canEdit}
             currentUser={user}
+            catTag={route.watchCat}
+            onSelectCatTag={handleSelectWatchCatTag}
+            ordererTag={route.watchOrderer}
+            onSelectOrdererTag={handleSelectWatchOrdererTag}
             onAddWatch={handleOpenAddWatch}
             onInspectWatch={handleInspectWatch}
             onEditWatch={handleEditWatch}
@@ -751,6 +1139,8 @@ export const App: React.FC = () => {
             canEdit={canEdit}
             authorName={user?.displayName || 'OniZeD'}
             apiBaseUrl={cfg.apiBaseUrl}
+            boardTag={route.tierBoard}
+            onSelectBoardTag={handleSelectTierBoardTag}
             onMoveAutoTierItem={({
               itemId,
               itemKind,
@@ -776,7 +1166,7 @@ export const App: React.FC = () => {
                 ? toTier
                   ? `«${itemTitle}»: оценка изменена на «${toTier}»`
                   : `«${itemTitle}»: оценка снята`
-                : `Порядок в тире «${toTier || 'Без оценки'}» обновлён`;
+                : `Порядок в тире «${toTier || 'Без оценки'}» обновлен`;
 
               commitData(
                 {
@@ -789,10 +1179,10 @@ export const App: React.FC = () => {
               );
             }}
             onSaveCustomTierLists={(lists) =>
-              commitData({ ...data, customTierLists: lists }, 'Тир-лист сохранён')
+              commitData({ ...data, customTierLists: lists }, 'Тир-лист сохранен')
             }
-            onInspectGame={(id) => setInspectGameId(id)}
-            onInspectWatch={(id) => setInspectWatchId(id)}
+            onInspectGame={handleInspectGame}
+            onInspectWatch={handleInspectWatch}
           />
         )}
 
@@ -800,9 +1190,11 @@ export const App: React.FC = () => {
           <BacklogView
             backlog={data.backlog}
             canEdit={canEdit}
-            onAddBacklog={() => setBacklogModalItem(null)}
-            onInspectBacklog={(id) => setInspectBacklogId(id)}
-            onEditBacklog={(b) => setBacklogModalItem(b)}
+            statusTag={route.backlogStatus}
+            onSelectStatusTag={handleSelectBacklogStatusTag}
+            onAddBacklog={handleOpenAddBacklog}
+            onInspectBacklog={handleInspectBacklog}
+            onEditBacklog={handleEditBacklog}
             onDeleteBacklog={(id) =>
               commitData(
                 { ...data, backlog: data.backlog.filter((x) => x.id !== id) },
@@ -826,7 +1218,7 @@ export const App: React.FC = () => {
                     g.id === gameId ? { ...g, status } : g
                   ),
                 },
-                `Статус игры изменён на «${status}»`
+                `Статус игры изменен на «${status}»`
               );
             }}
             onUpdateWatchStatus={(watchId, status) => {
@@ -837,7 +1229,7 @@ export const App: React.FC = () => {
                     w.id === watchId ? { ...w, status } : w
                   ),
                 },
-                `Статус тайтла изменён на «${status}»`
+                `Статус тайтла изменен на «${status}»`
               );
             }}
             onUpdateBacklogStatus={(backlogId, status) => {
@@ -848,18 +1240,14 @@ export const App: React.FC = () => {
                     b.id === backlogId ? { ...b, status } : b
                   ),
                 },
-                `Статус бэклога изменён на «${status}»`
+                `Статус бэклога изменен на «${status}»`
               );
             }}
             onPromoteBacklogToGame={handlePromoteBacklog}
-            onInspectGame={(id) => setInspectGameId(id)}
-            onInspectWatch={(id) => setInspectWatchId(id)}
-            onInspectBacklog={(id) => setInspectBacklogId(id)}
-            onFilterByOrderer={(orderer) => {
-              setGamesOrdererPreset(orderer);
-              setActiveTab('games');
-              window.scrollTo({ top: 0, behavior: 'smooth' });
-            }}
+            onInspectGame={handleInspectGame}
+            onInspectWatch={handleInspectWatch}
+            onInspectBacklog={handleInspectBacklog}
+            onFilterByOrderer={handleJumpToOrdererInGames}
           />
         )}
 
@@ -869,7 +1257,7 @@ export const App: React.FC = () => {
             ratingScale={data.ratingScale}
             canEdit={canEdit}
             onSaveRules={(rules) =>
-              commitData({ ...data, rules }, 'Свод правил обновлён')
+              commitData({ ...data, rules }, 'Свод правил обновлен')
             }
           />
         )}
@@ -886,8 +1274,10 @@ export const App: React.FC = () => {
                 (!m.targetId && m.targetTitle === inspectedGame.title))
           )}
           canEdit={canEdit}
-          onClose={() => setInspectGameId(null)}
-          onEdit={(g) => setGameModalItem(g)}
+          onClose={() =>
+            closeOverlayRoute((r) => ({ ...r, inspectGameId: null }))
+          }
+          onEdit={handleEditGame}
           onQuickUpdate={(updated) =>
             commitData(
               {
@@ -897,16 +1287,13 @@ export const App: React.FC = () => {
               'Игра обновлена'
             )
           }
-          onAddMeme={(g) =>
-            setMemeModalTarget({ type: 'game', id: g.id, title: g.title })
-          }
-          onViewMeme={(m) => setLightboxMeme(m)}
-          onEditMeme={(m) => setEditingMeme(m)}
-          onFilterByOrderer={(orderer) => {
-            setGamesOrdererPreset(orderer);
-            setActiveTab('games');
-            window.scrollTo({ top: 0, behavior: 'smooth' });
+          onAddMeme={handleAddMemeForGame}
+          onViewMeme={handleViewMeme}
+          onEditMeme={(m) => {
+            setEditingMeme(m);
+            navigateRoute((r) => ({ ...r, editorModal: 'meme' }));
           }}
+          onFilterByOrderer={handleJumpToOrdererInGames}
         />
       )}
 
@@ -920,8 +1307,10 @@ export const App: React.FC = () => {
                 (!m.targetId && m.targetTitle === inspectedWatch.title))
           )}
           canEdit={canEdit}
-          onClose={() => setInspectWatchId(null)}
-          onEdit={(w) => setWatchModalItem(w)}
+          onClose={() =>
+            closeOverlayRoute((r) => ({ ...r, inspectWatchId: null }))
+          }
+          onEdit={handleEditWatch}
           onQuickUpdate={(updated) =>
             commitData(
               {
@@ -930,14 +1319,17 @@ export const App: React.FC = () => {
                   x.id === updated.id ? updated : x
                 ),
               },
-              'Тайтл обновлён'
+              'Тайтл обновлен'
             )
           }
           onAddMeme={(w) =>
-            setMemeModalTarget({ type: 'watch', id: w.id, title: w.title })
+            handleOpenMemeForTarget({ type: 'watch', id: w.id, title: w.title })
           }
-          onViewMeme={(m) => setLightboxMeme(m)}
-          onEditMeme={(m) => setEditingMeme(m)}
+          onViewMeme={handleViewMeme}
+          onEditMeme={(m) => {
+            setEditingMeme(m);
+            navigateRoute((r) => ({ ...r, editorModal: 'meme' }));
+          }}
         />
       )}
 
@@ -945,8 +1337,10 @@ export const App: React.FC = () => {
         <BacklogDetailModal
           item={inspectedBacklog}
           canEdit={canEdit}
-          onClose={() => setInspectBacklogId(null)}
-          onEdit={(b) => setBacklogModalItem(b)}
+          onClose={() =>
+            closeOverlayRoute((r) => ({ ...r, inspectBacklogId: null }))
+          }
+          onEdit={handleEditBacklog}
           onQuickUpdate={(updated) =>
             commitData(
               {
@@ -969,7 +1363,12 @@ export const App: React.FC = () => {
           apiBaseUrl={cfg.apiBaseUrl}
           orderers={allOrdererStats}
           siteData={data}
-          onClose={() => setGameModalItem(undefined)}
+          onClose={() => {
+            setGameModalItem(undefined);
+            if (routeRef.current.editorModal === 'game') {
+              closeOverlayRoute((r) => ({ ...r, editorModal: null }));
+            }
+          }}
           onSave={(saved) => {
             const exists = data.games.some((x) => x.id === saved.id);
             const nextGames = exists
@@ -977,6 +1376,9 @@ export const App: React.FC = () => {
               : [saved, ...data.games];
             commitData({ ...data, games: nextGames }, 'Игра сохранена');
             setGameModalItem(undefined);
+            if (routeRef.current.editorModal === 'game') {
+              closeOverlayRoute((r) => ({ ...r, editorModal: null }));
+            }
           }}
         />
       )}
@@ -987,14 +1389,22 @@ export const App: React.FC = () => {
           apiBaseUrl={cfg.apiBaseUrl}
           orderers={allOrdererStats}
           siteData={data}
-          onClose={() => setWatchModalItem(undefined)}
+          onClose={() => {
+            setWatchModalItem(undefined);
+            if (routeRef.current.editorModal === 'watch') {
+              closeOverlayRoute((r) => ({ ...r, editorModal: null }));
+            }
+          }}
           onSave={(saved) => {
             const exists = data.watchlist.some((x) => x.id === saved.id);
             const nextWatch = exists
               ? data.watchlist.map((x) => (x.id === saved.id ? saved : x))
               : [saved, ...data.watchlist];
-            commitData({ ...data, watchlist: nextWatch }, 'Тайтл сохранён');
+            commitData({ ...data, watchlist: nextWatch }, 'Тайтл сохранен');
             setWatchModalItem(undefined);
+            if (routeRef.current.editorModal === 'watch') {
+              closeOverlayRoute((r) => ({ ...r, editorModal: null }));
+            }
           }}
         />
       )}
@@ -1004,14 +1414,22 @@ export const App: React.FC = () => {
           initial={backlogModalItem}
           apiBaseUrl={cfg.apiBaseUrl}
           siteData={data}
-          onClose={() => setBacklogModalItem(undefined)}
+          onClose={() => {
+            setBacklogModalItem(undefined);
+            if (routeRef.current.editorModal === 'backlog') {
+              closeOverlayRoute((r) => ({ ...r, editorModal: null }));
+            }
+          }}
           onSave={(saved) => {
             const exists = data.backlog.some((x) => x.id === saved.id);
             const nextBacklog = exists
               ? data.backlog.map((x) => (x.id === saved.id ? saved : x))
               : [saved, ...data.backlog];
-            commitData({ ...data, backlog: nextBacklog }, 'Бэклог обновлён');
+            commitData({ ...data, backlog: nextBacklog }, 'Бэклог обновлен');
             setBacklogModalItem(undefined);
+            if (routeRef.current.editorModal === 'backlog') {
+              closeOverlayRoute((r) => ({ ...r, editorModal: null }));
+            }
           }}
         />
       )}
@@ -1026,6 +1444,9 @@ export const App: React.FC = () => {
           onClose={() => {
             setMemeModalTarget(undefined);
             setEditingMeme(null);
+            if (routeRef.current.editorModal === 'meme') {
+              closeOverlayRoute((r) => ({ ...r, editorModal: null }));
+            }
           }}
           onSave={(meme) => {
             const exists = data.memes.some((x) => x.id === meme.id);
@@ -1038,22 +1459,33 @@ export const App: React.FC = () => {
             );
             setMemeModalTarget(undefined);
             setEditingMeme(null);
+            if (routeRef.current.editorModal === 'meme') {
+              closeOverlayRoute((r) => ({ ...r, editorModal: null }));
+            }
           }}
         />
       )}
 
-      {lightboxMeme && (
+      {activeLightboxMeme && (
         <MemeLightbox
-          meme={lightboxMeme}
+          meme={activeLightboxMeme}
           canEdit={canEdit}
-          onClose={() => setLightboxMeme(null)}
-          onEdit={(m) => setEditingMeme(m)}
-          onDelete={(id) =>
+          onClose={() => {
+            setLightboxMemeFallback(null);
+            closeOverlayRoute((r) => ({ ...r, memeId: null }));
+          }}
+          onEdit={(m) => {
+            setEditingMeme(m);
+            navigateRoute((r) => ({ ...r, editorModal: 'meme' }));
+          }}
+          onDelete={(id) => {
             commitData(
               { ...data, memes: data.memes.filter((m) => m.id !== id) },
-              'Мем удалён'
-            )
-          }
+              'Мем удален'
+            );
+            setLightboxMemeFallback(null);
+            closeOverlayRoute((r) => ({ ...r, memeId: null }));
+          }}
         />
       )}
 
@@ -1063,14 +1495,23 @@ export const App: React.FC = () => {
           role={role}
           data={data}
           dataSource={dataSource}
-          onClose={() => setViewerAccountOpen(false)}
+          onClose={() => {
+            setViewerAccountOpen(false);
+            if (routeRef.current.editorModal === 'account') {
+              closeOverlayRoute((r) => ({ ...r, editorModal: null }));
+            }
+          }}
           onLogout={() => {
             clearTwitchSession();
             setUser(null);
+            setViewerAccountOpen(false);
+            if (routeRef.current.editorModal === 'account') {
+              closeOverlayRoute((r) => ({ ...r, editorModal: null }));
+            }
             showToast('Вы вышли из аккаунта');
           }}
           onUpdateModerators={(moderators) =>
-            commitData({ ...data, moderators }, 'Список модераторов обновлён')
+            commitData({ ...data, moderators }, 'Список модераторов обновлен')
           }
           onImportJson={(imported) =>
             commitData(imported, 'Резервная копия успешно загружена!')
@@ -1084,6 +1525,11 @@ export const App: React.FC = () => {
       {siteSettingsTab !== null && (
         <SiteSettingsModal
           initialTab={siteSettingsTab}
+          onSelectTab={(nextTab) =>
+            navigateRoute((r) => ({ ...r, settingsTab: nextTab }), {
+              replace: true,
+            })
+          }
           prefs={prefs}
           onChangePrefs={handleUpdatePrefs}
           customWallpaperUrl={customWallpaperUrl}
@@ -1095,14 +1541,16 @@ export const App: React.FC = () => {
           apiBaseUrl={cfg.apiBaseUrl}
           data={data}
           dataSource={dataSource}
-          onClose={() => setSiteSettingsTab(null)}
+          onClose={() =>
+            closeOverlayRoute((r) => ({ ...r, settingsTab: null }))
+          }
           onLogout={() => {
             clearTwitchSession();
             setUser(null);
             showToast('Вы вышли из аккаунта');
           }}
           onUpdateModerators={(moderators) =>
-            commitData({ ...data, moderators }, 'Список модераторов обновлён')
+            commitData({ ...data, moderators }, 'Список модераторов обновлен')
           }
           onImportJson={(imported) =>
             commitData(imported, 'Резервная копия успешно загружена!', {
@@ -1131,7 +1579,9 @@ export const App: React.FC = () => {
       <CookieBanner
         privacy={privacyPrefs}
         onApply={handleApplyPrivacy}
-        onOpenCustomize={() => setSiteSettingsTab('privacy')}
+        onOpenCustomize={() =>
+          navigateRoute((r) => ({ ...r, settingsTab: 'privacy' }))
+        }
       />
 
       {toast && (

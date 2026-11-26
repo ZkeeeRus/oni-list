@@ -46,7 +46,18 @@ export function getRedirectUri(): string {
   return url.toString();
 }
 
+const PRE_OAUTH_HASH_KEY = 'onized_hub_pre_oauth_hash_v1';
+
 export function startTwitchOAuth(clientId: string): void {
+  try {
+    if (window.location.hash && !window.location.hash.includes('access_token=')) {
+      sessionStorage.setItem(PRE_OAUTH_HASH_KEY, window.location.hash);
+    } else {
+      sessionStorage.removeItem(PRE_OAUTH_HASH_KEY);
+    }
+  } catch {
+    // Ignore storage errors
+  }
   const redirectUri = getRedirectUri();
   const authUrl = new URL('https://id.twitch.tv/oauth2/authorize');
   authUrl.searchParams.set('client_id', clientId.trim());
@@ -117,7 +128,18 @@ export async function initTwitchSession(clientId?: string): Promise<{
   if (window.location.hash && window.location.hash.includes('access_token=')) {
     const params = new URLSearchParams(window.location.hash.slice(1));
     const token = params.get('access_token');
-    window.history.replaceState(null, '', window.location.pathname + window.location.search);
+    let savedHash = '';
+    try {
+      savedHash = sessionStorage.getItem(PRE_OAUTH_HASH_KEY) || '';
+      sessionStorage.removeItem(PRE_OAUTH_HASH_KEY);
+    } catch {
+      // Ignore
+    }
+    window.history.replaceState(
+      null,
+      '',
+      window.location.pathname + window.location.search + savedHash
+    );
     if (token) {
       const verified = await validateTwitchToken(token, clientId);
       if (verified) return { user: verified, justLoggedIn: true };
