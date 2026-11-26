@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { memo, useEffect, useRef, useState } from 'react';
 import { isHolidayActive, UserPreferences } from '../utils/preferences';
 import { playBellJingle } from '../utils/soundEffects';
 import { trackSiteAction } from '../utils/analytics';
@@ -74,7 +74,7 @@ const WinterParallaxDrawings: React.FC = () => (
 export const SnowAndParallaxLayer: React.FC<{
   prefs: UserPreferences;
   customWallpaperUrl?: string;
-}> = ({ prefs, customWallpaperUrl }) => {
+}> = memo(({ prefs, customWallpaperUrl }) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const wallpaperRef = useRef<HTMLDivElement | null>(null);
   const farPlaneRef = useRef<HTMLDivElement | null>(null);
@@ -114,56 +114,88 @@ export const SnowAndParallaxLayer: React.FC<{
     let curMy = 0;
     let curSy = sy;
 
+    const applyTransforms = () => {
+      if (wallpaperRef.current) {
+        const wx = curMx * -18;
+        const wy = curMy * -14;
+        wallpaperRef.current.style.transform = `translate3d(${wx.toFixed(1)}px, ${wy.toFixed(1)}px, 0) scale(1.06)`;
+      }
+      if (farPlaneRef.current) {
+        const fx = curMx * -24;
+        const fy = curMy * -18 - ((curSy * 0.14) % 180);
+        farPlaneRef.current.style.transform = `translate3d(${fx.toFixed(1)}px, ${fy.toFixed(1)}px, 0)`;
+      }
+      if (midPlaneRef.current) {
+        const mdx = curMx * -46;
+        const mdy = curMy * -36 - ((curSy * 0.28) % 300);
+        midPlaneRef.current.style.transform = `translate3d(${mdx.toFixed(1)}px, ${mdy.toFixed(1)}px, 0)`;
+      }
+      if (shardsPlaneRef.current) {
+        const sx = curMx * -68;
+        const syShift = curMy * -52 + Math.sin(curSy * 0.0025) * 40;
+        shardsPlaneRef.current.style.transform = `translate3d(${sx.toFixed(1)}px, ${syShift.toFixed(1)}px, 0)`;
+      }
+      if (nearPlaneRef.current) {
+        const nrx = curMx * -86;
+        const nry = curMy * -66 + Math.cos(curSy * 0.002) * 44;
+        nearPlaneRef.current.style.transform = `translate3d(${nrx.toFixed(1)}px, ${nry.toFixed(1)}px, 0)`;
+      }
+    };
+
+    const tick = () => {
+      if (document.hidden) {
+        raf = 0;
+        return;
+      }
+      const dx = mx - curMx;
+      const dy = my - curMy;
+      const ds = sy - curSy;
+
+      if (
+        Math.abs(dx) < 0.0015 &&
+        Math.abs(dy) < 0.0015 &&
+        Math.abs(ds) < 0.25
+      ) {
+        curMx = mx;
+        curMy = my;
+        curSy = sy;
+        applyTransforms();
+        raf = 0; // Засыпаем при покое - 0% нагрузки на CPU/GPU
+        return;
+      }
+
+      curMx += dx * 0.11;
+      curMy += dy * 0.11;
+      curSy += ds * 0.14;
+      applyTransforms();
+      raf = requestAnimationFrame(tick);
+    };
+
+    const wake = () => {
+      if (!raf && !document.hidden) {
+        raf = requestAnimationFrame(tick);
+      }
+    };
+
     const onMove = (e: MouseEvent) => {
       mx = (e.clientX / Math.max(1, window.innerWidth) - 0.5) * 2;
       my = (e.clientY / Math.max(1, window.innerHeight) - 0.5) * 2;
+      wake();
     };
 
     const onScroll = () => {
       sy = window.scrollY || 0;
+      wake();
     };
 
-    const tick = () => {
-      curMx += (mx - curMx) * 0.095;
-      curMy += (my - curMy) * 0.095;
-      curSy += (sy - curSy) * 0.12;
-
-      if (wallpaperRef.current) {
-        const wx = curMx * -20;
-        const wy = curMy * -16;
-        wallpaperRef.current.style.transform = `translate3d(${wx.toFixed(1)}px, ${wy.toFixed(1)}px, 0) scale(1.07)`;
-      }
-      if (farPlaneRef.current) {
-        const fx = curMx * -28;
-        const fy = curMy * -22 - ((curSy * 0.18) % 180);
-        farPlaneRef.current.style.transform = `translate3d(${fx.toFixed(1)}px, ${fy.toFixed(1)}px, 0)`;
-      }
-      if (midPlaneRef.current) {
-        const mdx = curMx * -56;
-        const mdy = curMy * -44 - ((curSy * 0.36) % 300);
-        midPlaneRef.current.style.transform = `translate3d(${mdx.toFixed(1)}px, ${mdy.toFixed(1)}px, 0)`;
-      }
-      if (shardsPlaneRef.current) {
-        const sx = curMx * -82;
-        const syShift = curMy * -64 + Math.sin(curSy * 0.003) * 48;
-        shardsPlaneRef.current.style.transform = `translate3d(${sx.toFixed(1)}px, ${syShift.toFixed(1)}px, 0)`;
-      }
-      if (nearPlaneRef.current) {
-        const nrx = curMx * -105;
-        const nry = curMy * -82 + Math.cos(curSy * 0.0022) * 55;
-        nearPlaneRef.current.style.transform = `translate3d(${nrx.toFixed(1)}px, ${nry.toFixed(1)}px, 0)`;
-      }
-      raf = requestAnimationFrame(tick);
-    };
-
+    applyTransforms();
     window.addEventListener('mousemove', onMove, { passive: true });
     window.addEventListener('scroll', onScroll, { passive: true });
-    raf = requestAnimationFrame(tick);
 
     return () => {
       window.removeEventListener('mousemove', onMove);
       window.removeEventListener('scroll', onScroll);
-      cancelAnimationFrame(raf);
+      if (raf) cancelAnimationFrame(raf);
     };
   }, [enableParallax, prefs.bgStyle, hasCustomBg]);
 
@@ -177,34 +209,41 @@ export const SnowAndParallaxLayer: React.FC<{
     let height = (canvas.height = window.innerHeight);
 
     const isMobile = width < 640;
-    const baseCount = prefs.snowIntensity === 'rich' ? 95 : 48;
+    const baseCount = prefs.snowIntensity === 'rich' ? 78 : 42;
     const count =
       prefs.performanceMode === 'balanced'
-        ? Math.round(baseCount * 0.6)
+        ? Math.round(baseCount * 0.55)
         : isMobile
-          ? Math.round(baseCount * 0.65)
+          ? Math.round(baseCount * 0.6)
           : baseCount;
 
     const isLight = prefs.colorMode === 'light';
+    const fillFar = isLight
+      ? 'rgba(148, 163, 184, 0.36)'
+      : 'rgba(241, 245, 249, 0.42)';
+    const fillNear = isLight
+      ? 'rgba(100, 116, 139, 0.62)'
+      : 'rgba(248, 250, 252, 0.78)';
 
-    const flakes = Array.from({ length: count }, () => {
-      const depth = 0.45 + Math.random() * 1.15;
+    const flakes = Array.from({ length: count }, (_, idx) => {
+      const near = idx % 3 === 0;
+      const depth = near ? 1.05 + Math.random() * 0.45 : 0.48 + Math.random() * 0.5;
       return {
         x: Math.random() * width,
         y: Math.random() * height,
-        r: (0.9 + Math.random() * 2.1) * depth,
-        vy: (0.45 + Math.random() * 0.95) * depth,
-        vx: (Math.random() - 0.5) * 0.4,
+        r: (0.9 + Math.random() * 1.9) * depth,
+        vy: (0.45 + Math.random() * 0.9) * depth,
+        vx: (Math.random() - 0.5) * 0.38,
         depth,
+        near,
         phase: Math.random() * Math.PI * 2,
-        alpha: Math.min(0.85, (0.28 + Math.random() * 0.42) * depth),
       };
     });
 
     let mouseWind = 0;
     const onMouse = (e: MouseEvent) => {
       if (!enableParallax) return;
-      mouseWind = (e.clientX / Math.max(1, width) - 0.5) * 1.35;
+      mouseWind = (e.clientX / Math.max(1, width) - 0.5) * 1.25;
     };
 
     const onResize = () => {
@@ -213,30 +252,50 @@ export const SnowAndParallaxLayer: React.FC<{
     };
 
     let rafId = 0;
-    const render = () => {
-      if (!document.hidden) {
-        ctx.clearRect(0, 0, width, height);
-        for (const f of flakes) {
-          f.phase += 0.015;
-          f.y += f.vy;
-          f.x += f.vx + Math.sin(f.phase) * 0.3 + mouseWind * f.depth;
+    let lastTs = 0;
+    const FRAME_MIN_MS = 25; // ~40 FPS лимит (экономит 3-6x ресурсов на 144/240 Гц мониторах)
 
-          if (f.y > height + 8) {
-            f.y = -8;
-            f.x = Math.random() * width;
-          }
-          if (f.x > width + 8) f.x = -8;
-          if (f.x < -8) f.x = width + 8;
+    const render = (ts: number) => {
+      rafId = requestAnimationFrame(render);
+      if (document.hidden) return;
+      if (ts - lastTs < FRAME_MIN_MS) return;
 
-          ctx.beginPath();
+      const dtScale = lastTs > 0 ? Math.min(2.2, (ts - lastTs) / 16.67) : 1;
+      lastTs = ts;
+
+      ctx.clearRect(0, 0, width, height);
+
+      // Батчинг всех снежинок всего в 2 вызова ctx.fill() за кадр
+      ctx.fillStyle = fillFar;
+      ctx.beginPath();
+      for (const f of flakes) {
+        f.phase += 0.015 * dtScale;
+        f.y += f.vy * dtScale;
+        f.x += (f.vx + Math.sin(f.phase) * 0.28 + mouseWind * f.depth) * dtScale;
+
+        if (f.y > height + 8) {
+          f.y = -8;
+          f.x = Math.random() * width;
+        }
+        if (f.x > width + 8) f.x = -8;
+        if (f.x < -8) f.x = width + 8;
+
+        if (!f.near) {
+          ctx.moveTo(f.x + f.r, f.y);
           ctx.arc(f.x, f.y, f.r, 0, Math.PI * 2);
-          ctx.fillStyle = isLight
-            ? `rgba(148, 163, 184, ${f.alpha * 0.85})`
-            : `rgba(241, 245, 249, ${f.alpha})`;
-          ctx.fill();
         }
       }
-      rafId = requestAnimationFrame(render);
+      ctx.fill();
+
+      ctx.fillStyle = fillNear;
+      ctx.beginPath();
+      for (const f of flakes) {
+        if (f.near) {
+          ctx.moveTo(f.x + f.r, f.y);
+          ctx.arc(f.x, f.y, f.r, 0, Math.PI * 2);
+        }
+      }
+      ctx.fill();
     };
 
     window.addEventListener('resize', onResize, { passive: true });
@@ -327,7 +386,7 @@ export const SnowAndParallaxLayer: React.FC<{
       )}
     </>
   );
-};
+});
 
 /* ---------- Свисающая новогодняя гирлянда под шапкой с игрушками и хвойными дугами ---------- */
 const BULB_COLORS = ['#fbbf24', '#f43f5e', '#38bdf8', '#34d399', '#c084fc'];
@@ -337,7 +396,7 @@ const CTRL_Y_DELTA = 36; // Провисание кривой Безье (в н�
 
 export const HeaderGarland: React.FC<{
   prefs: UserPreferences;
-}> = ({ prefs }) => {
+}> = memo(({ prefs }) => {
   const [flash, setFlash] = useState(false);
   const holiday = isHolidayActive(prefs);
   if (!holiday || !prefs.garlandEnabled) return null;
@@ -439,7 +498,7 @@ export const HeaderGarland: React.FC<{
       ))}
     </div>
   );
-};
+});
 
 /* ---------- Компактный футер с сугробами, елочкой и ненавязчивыми ссылками ---------- */
 const TREE_WISHES = [
@@ -452,7 +511,7 @@ const TREE_WISHES = [
 export const FestiveFooter: React.FC<{
   prefs: UserPreferences;
   onShowWish: (msg: string) => void;
-}> = ({ prefs, onShowWish }) => {
+}> = memo(({ prefs, onShowWish }) => {
   const [treeLit, setTreeLit] = useState(false);
   const holiday = isHolidayActive(prefs);
   const showWinter = holiday && prefs.footerTreeEnabled;
@@ -542,4 +601,4 @@ export const FestiveFooter: React.FC<{
       </div>
     </footer>
   );
-};
+});

@@ -396,6 +396,57 @@ export const App: React.FC = () => {
     [data]
   );
 
+  // Стабильные ссылки на колбэки, чтобы открытие модалок/тостов не перерисовывало сетку игр
+  const dataRef = useRef(data);
+  dataRef.current = data;
+  const commitDataRef = useRef(commitData);
+  commitDataRef.current = commitData;
+
+  const handleClearInitialOrderer = useCallback(() => setGamesOrdererPreset(''), []);
+  const handleOpenAddGame = useCallback(() => setGameModalItem(null), []);
+  const handleInspectGame = useCallback((id: string) => setInspectGameId(id), []);
+  const handleEditGame = useCallback((g: GameItem) => setGameModalItem(g), []);
+  const handleDeleteGame = useCallback((id: string) => {
+    const cur = dataRef.current;
+    if (!cur) return;
+    commitDataRef.current(
+      { ...cur, games: cur.games.filter((x) => x.id !== id) },
+      'Игра удалена'
+    );
+  }, []);
+  const handleQuickUpdateGame = useCallback((updated: GameItem) => {
+    const cur = dataRef.current;
+    if (!cur) return;
+    commitDataRef.current(
+      {
+        ...cur,
+        games: cur.games.map((x) => (x.id === updated.id ? updated : x)),
+      },
+      'Статус/оценка обновлены'
+    );
+  }, []);
+  const handleAddMemeForGame = useCallback(
+    (g: GameItem) => setMemeModalTarget({ type: 'game', id: g.id, title: g.title }),
+    []
+  );
+  const handleOpenAddWatch = useCallback(() => setWatchModalItem(null), []);
+  const handleInspectWatch = useCallback((id: string) => setInspectWatchId(id), []);
+  const handleEditWatch = useCallback((w: WatchItem) => setWatchModalItem(w), []);
+  const handleDeleteWatch = useCallback((id: string) => {
+    const cur = dataRef.current;
+    if (!cur) return;
+    commitDataRef.current(
+      { ...cur, watchlist: cur.watchlist.filter((x) => x.id !== id) },
+      'Тайтл удален'
+    );
+  }, []);
+  const handleOpenMemeForTarget = useCallback(
+    (target: { type: 'watch' | 'game' | 'general'; id: string; title: string }) =>
+      setMemeModalTarget(target),
+    []
+  );
+  const handleViewMeme = useCallback((m: MemeItem) => setLightboxMeme(m), []);
+
   if (!data) {
     return (
       <div className="loading-screen">
@@ -409,7 +460,7 @@ export const App: React.FC = () => {
     playUiClick(prefs);
     setActiveTab(tab);
     trackTabView(tab);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    window.scrollTo(0, 0);
   };
 
   const handlePromoteBacklog = (b: BacklogItem) => {
@@ -607,29 +658,14 @@ export const App: React.FC = () => {
             canEdit={canEdit}
             currentUser={user}
             initialOrdererFilter={gamesOrdererPreset}
-            onClearInitialOrderer={() => setGamesOrdererPreset('')}
-            onAddGame={() => setGameModalItem(null)}
-            onInspectGame={(id) => setInspectGameId(id)}
-            onEditGame={(g) => setGameModalItem(g)}
-            onDeleteGame={(id) =>
-              commitData(
-                { ...data, games: data.games.filter((x) => x.id !== id) },
-                'Игра удалена'
-              )
-            }
-            onQuickUpdateGame={(updated) =>
-              commitData(
-                {
-                  ...data,
-                  games: data.games.map((x) => (x.id === updated.id ? updated : x)),
-                },
-                'Статус/оценка обновлены'
-              )
-            }
-            onAddMemeForGame={(g) =>
-              setMemeModalTarget({ type: 'game', id: g.id, title: g.title })
-            }
-            onViewMeme={(m) => setLightboxMeme(m)}
+            onClearInitialOrderer={handleClearInitialOrderer}
+            onAddGame={handleOpenAddGame}
+            onInspectGame={handleInspectGame}
+            onEditGame={handleEditGame}
+            onDeleteGame={handleDeleteGame}
+            onQuickUpdateGame={handleQuickUpdateGame}
+            onAddMemeForGame={handleAddMemeForGame}
+            onViewMeme={handleViewMeme}
           />
         )}
 
@@ -639,17 +675,12 @@ export const App: React.FC = () => {
             memes={data.memes}
             canEdit={canEdit}
             currentUser={user}
-            onAddWatch={() => setWatchModalItem(null)}
-            onInspectWatch={(id) => setInspectWatchId(id)}
-            onEditWatch={(w) => setWatchModalItem(w)}
-            onDeleteWatch={(id) =>
-              commitData(
-                { ...data, watchlist: data.watchlist.filter((x) => x.id !== id) },
-                'Тайтл удалён'
-              )
-            }
-            onAddMeme={(target) => setMemeModalTarget(target)}
-            onViewMeme={(m) => setLightboxMeme(m)}
+            onAddWatch={handleOpenAddWatch}
+            onInspectWatch={handleInspectWatch}
+            onEditWatch={handleEditWatch}
+            onDeleteWatch={handleDeleteWatch}
+            onAddMeme={handleOpenMemeForTarget}
+            onViewMeme={handleViewMeme}
           />
         )}
 
