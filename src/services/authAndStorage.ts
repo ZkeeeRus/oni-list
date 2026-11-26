@@ -1,4 +1,5 @@
 import { RuntimeConfig, SiteData, TwitchUser, UserRole } from '../types';
+import { normalizeOrdererName } from '../utils/orderers';
 
 const LOCAL_DATA_KEY = 'onized_hub_local_state_v1';
 const LOCAL_USER_KEY = 'onized_hub_twitch_user_v1';
@@ -224,6 +225,14 @@ function ensurePermanentAdmins(d: SiteData): SiteData {
     ...d,
     admins,
     moderators: (d.moderators || []).map((m) => m.toLowerCase().trim()).filter(Boolean),
+    games: (d.games || []).map((g) => ({
+      ...g,
+      orderedBy: normalizeOrdererName(g.orderedBy),
+    })),
+    watchlist: (d.watchlist || []).map((w) => ({
+      ...w,
+      orderedBy: normalizeOrdererName(w.orderedBy),
+    })),
     customTierLists: d.customTierLists || [],
     memes: d.memes || [],
   };

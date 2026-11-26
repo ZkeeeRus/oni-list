@@ -1,5 +1,6 @@
 import React, { useRef, useState } from 'react';
 import {
+  Clock,
   Edit3,
   ExternalLink,
   ImageOff,
@@ -14,6 +15,12 @@ import { CoverImage } from './CoverImage';
 import { resolveMemeImageUrl } from '../utils/builtinMemes';
 import { isForcedNoCover, NO_COVER_TOKEN } from '../utils/covers';
 import { compressCoverToWebpDataUrl } from '../utils/imageCompress';
+import {
+  getGameHltbUrl,
+  getGameSteamStoreUrl,
+  lookupGameMeta,
+  useGameMetaMap,
+} from '../utils/gameMeta';
 
 const QuickCoverUploadButton: React.FC<{
   onUploaded: (webpDataUrl: string) => void;
@@ -76,6 +83,7 @@ export const GameDetailModal: React.FC<{
   onQuickUpdate: (g: GameItem) => void;
   onAddMeme: (g: GameItem) => void;
   onViewMeme: (m: MemeItem) => void;
+  onEditMeme?: (m: MemeItem) => void;
   onFilterByOrderer?: (orderer: string) => void;
 }> = ({
   game,
@@ -86,8 +94,16 @@ export const GameDetailModal: React.FC<{
   onQuickUpdate,
   onAddMeme,
   onViewMeme,
+  onEditMeme,
   onFilterByOrderer,
 }) => {
+  const metaMap = useGameMetaMap();
+  const meta = lookupGameMeta(game, metaMap);
+  const steamUrl = getGameSteamStoreUrl(game);
+  const hltbUrl = getGameHltbUrl(game.title, meta);
+  const extraLink =
+    game.link && !game.link.includes('store.steampowered.com') ? game.link : '';
+
   return (
     <div className="modal-backdrop" onClick={onClose}>
       <div className="modal-card modal-lg" onClick={(e) => e.stopPropagation()}>
@@ -110,8 +126,22 @@ export const GameDetailModal: React.FC<{
               <RatingBadge rating={game.rating} />
               <DropPriceBadge price={game.dropPrice} />
               <ReturnPriceBadge price={game.returnPrice} />
-              {game.hours && <span className="badge">{game.hours} ч.</span>}
+              {game.hours ? (
+                <span className="badge">{game.hours} ч.</span>
+              ) : meta?.estHours ? (
+                <span className="badge meta-pill-time">{meta.estHours}</span>
+              ) : null}
+              {meta?.steamScore && (
+                <span className="badge meta-pill-steam">Steam {meta.steamScore}%</span>
+              )}
+              {meta?.year && <span className="badge">{meta.year}</span>}
             </div>
+
+            {(meta?.genres || meta?.dev) && (
+              <div className="muted-sm">
+                {[meta.genres, meta.dev].filter(Boolean).join(' • ')}
+              </div>
+            )}
 
             <p>
               <strong>Кто заказал:</strong>{' '}
@@ -188,19 +218,30 @@ export const GameDetailModal: React.FC<{
                 <strong>Мемы с этого прохождения ({memes.length}):</strong>
                 <div className="detail-memes-grid">
                   {memes.map((m) => (
-                    <button
-                      key={m.id}
-                      type="button"
-                      className="detail-meme-card"
-                      onClick={() => onViewMeme(m)}
-                    >
-                      <img
-                        src={resolveMemeImageUrl(m.imageUrl)}
-                        alt={m.caption}
-                        referrerPolicy="no-referrer"
-                      />
-                      <span>{m.caption}</span>
-                    </button>
+                    <div key={m.id} className="detail-meme-wrap">
+                      <button
+                        type="button"
+                        className="detail-meme-card"
+                        onClick={() => onViewMeme(m)}
+                      >
+                        <img
+                          src={resolveMemeImageUrl(m.imageUrl)}
+                          alt={m.caption}
+                          referrerPolicy="no-referrer"
+                        />
+                        <span>{m.caption}</span>
+                      </button>
+                      {canEdit && onEditMeme && (
+                        <button
+                          type="button"
+                          className="meme-card-edit-btn"
+                          title="Редактировать описание мема"
+                          onClick={() => onEditMeme(m)}
+                        >
+                          <Edit3 size={12} />
+                        </button>
+                      )}
+                    </div>
                   ))}
                 </div>
               </div>
@@ -217,14 +258,32 @@ export const GameDetailModal: React.FC<{
                   <Video size={14} /> Запись стрима (VOD)
                 </a>
               )}
-              {game.link && (
+              {steamUrl && (
                 <a
-                  href={game.link}
+                  href={steamUrl}
                   target="_blank"
                   rel="noreferrer"
                   className="btn btn-secondary btn-sm"
                 >
-                  <ExternalLink size={14} /> Ссылка / страница
+                  <ExternalLink size={14} /> Steam
+                </a>
+              )}
+              <a
+                href={hltbUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="btn btn-secondary btn-sm"
+              >
+                <Clock size={14} /> HowLongToBeat
+              </a>
+              {extraLink && (
+                <a
+                  href={extraLink}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="btn btn-secondary btn-sm"
+                >
+                  <ExternalLink size={14} /> Ссылка / моды
                 </a>
               )}
               {canEdit && (
@@ -286,6 +345,7 @@ export const WatchDetailModal: React.FC<{
   onQuickUpdate: (w: WatchItem) => void;
   onAddMeme: (w: WatchItem) => void;
   onViewMeme: (m: MemeItem) => void;
+  onEditMeme?: (m: MemeItem) => void;
 }> = ({
   item,
   memes,
@@ -295,6 +355,7 @@ export const WatchDetailModal: React.FC<{
   onQuickUpdate,
   onAddMeme,
   onViewMeme,
+  onEditMeme,
 }) => {
   return (
     <div className="modal-backdrop" onClick={onClose}>
@@ -380,19 +441,30 @@ export const WatchDetailModal: React.FC<{
                 <strong>Мемы с этого стрима ({memes.length}):</strong>
                 <div className="detail-memes-grid">
                   {memes.map((m) => (
-                    <button
-                      key={m.id}
-                      type="button"
-                      className="detail-meme-card"
-                      onClick={() => onViewMeme(m)}
-                    >
-                      <img
-                        src={resolveMemeImageUrl(m.imageUrl)}
-                        alt={m.caption}
-                        referrerPolicy="no-referrer"
-                      />
-                      <span>{m.caption}</span>
-                    </button>
+                    <div key={m.id} className="detail-meme-wrap">
+                      <button
+                        type="button"
+                        className="detail-meme-card"
+                        onClick={() => onViewMeme(m)}
+                      >
+                        <img
+                          src={resolveMemeImageUrl(m.imageUrl)}
+                          alt={m.caption}
+                          referrerPolicy="no-referrer"
+                        />
+                        <span>{m.caption}</span>
+                      </button>
+                      {canEdit && onEditMeme && (
+                        <button
+                          type="button"
+                          className="meme-card-edit-btn"
+                          title="Редактировать описание мема"
+                          onClick={() => onEditMeme(m)}
+                        >
+                          <Edit3 size={12} />
+                        </button>
+                      )}
+                    </div>
                   ))}
                 </div>
               </div>

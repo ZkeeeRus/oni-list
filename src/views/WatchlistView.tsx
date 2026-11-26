@@ -9,7 +9,9 @@ import {
 } from 'lucide-react';
 import { MemeItem, TwitchUser, WatchItem } from '../types';
 import { CoverImage } from '../components/CoverImage';
+import { OrdererAutocomplete } from '../components/OrdererAutocomplete';
 import { resolveMemeImageUrl } from '../utils/builtinMemes';
+import { collectOrdererStats } from '../utils/orderers';
 import {
   RATINGS_ORDER,
   RatingBadge,
@@ -50,6 +52,8 @@ export const WatchlistView: React.FC<WatchlistViewProps> = ({
   const [onlyMine, setOnlyMine] = useState(false);
   const [ordererFilter, setOrdererFilter] = useState('');
 
+  const ordererStats = useMemo(() => collectOrdererStats([], watchlist), [watchlist]);
+
   const memesByWatchId = useMemo(() => {
     const map = new Map<string, MemeItem[]>();
     for (const m of memes) {
@@ -81,8 +85,12 @@ export const WatchlistView: React.FC<WatchlistViewProps> = ({
       }
       if (statusFilter !== 'ALL' && w.status !== statusFilter) return false;
       if (ratingFilter !== 'ALL' && w.rating !== ratingFilter) return false;
-      if (onlyMine && myLogin && !w.orderedBy.toLowerCase().includes(myLogin)) {
-        return false;
+      if (onlyMine && myLogin) {
+        const lowerOrd = w.orderedBy.toLowerCase();
+        const isStreamerMatch = myLogin === 'onized' && lowerOrd === 'стример';
+        if (!lowerOrd.includes(myLogin) && !isStreamerMatch) {
+          return false;
+        }
       }
       if (ordQ && !w.orderedBy.toLowerCase().includes(ordQ)) {
         return false;
@@ -139,6 +147,13 @@ export const WatchlistView: React.FC<WatchlistViewProps> = ({
             </button>
           )}
         </div>
+
+        <OrdererAutocomplete
+          value={ordererFilter}
+          onChange={setOrdererFilter}
+          orderers={ordererStats}
+          placeholder="Заказчик (подсказки)..."
+        />
 
         <select
           className="input select-auto"

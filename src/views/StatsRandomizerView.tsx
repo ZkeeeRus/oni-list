@@ -9,6 +9,8 @@ import {
 } from 'lucide-react';
 import { BacklogItem, GameItem, SiteData, WatchItem } from '../types';
 import { CoverImage } from '../components/CoverImage';
+import { OrdererAutocomplete } from '../components/OrdererAutocomplete';
+import { collectOrdererStats } from '../utils/orderers';
 import {
   BACKLOG_STATUSES,
   GAME_STATUSES,
@@ -91,6 +93,8 @@ export const StatsRandomizerView: React.FC<StatsRandomizerViewProps> = ({
   const [winnerId, setWinnerId] = useState<string | null>(null);
   const [winnerKind, setWinnerKind] = useState<RollCandidate['kind'] | null>(null);
   const [customWinnerTitle, setCustomWinnerTitle] = useState<string | null>(null);
+  const [showAllOrderers, setShowAllOrderers] = useState(false);
+  const [viewerSearch, setViewerSearch] = useState('');
 
   const mapGame = (g: GameItem): RollCandidate => ({
     id: g.id,
@@ -276,26 +280,24 @@ export const StatsRandomizerView: React.FC<StatsRandomizerViewProps> = ({
 
   const dropChance = pool.length > 0 ? (100 / pool.length).toFixed(2) : '0';
 
-  const topOrderers = useMemo(() => {
-    const counts = new Map<string, { display: string; count: number; completed: number }>();
-    for (const g of data.games) {
-      const raw = (g.orderedBy || '').trim();
-      if (!raw || raw === '-' || raw === '?') continue;
-      const key = raw.toLowerCase();
-      const entry = counts.get(key) || { display: raw, count: 0, completed: 0 };
-      entry.count += 1;
-      if (g.status === 'Игра пройдена') entry.completed += 1;
-      counts.set(key, entry);
-    }
-    const total = data.games.length || 1;
-    return Array.from(counts.values())
-      .sort((a, b) => b.count - a.count)
-      .slice(0, 15)
-      .map((e) => ({
-        ...e,
-        pct: ((e.count / total) * 100).toFixed(1),
-      }));
-  }, [data.games]);
+  const allOrderers = useMemo(() => {
+    const stats = collectOrdererStats(data.games, data.watchlist);
+    const totalOrders = Math.max(1, data.games.length + data.watchlist.length);
+    return stats.map((e, index) => ({
+      ...e,
+      rank: index + 1,
+      pct: ((e.total / totalOrders) * 100).toFixed(1),
+    }));
+  }, [data.games, data.watchlist]);
+
+  const visibleOrderers = useMemo(() => {
+    const q = viewerSearch.trim().toLowerCase();
+    const filtered = q
+      ? allOrderers.filter((o) => o.display.toLowerCase().includes(q))
+      : allOrderers;
+    if (q || showAllOrderers) return filtered;
+    return filtered.slice(0, 15);
+  }, [allOrderers, viewerSearch, showAllOrderers]);
 
   const ratingStats = useMemo(() => {
     return RATINGS_ORDER.filter((r) => r !== 'Нет мнения').map((r) => {
@@ -305,7 +307,7 @@ export const StatsRandomizerView: React.FC<StatsRandomizerViewProps> = ({
   }, [data.games]);
 
   const maxRatingCount = Math.max(1, ...ratingStats.map((r) => r.count));
-  const maxOrderCount = Math.max(1, ...topOrderers.map((o) => o.count));
+  const maxOrderCount = Math.max(1, ...allOrderers.map((o) => o.total));
 
   return (
     <div className="view-stack">
@@ -679,37 +681,71 @@ export const StatsRandomizerView: React.FC<StatsRandomizerViewProps> = ({
             <div>
               <h2>
                 <Users size={18} style={{ verticalAlign: 'middle', marginRight: 8 }} />
-                Топ заказчиков игр
+                Статистика заказчиков ({allOrderers.length})
               </h2>
               <p className="muted-sm">Кликни на ник, чтобы открыть все заказы зрителя</p>
             </div>
+            {allOrderers.length > 15 && !viewerSearch && (
+              <button
+                type="button"
+                className="btn btn-secondary btn-sm"
+                onClick={() => setShowAllOrderers((v) => !v)}
+              >
+                {showAllOrderers
+                  ? 'Свернуть'
+                  : `Все (${allOrderers.length})`}
+              </button>
+            )}
+          </div>
+
+          <div style={{ marginBottom: 12 }}>
+            <OrdererAutocomplete
+              value={viewerSearch}
+              onChange={setViewerSearch}
+              orderers={allOrderers}
+              placeholder="Найти зрителя в статистике..."
+            />
           </div>
 
           <div className="bars-list">
-            {topOrderers.map((ord, i) => (
+            {visibleOrderers.map((ord) => (
               <button
-                key={ord.display}
+                key={ord.key}
                 type="button"
                 className="bar-row-btn"
                 onClick={() => onFilterByOrderer(ord.display)}
               >
-                <div className="row-between">
+                <div className="row-between wrap">
                   <span>
-                    <strong className="rank-num">#{i + 1}</strong> {ord.display}
+                    <strong className="rank-num">#{ord.rank}</strong> {ord.display}
                   </span>
                   <span className="muted-sm">
-                    <strong>{ord.count}</strong> игр ({ord.pct}%) • пройдено {ord.completed}
+                    <strong>{ord.total}</strong> зак. ({ord.gamesCount} игр
+                    {ord.watchCount > 0 ? `, ${ord.watchCount} просм.` : ''}) • пройдено {ord.completedGames}
                   </span>
                 </div>
                 <div className="bar-track">
                   <div
                     className="bar-fill purple"
-                    style={{ width: `${(ord.count / maxOrderCount) * 100}%` }}
+                    style={{ width: `${(ord.total / maxOrderCount) * 100}%` }}
                   />
                 </div>
               </button>
             ))}
           </div>
+
+          {allOrderers.length > 15 && !viewerSearch && (
+            <button
+              type="button"
+              className="btn btn-secondary btn-sm"
+              style={{ width: '100%', marginTop: 12, justifyContent: 'center' }}
+              onClick={() => setShowAllOrderers((v) => !v)}
+            >
+              {showAllOrderers
+                ? 'Свернуть до топ-15'
+                : `Развернуть весь список (${allOrderers.length} заказчиков)`}
+            </button>
+          )}
         </section>
 
         <section className="section-block">

@@ -15,8 +15,10 @@ import {
   WatchItem,
 } from '../types';
 import { CoverImage } from '../components/CoverImage';
+import { OrdererAutocomplete } from '../components/OrdererAutocomplete';
 import { getRatingColor } from '../components/Badges';
 import { searchCoversOnline } from '../utils/covers';
+import { collectOrdererStats } from '../utils/orderers';
 
 interface TierListViewProps {
   games: GameItem[];
@@ -53,7 +55,13 @@ export const TierListView: React.FC<TierListViewProps> = ({
 }) => {
   const [selectedBoardId, setSelectedBoardId] = useState<string>('AUTO_GAMES');
   const [autoFilter, setAutoFilter] = useState('');
+  const [ordererFilter, setOrdererFilter] = useState('');
   const [statusScope, setStatusScope] = useState<'ALL' | 'COMPLETED'>('ALL');
+
+  const ordererStats = useMemo(
+    () => collectOrdererStats(games, watchlist),
+    [games, watchlist]
+  );
 
   const [dragItem, setDragItem] = useState<{
     card: TierCardItem;
@@ -84,6 +92,7 @@ export const TierListView: React.FC<TierListViewProps> = ({
 
   const autoRows = useMemo(() => {
     const q = autoFilter.trim().toLowerCase();
+    const ordQ = ordererFilter.trim().toLowerCase();
     const tiers = ['Шедевр', 'Великолепно', 'Похвально', 'Проходняк', 'Полный кал'];
 
     return tiers.map((tierName) => {
@@ -102,6 +111,7 @@ export const TierListView: React.FC<TierListViewProps> = ({
         for (const g of games) {
           if (g.rating !== tierName) continue;
           if (statusScope === 'COMPLETED' && g.status !== 'Игра пройдена') continue;
+          if (ordQ && !g.orderedBy.toLowerCase().includes(ordQ)) continue;
           if (
             q &&
             !`${g.title} ${g.orderedBy} ${g.status}`.toLowerCase().includes(q)
@@ -123,6 +133,7 @@ export const TierListView: React.FC<TierListViewProps> = ({
       if (selectedBoardId === 'AUTO_WATCH' || selectedBoardId === 'AUTO_ALL') {
         for (const w of watchlist) {
           if (w.rating !== tierName) continue;
+          if (ordQ && !w.orderedBy.toLowerCase().includes(ordQ)) continue;
           if (q && !`${w.title} ${w.orderedBy} ${w.category}`.toLowerCase().includes(q)) {
             continue;
           }
@@ -139,7 +150,7 @@ export const TierListView: React.FC<TierListViewProps> = ({
 
       return { tierName, color, items };
     });
-  }, [games, watchlist, selectedBoardId, autoFilter, statusScope]);
+  }, [games, watchlist, selectedBoardId, autoFilter, ordererFilter, statusScope]);
 
   const handleCreateNewBoard = () => {
     const name = prompt('Название нового тир-листа для стрима:', 'Новый тир-лист');
@@ -334,6 +345,13 @@ export const TierListView: React.FC<TierListViewProps> = ({
               )}
             </div>
 
+            <OrdererAutocomplete
+              value={ordererFilter}
+              onChange={setOrdererFilter}
+              orderers={ordererStats}
+              placeholder="Заказчик (подсказки)..."
+            />
+
             {selectedBoardId === 'AUTO_GAMES' && (
               <div className="segmented">
                 <button
@@ -360,15 +378,19 @@ export const TierListView: React.FC<TierListViewProps> = ({
                   <div
                     className="tier-label-col"
                     style={{
-                      backgroundColor: `${row.color}26`,
+                      backgroundColor: `${row.color}22`,
                       borderLeft: `5px solid ${row.color}`,
                     }}
                   >
-                    <strong style={{ color: row.color }}>{row.tierName}</strong>
-                    <span className="tier-count">{row.items.length} шт.</span>
-                    {scaleInfo && (
-                      <small className="tier-desc-hint">{scaleInfo.description}</small>
-                    )}
+                    <div className="tier-label-sticky">
+                      <div className="tier-label-top">
+                        <strong style={{ color: row.color }}>{row.tierName}</strong>
+                        <span className="tier-count">{row.items.length} шт.</span>
+                      </div>
+                      {scaleInfo && (
+                        <small className="tier-desc-hint">{scaleInfo.description}</small>
+                      )}
+                    </div>
                   </div>
                   <div className="tier-items-wrap">
                     {row.items.map((item) => (
@@ -463,29 +485,31 @@ export const TierListView: React.FC<TierListViewProps> = ({
                 <div
                   className="tier-label-col"
                   style={{
-                    backgroundColor: `${tier.color}26`,
+                    backgroundColor: `${tier.color}22`,
                     borderLeft: `5px solid ${tier.color}`,
                   }}
                 >
-                  {canEdit ? (
-                    <input
-                      className="tier-inline-input"
-                      style={{ color: tier.color }}
-                      value={tier.label}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        updateCurrentBoard((b) => ({
-                          ...b,
-                          tiers: b.tiers.map((t) =>
-                            t.id === tier.id ? { ...t, label: val } : t
-                          ),
-                        }));
-                      }}
-                    />
-                  ) : (
-                    <strong style={{ color: tier.color }}>{tier.label}</strong>
-                  )}
-                  <span className="tier-count">{tier.items.length} шт.</span>
+                  <div className="tier-label-sticky">
+                    {canEdit ? (
+                      <input
+                        className="tier-inline-input"
+                        style={{ color: tier.color }}
+                        value={tier.label}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          updateCurrentBoard((b) => ({
+                            ...b,
+                            tiers: b.tiers.map((t) =>
+                              t.id === tier.id ? { ...t, label: val } : t
+                            ),
+                          }));
+                        }}
+                      />
+                    ) : (
+                      <strong style={{ color: tier.color }}>{tier.label}</strong>
+                    )}
+                    <span className="tier-count">{tier.items.length} шт.</span>
+                  </div>
                 </div>
 
                 <div className="tier-items-wrap min-drop-zone">

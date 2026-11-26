@@ -14,7 +14,15 @@ import {
 } from 'lucide-react';
 import { GameItem, MemeItem, TwitchUser } from '../types';
 import { CoverImage } from '../components/CoverImage';
+import { OrdererAutocomplete } from '../components/OrdererAutocomplete';
 import { resolveMemeImageUrl } from '../utils/builtinMemes';
+import { collectOrdererStats } from '../utils/orderers';
+import {
+  getGameHltbUrl,
+  getGameSteamStoreUrl,
+  lookupGameMeta,
+  useGameMetaMap,
+} from '../utils/gameMeta';
 import {
   DropPriceBadge,
   GAME_STATUSES,
@@ -71,6 +79,9 @@ export const GamesView: React.FC<GamesViewProps> = ({
     }
   }, [initialOrdererFilter]);
 
+  const metaMap = useGameMetaMap();
+  const ordererStats = useMemo(() => collectOrdererStats(games), [games]);
+
   const memesByGame = useMemo(() => {
     const map = new Map<string, MemeItem[]>();
     for (const m of memes) {
@@ -109,7 +120,11 @@ export const GamesView: React.FC<GamesViewProps> = ({
       }
       if (onlyVod && !g.vodUrl) return false;
       if (onlyReturned && !g.returnPrice) return false;
-      if (onlyMine && myLogin && !g.orderedBy.toLowerCase().includes(myLogin)) return false;
+      if (onlyMine && myLogin) {
+        const lowerOrd = g.orderedBy.toLowerCase();
+        const isStreamerMatch = myLogin === 'onized' && lowerOrd === 'стример';
+        if (!lowerOrd.includes(myLogin) && !isStreamerMatch) return false;
+      }
       if (ordQ && !g.orderedBy.toLowerCase().includes(ordQ)) return false;
       if (q) {
         const hay =
@@ -199,6 +214,16 @@ export const GamesView: React.FC<GamesViewProps> = ({
             </button>
           )}
         </div>
+
+        <OrdererAutocomplete
+          value={ordererFilter}
+          onChange={(val) => {
+            setOrdererFilter(val);
+            if (!val) onClearInitialOrderer?.();
+          }}
+          orderers={ordererStats}
+          placeholder="Заказчик (подсказки)..."
+        />
 
         <select
           className="input select-auto"
@@ -292,6 +317,12 @@ export const GamesView: React.FC<GamesViewProps> = ({
         <div className="media-cards-grid">
           {filtered.map((g) => {
             const gMemes = memesByGame.get(g.id) || [];
+            const meta = lookupGameMeta(g, metaMap);
+            const steamUrl = getGameSteamStoreUrl(g);
+            const hltbUrl = getGameHltbUrl(g.title, meta);
+            const displayTime = g.hours ? `${g.hours}ч` : meta?.estHours || '';
+            const metaLine = [meta?.year, meta?.genres].filter(Boolean).join(' • ');
+
             return (
               <article
                 key={g.id}
@@ -316,9 +347,14 @@ export const GamesView: React.FC<GamesViewProps> = ({
                       <Video size={13} /> VOD
                     </a>
                   )}
-                  {g.hours && (
+                  {meta?.steamScore && (
+                    <span className="steam-score-badge" title="Процент положительных отзывов в Steam">
+                      👍 {meta.steamScore}%
+                    </span>
+                  )}
+                  {displayTime && (
                     <span className="hours-floating-badge">
-                      <Clock size={12} /> {g.hours}ч
+                      <Clock size={12} /> {displayTime}
                     </span>
                   )}
                 </div>
@@ -331,6 +367,7 @@ export const GamesView: React.FC<GamesViewProps> = ({
                     <ReturnPriceBadge price={g.returnPrice} />
                   </div>
                   <h3 className="media-card-title">{g.title}</h3>
+                  {metaLine && <div className="card-meta-sub">{metaLine}</div>}
                   <div className="media-card-orderer">
                     Заказал:{' '}
                     <button
@@ -378,6 +415,41 @@ export const GamesView: React.FC<GamesViewProps> = ({
                       </div>
                     </div>
                   )}
+
+                  <div
+                    className="card-ext-links"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    {steamUrl && (
+                      <a
+                        href={steamUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="ext-chip steam-chip"
+                      >
+                        Steam <ExternalLink size={11} />
+                      </a>
+                    )}
+                    <a
+                      href={hltbUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="ext-chip hltb-chip"
+                      title="Время прохождения на HowLongToBeat"
+                    >
+                      HLTB <Clock size={11} />
+                    </a>
+                    {g.link && !g.link.includes('store.steampowered.com') && (
+                      <a
+                        href={g.link}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="ext-chip"
+                      >
+                        Ссылка <ExternalLink size={11} />
+                      </a>
+                    )}
+                  </div>
 
                   {canEdit && (
                     <div
@@ -509,7 +581,11 @@ export const GamesView: React.FC<GamesViewProps> = ({
                   </td>
                   <td onClick={(e) => e.stopPropagation()}>
                     <div className="row-gap-xs wrap">
-                      {g.hours && <span className="muted-sm">{g.hours}ч</span>}
+                      {(g.hours || lookupGameMeta(g, metaMap)?.estHours) && (
+                        <span className="muted-sm">
+                          {g.hours ? `${g.hours}ч` : lookupGameMeta(g, metaMap)?.estHours}
+                        </span>
+                      )}
                       {g.vodUrl && (
                         <a
                           href={g.vodUrl}
@@ -520,16 +596,26 @@ export const GamesView: React.FC<GamesViewProps> = ({
                           VOD
                         </a>
                       )}
-                      {g.link && (
+                      {getGameSteamStoreUrl(g) && (
                         <a
-                          href={g.link}
+                          href={getGameSteamStoreUrl(g)}
                           target="_blank"
                           rel="noreferrer"
                           className="btn btn-ghost btn-xs"
+                          title="Открыть в Steam"
                         >
-                          <ExternalLink size={12} />
+                          Steam
                         </a>
                       )}
+                      <a
+                        href={getGameHltbUrl(g.title, lookupGameMeta(g, metaMap))}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="btn btn-ghost btn-xs"
+                        title="HowLongToBeat"
+                      >
+                        HLTB
+                      </a>
                     </div>
                   </td>
                   {canEdit && (

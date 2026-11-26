@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { HubConfig, SiteData } from '../types';
 import { CoverImage } from '../components/CoverImage';
+import { collectOrdererStats } from '../utils/orderers';
 import {
   DropPriceBadge,
   PriorityBadge,
@@ -62,6 +63,7 @@ export const HubView: React.FC<HubViewProps> = ({
   const { hubConfig, games, watchlist, backlog, customTierLists } = data;
   const [editingPlan, setEditingPlan] = useState(false);
   const [planDraft, setPlanDraft] = useState(hubConfig.currentPlanNote);
+  const [hubOrderersExpanded, setHubOrderersExpanded] = useState(false);
 
   const activeGames = games.filter(
     (g) => g.status === 'В процессе' || g.status === 'Проходится'
@@ -75,20 +77,14 @@ export const HubView: React.FC<HubViewProps> = ({
     .filter((g) => g.comment && g.comment.length > 35 && g.rating)
     .slice(0, 6);
 
-  const topOrderers = useMemo(() => {
-    const counts = new Map<string, { display: string; count: number }>();
-    for (const g of games) {
-      const raw = (g.orderedBy || '').trim();
-      if (!raw || raw === '-' || raw === '?') continue;
-      const key = raw.toLowerCase();
-      const entry = counts.get(key) || { display: raw, count: 0 };
-      entry.count += 1;
-      counts.set(key, entry);
-    }
-    return Array.from(counts.values())
-      .sort((a, b) => b.count - a.count)
-      .slice(0, 6);
-  }, [games]);
+  const allOrderers = useMemo(
+    () => collectOrdererStats(games, watchlist),
+    [games, watchlist]
+  );
+  const topOrderers = useMemo(
+    () => (hubOrderersExpanded ? allOrderers : allOrderers.slice(0, 6)),
+    [allOrderers, hubOrderersExpanded]
+  );
 
   const handleSavePlan = () => {
     onUpdateHubConfig({
@@ -368,10 +364,10 @@ export const HubView: React.FC<HubViewProps> = ({
             </button>
           </div>
 
-          <div className="compact-list">
+          <div className="compact-list hub-orderers-scroll">
             {topOrderers.map((ord, idx) => (
               <button
-                key={ord.display}
+                key={ord.key}
                 type="button"
                 className="compact-row orderer-hub-row"
                 onClick={() => onFilterByOrderer(ord.display)}
@@ -380,10 +376,24 @@ export const HubView: React.FC<HubViewProps> = ({
                 <div className="compact-row-body orderer-name-cell">
                   <strong>{ord.display}</strong>
                 </div>
-                <span className="badge tone-queued">{ord.count} игр</span>
+                <span className="badge tone-queued">
+                  {ord.gamesCount} игр{ord.watchCount > 0 ? ` + ${ord.watchCount} просм.` : ''}
+                </span>
               </button>
             ))}
           </div>
+          {allOrderers.length > 6 && (
+            <button
+              type="button"
+              className="btn btn-secondary btn-sm"
+              style={{ width: '100%', marginTop: 10, justifyContent: 'center' }}
+              onClick={() => setHubOrderersExpanded((v) => !v)}
+            >
+              {hubOrderersExpanded
+                ? 'Свернуть до топ-6'
+                : `Развернуть всех (${allOrderers.length} заказчиков)`}
+            </button>
+          )}
         </section>
       </div>
 

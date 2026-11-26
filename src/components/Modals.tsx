@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
   Download,
+  Edit3,
   ImageOff,
   ImagePlus,
   LogOut,
@@ -43,6 +44,8 @@ import {
 } from '../utils/imageCompress';
 import { resolveMemeImageUrl } from '../utils/builtinMemes';
 import { CoverImage } from './CoverImage';
+import { OrdererAutocomplete } from './OrdererAutocomplete';
+import { normalizeOrdererName, OrdererStat } from '../utils/orderers';
 import { PERMANENT_ADMINS } from '../services/authAndStorage';
 
 /* ---------- Cover Picker Block ---------- */
@@ -234,9 +237,10 @@ const CoverPicker: React.FC<{
 export const GameModal: React.FC<{
   initial?: GameItem | null;
   apiBaseUrl: string;
+  orderers: OrdererStat[];
   onClose: () => void;
   onSave: (game: GameItem) => void;
-}> = ({ initial, apiBaseUrl, onClose, onSave }) => {
+}> = ({ initial, apiBaseUrl, orderers, onClose, onSave }) => {
   const [title, setTitle] = useState(initial?.title ?? '');
   const [orderedBy, setOrderedBy] = useState(initial?.orderedBy ?? '');
   const [status, setStatus] = useState(initial?.status ?? 'Заказано');
@@ -263,7 +267,7 @@ export const GameModal: React.FC<{
     onSave({
       id: initial?.id || `game-${Date.now()}`,
       title: title.trim(),
-      orderedBy: orderedBy.trim() || '-',
+      orderedBy: normalizeOrdererName(orderedBy),
       status,
       rating,
       conditions: conditions.trim(),
@@ -303,10 +307,11 @@ export const GameModal: React.FC<{
             </div>
             <div>
               <label className="field-label">Кто заказал</label>
-              <input
-                className="input"
+              <OrdererAutocomplete
+                variant="form"
                 value={orderedBy}
-                onChange={(e) => setOrderedBy(e.target.value)}
+                onChange={setOrderedBy}
+                orderers={orderers}
                 placeholder="Ник зрителя или Стример"
               />
             </div>
@@ -446,9 +451,10 @@ export const GameModal: React.FC<{
 export const WatchModal: React.FC<{
   initial?: WatchItem | null;
   apiBaseUrl: string;
+  orderers: OrdererStat[];
   onClose: () => void;
   onSave: (item: WatchItem) => void;
-}> = ({ initial, apiBaseUrl, onClose, onSave }) => {
+}> = ({ initial, apiBaseUrl, orderers, onClose, onSave }) => {
   const [title, setTitle] = useState(initial?.title ?? '');
   const [category, setCategory] = useState<string>(initial?.category ?? 'Фильм');
   const [orderedBy, setOrderedBy] = useState(initial?.orderedBy ?? '');
@@ -465,7 +471,7 @@ export const WatchModal: React.FC<{
       id: initial?.id || `watch-${Date.now()}`,
       title: title.trim(),
       category,
-      orderedBy: orderedBy.trim() || '-',
+      orderedBy: normalizeOrdererName(orderedBy),
       status,
       rating,
       comment: comment.trim(),
@@ -497,11 +503,12 @@ export const WatchModal: React.FC<{
             </div>
             <div>
               <label className="field-label">Кто заказал</label>
-              <input
-                className="input"
+              <OrdererAutocomplete
+                variant="form"
                 value={orderedBy}
-                onChange={(e) => setOrderedBy(e.target.value)}
-                placeholder="Ник зрителя"
+                onChange={setOrderedBy}
+                orderers={orderers}
+                placeholder="Ник зрителя или Стример"
               />
             </div>
           </div>
@@ -587,23 +594,32 @@ export const WatchModal: React.FC<{
   );
 };
 
-/* ---------- Stream Meme Add Modal (Ctrl+V + File + URL) ---------- */
+/* ---------- Stream Meme Add / Edit Modal (Ctrl+V + File + URL) ---------- */
 export const MemeModal: React.FC<{
   watchlist: WatchItem[];
   games: GameItem[];
   preselectedTarget?: { type: 'watch' | 'game' | 'general'; id: string; title: string } | null;
+  initialMeme?: MemeItem | null;
   authorName: string;
   onClose: () => void;
   onSave: (meme: MemeItem) => void;
-}> = ({ watchlist, games, preselectedTarget, authorName, onClose, onSave }) => {
+}> = ({
+  watchlist,
+  games,
+  preselectedTarget,
+  initialMeme,
+  authorName,
+  onClose,
+  onSave,
+}) => {
   const [targetType, setTargetType] = useState<'watch' | 'game' | 'general'>(
-    preselectedTarget?.type ?? 'watch'
+    initialMeme?.targetType ?? preselectedTarget?.type ?? 'watch'
   );
   const [targetId, setTargetId] = useState<string>(
-    preselectedTarget?.id ?? (watchlist[0]?.id || '')
+    initialMeme?.targetId ?? preselectedTarget?.id ?? (watchlist[0]?.id || '')
   );
-  const [imageUrl, setImageUrl] = useState('');
-  const [caption, setCaption] = useState('');
+  const [imageUrl, setImageUrl] = useState(initialMeme?.imageUrl ?? '');
+  const [caption, setCaption] = useState(initialMeme?.caption ?? '');
   const [compressing, setCompressing] = useState(false);
   const fileRef = useRef<HTMLInputElement | null>(null);
 
@@ -654,14 +670,14 @@ export const MemeModal: React.FC<{
       resolvedTitle = games.find((g) => g.id === targetId)?.title || '';
     }
     onSave({
-      id: `meme-${Date.now()}`,
+      id: initialMeme?.id || `meme-${Date.now()}`,
       targetType,
       targetId: targetType === 'general' ? '' : targetId,
       targetTitle: resolvedTitle,
       imageUrl: imageUrl.trim(),
       caption: caption.trim() || resolvedTitle,
-      addedBy: authorName || 'Модератор',
-      createdAt: new Date().toISOString().slice(0, 10),
+      addedBy: initialMeme?.addedBy || authorName || 'Модератор',
+      createdAt: initialMeme?.createdAt || new Date().toISOString().slice(0, 10),
     });
   };
 
@@ -669,7 +685,7 @@ export const MemeModal: React.FC<{
     <div className="modal-backdrop" onClick={onClose}>
       <div className="modal-card" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
-          <h3>Добавить мем со стрима на память</h3>
+          <h3>{initialMeme ? 'Редактировать мем' : 'Добавить мем со стрима на память'}</h3>
           <button className="icon-btn" onClick={onClose}>
             <X size={18} />
           </button>
@@ -779,8 +795,9 @@ export const MemeLightbox: React.FC<{
   meme: MemeItem;
   canEdit: boolean;
   onClose: () => void;
+  onEdit: (meme: MemeItem) => void;
   onDelete: (id: string) => void;
-}> = ({ meme, canEdit, onClose, onDelete }) => {
+}> = ({ meme, canEdit, onClose, onEdit, onDelete }) => {
   return (
     <div className="modal-backdrop" onClick={onClose}>
       <div className="lightbox-card" onClick={(e) => e.stopPropagation()}>
@@ -793,15 +810,26 @@ export const MemeLightbox: React.FC<{
           </div>
           <div className="row-gap-sm">
             {canEdit && (
-              <button
-                className="btn btn-danger btn-sm"
-                onClick={() => {
-                  onDelete(meme.id);
-                  onClose();
-                }}
-              >
-                <Trash2 size={14} /> Удалить
-              </button>
+              <>
+                <button
+                  className="btn btn-secondary btn-sm"
+                  onClick={() => {
+                    onClose();
+                    onEdit(meme);
+                  }}
+                >
+                  <Edit3 size={14} /> Править
+                </button>
+                <button
+                  className="btn btn-danger btn-sm"
+                  onClick={() => {
+                    onDelete(meme.id);
+                    onClose();
+                  }}
+                >
+                  <Trash2 size={14} /> Удалить
+                </button>
+              </>
             )}
             <button className="icon-btn" onClick={onClose}>
               <X size={20} />

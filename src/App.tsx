@@ -51,6 +51,8 @@ import {
   GameDetailModal,
   WatchDetailModal,
 } from './components/DetailModals';
+import { collectOrdererStats } from './utils/orderers';
+import { loadGameMetaMap } from './utils/gameMeta';
 
 export const App: React.FC = () => {
   const [cfg, setCfg] = useState<RuntimeConfig>({
@@ -83,6 +85,7 @@ export const App: React.FC = () => {
   const [memeModalTarget, setMemeModalTarget] = useState<
     { type: 'watch' | 'game' | 'general'; id: string; title: string } | null | undefined
   >(undefined);
+  const [editingMeme, setEditingMeme] = useState<MemeItem | null>(null);
   const [lightboxMeme, setLightboxMeme] = useState<MemeItem | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
 
@@ -94,6 +97,7 @@ export const App: React.FC = () => {
   };
 
   useEffect(() => {
+    loadGameMetaMap();
     (async () => {
       const loadedCfg = await loadRuntimeConfig();
       setCfg(loadedCfg);
@@ -168,6 +172,11 @@ export const App: React.FC = () => {
     [inspectBacklogId, data]
   );
 
+  const allOrdererStats = useMemo(
+    () => (data ? collectOrdererStats(data.games, data.watchlist) : []),
+    [data]
+  );
+
   if (!data) {
     return (
       <div className="loading-screen">
@@ -186,7 +195,7 @@ export const App: React.FC = () => {
     const promoted: GameItem = {
       id: `game-${Date.now()}`,
       title: b.title,
-      orderedBy: 'OniZeD (бэклог)',
+      orderedBy: 'Стример',
       status: 'В процессе',
       rating: '',
       conditions: b.idea,
@@ -502,6 +511,7 @@ export const App: React.FC = () => {
             setMemeModalTarget({ type: 'game', id: g.id, title: g.title })
           }
           onViewMeme={(m) => setLightboxMeme(m)}
+          onEditMeme={(m) => setEditingMeme(m)}
           onFilterByOrderer={(orderer) => {
             setGamesOrdererPreset(orderer);
             setActiveTab('games');
@@ -537,6 +547,7 @@ export const App: React.FC = () => {
             setMemeModalTarget({ type: 'watch', id: w.id, title: w.title })
           }
           onViewMeme={(m) => setLightboxMeme(m)}
+          onEditMeme={(m) => setEditingMeme(m)}
         />
       )}
 
@@ -566,6 +577,7 @@ export const App: React.FC = () => {
         <GameModal
           initial={gameModalItem}
           apiBaseUrl={cfg.apiBaseUrl}
+          orderers={allOrdererStats}
           onClose={() => setGameModalItem(undefined)}
           onSave={(saved) => {
             const exists = data.games.some((x) => x.id === saved.id);
@@ -582,6 +594,7 @@ export const App: React.FC = () => {
         <WatchModal
           initial={watchModalItem}
           apiBaseUrl={cfg.apiBaseUrl}
+          orderers={allOrdererStats}
           onClose={() => setWatchModalItem(undefined)}
           onSave={(saved) => {
             const exists = data.watchlist.some((x) => x.id === saved.id);
@@ -610,19 +623,28 @@ export const App: React.FC = () => {
         />
       )}
 
-      {memeModalTarget !== undefined && (
+      {(memeModalTarget !== undefined || editingMeme !== null) && (
         <MemeModal
           watchlist={data.watchlist}
           games={data.games}
           preselectedTarget={memeModalTarget}
-          authorName={user?.displayName || 'OniZeD'}
-          onClose={() => setMemeModalTarget(undefined)}
+          initialMeme={editingMeme}
+          authorName={user?.displayName || 'Стример'}
+          onClose={() => {
+            setMemeModalTarget(undefined);
+            setEditingMeme(null);
+          }}
           onSave={(meme) => {
+            const exists = data.memes.some((x) => x.id === meme.id);
+            const nextMemes = exists
+              ? data.memes.map((x) => (x.id === meme.id ? meme : x))
+              : [meme, ...data.memes];
             commitData(
-              { ...data, memes: [meme, ...data.memes] },
-              'Мем прикреплён!'
+              { ...data, memes: nextMemes },
+              exists ? 'Описание мема обновлено!' : 'Мем прикреплен!'
             );
             setMemeModalTarget(undefined);
+            setEditingMeme(null);
           }}
         />
       )}
@@ -632,6 +654,7 @@ export const App: React.FC = () => {
           meme={lightboxMeme}
           canEdit={canEdit}
           onClose={() => setLightboxMeme(null)}
+          onEdit={(m) => setEditingMeme(m)}
           onDelete={(id) =>
             commitData(
               { ...data, memes: data.memes.filter((m) => m.id !== id) },
