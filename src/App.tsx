@@ -1125,6 +1125,17 @@ export const App: React.FC = () => {
             onInspectWatch={handleInspectWatch}
             onEditWatch={handleEditWatch}
             onDeleteWatch={handleDeleteWatch}
+            onQuickUpdateWatch={(updated) =>
+              commitData(
+                {
+                  ...data,
+                  watchlist: data.watchlist.map((x) =>
+                    x.id === updated.id ? updated : x
+                  ),
+                },
+                'Тайтл обновлен'
+              )
+            }
             onAddMeme={handleOpenMemeForTarget}
             onViewMeme={handleViewMeme}
           />
@@ -1202,6 +1213,17 @@ export const App: React.FC = () => {
                 'Идея удалена из бэклога'
               )
             }
+            onQuickUpdateBacklog={(updated) =>
+              commitData(
+                {
+                  ...data,
+                  backlog: data.backlog.map((x) =>
+                    x.id === updated.id ? updated : x
+                  ),
+                },
+                'Идея бэклога обновлена'
+              )
+            }
             onPromoteToGame={handlePromoteBacklog}
           />
         )}
@@ -1257,8 +1279,15 @@ export const App: React.FC = () => {
             rules={data.rules}
             ratingScale={data.ratingScale}
             canEdit={canEdit}
-            onSaveRules={(rules) =>
-              commitData({ ...data, rules }, 'Свод правил обновлен')
+            onSaveRules={(rules, nextScale) =>
+              commitData(
+                {
+                  ...data,
+                  rules,
+                  ...(nextScale ? { ratingScale: nextScale } : {}),
+                },
+                'Свод правил обновлен'
+              )
             }
           />
         )}

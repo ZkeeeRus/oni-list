@@ -9,6 +9,8 @@ import React, {
 } from 'react';
 import {
   Edit3,
+  LayoutGrid,
+  List,
   Plus,
   Search,
   X,
@@ -39,12 +41,14 @@ interface WatchlistViewProps {
   onInspectWatch: (id: string) => void;
   onEditWatch: (item: WatchItem) => void;
   onDeleteWatch: (id: string) => void;
+  onQuickUpdateWatch?: (item: WatchItem) => void;
   onAddMeme: (target: { type: 'watch'; id: string; title: string }) => void;
   onViewMeme: (meme: MemeItem) => void;
 }
 
 const EMPTY_MEMES: MemeItem[] = [];
-const WATCH_BATCH = 36;
+const WATCH_GRID_BATCH = 36;
+const WATCH_TABLE_BATCH = 60;
 
 interface WatchGridCardProps {
   item: WatchItem;
@@ -170,6 +174,7 @@ export const WatchlistView: React.FC<WatchlistViewProps> = memo(
     onInspectWatch,
     onEditWatch,
     onDeleteWatch,
+    onQuickUpdateWatch,
     onAddMeme,
     onViewMeme,
   }) => {
@@ -179,6 +184,24 @@ export const WatchlistView: React.FC<WatchlistViewProps> = memo(
     const [ratingFilter, setRatingFilter] = useState('ALL');
     const [onlyMine, setOnlyMine] = useState(false);
     const [ordererFilter, setOrdererFilter] = useState(ordererTag || '');
+    const [viewMode, setViewMode] = useState<'grid' | 'table'>(() => {
+      try {
+        return localStorage.getItem('onized_view_watch') === 'table'
+          ? 'table'
+          : 'grid';
+      } catch {
+        return 'grid';
+      }
+    });
+
+    const changeViewMode = useCallback((mode: 'grid' | 'table') => {
+      setViewMode(mode);
+      try {
+        localStorage.setItem('onized_view_watch', mode);
+      } catch {
+        // Ignore
+      }
+    }, []);
 
     useEffect(() => {
       setCatFilter(catTag || 'ALL');
@@ -191,7 +214,8 @@ export const WatchlistView: React.FC<WatchlistViewProps> = memo(
     const deferredSearch = useDeferredValue(search);
     const deferredOrderer = useDeferredValue(ordererFilter);
 
-    const [visibleCount, setVisibleCount] = useState(WATCH_BATCH);
+    const batchSize = viewMode === 'grid' ? WATCH_GRID_BATCH : WATCH_TABLE_BATCH;
+    const [visibleCount, setVisibleCount] = useState(batchSize);
     const loadMoreRef = useRef<HTMLDivElement | null>(null);
 
     const ordererStats = useMemo(
@@ -282,8 +306,9 @@ export const WatchlistView: React.FC<WatchlistViewProps> = memo(
     ]);
 
     useEffect(() => {
-      setVisibleCount(WATCH_BATCH);
+      setVisibleCount(batchSize);
     }, [
+      batchSize,
       deferredSearch,
       catFilter,
       statusFilter,
@@ -303,7 +328,7 @@ export const WatchlistView: React.FC<WatchlistViewProps> = memo(
         (entries) => {
           if (entries[0]?.isIntersecting) {
             setVisibleCount((prev) =>
-              Math.min(filtered.length, prev + WATCH_BATCH)
+              Math.min(filtered.length, prev + batchSize)
             );
           }
         },
@@ -311,7 +336,7 @@ export const WatchlistView: React.FC<WatchlistViewProps> = memo(
       );
       obs.observe(node);
       return () => obs.disconnect();
-    }, [hasMore, filtered.length]);
+    }, [hasMore, filtered.length, batchSize]);
 
     const visibleItems = useMemo(
       () => filtered.slice(0, visibleCount),
@@ -344,13 +369,31 @@ export const WatchlistView: React.FC<WatchlistViewProps> = memo(
             </p>
           </div>
 
-          {canEdit && (
-            <div className="row-gap-sm wrap">
+          <div className="row-gap-sm wrap">
+            <div className="segmented">
+              <button
+                type="button"
+                className={viewMode === 'grid' ? 'active' : ''}
+                onClick={() => changeViewMode('grid')}
+                title="Карточки с постерами"
+              >
+                <LayoutGrid size={16} /> Плитка
+              </button>
+              <button
+                type="button"
+                className={viewMode === 'table' ? 'active' : ''}
+                onClick={() => changeViewMode('table')}
+                title="Компактная таблица"
+              >
+                <List size={16} /> Таблица
+              </button>
+            </div>
+            {canEdit && (
               <button className="btn btn-primary" onClick={onAddWatch}>
                 <Plus size={16} /> Добавить тайтл
               </button>
-            </div>
-          )}
+            )}
+          </div>
         </div>
 
         <div className="filters-bar">
@@ -461,22 +504,164 @@ export const WatchlistView: React.FC<WatchlistViewProps> = memo(
           )}
         </div>
 
-        <div className="media-cards-grid">
-          {visibleItems.map((w) => (
-            <WatchGridCard
-              key={w.id}
-              item={w}
-              memes={memesByWatchId.get(w.id) || EMPTY_MEMES}
-              canEdit={canEdit}
-              onInspectWatch={onInspectWatch}
-              onSelectOrderer={handleSelectOrderer}
-              onEditWatch={onEditWatch}
-              onDeleteWatch={onDeleteWatch}
-              onAddMeme={onAddMeme}
-              onViewMeme={onViewMeme}
-            />
-          ))}
-        </div>
+        {viewMode === 'grid' ? (
+          <div className="media-cards-grid">
+            {visibleItems.map((w) => (
+              <WatchGridCard
+                key={w.id}
+                item={w}
+                memes={memesByWatchId.get(w.id) || EMPTY_MEMES}
+                canEdit={canEdit}
+                onInspectWatch={onInspectWatch}
+                onSelectOrderer={handleSelectOrderer}
+                onEditWatch={onEditWatch}
+                onDeleteWatch={onDeleteWatch}
+                onAddMeme={onAddMeme}
+                onViewMeme={onViewMeme}
+              />
+            ))}
+          </div>
+        ) : (
+          <div className="table-scroll">
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th className="col-game">Тайтл</th>
+                  <th className="col-orderer">Кто заказал</th>
+                  <th className="col-status">Статус</th>
+                  <th className="col-rating">Оценка</th>
+                  <th className="col-notes">Условия и комментарий</th>
+                  <th className="col-links">Мемы / действия</th>
+                </tr>
+              </thead>
+              <tbody>
+                {visibleItems.map((w) => {
+                  const itemMemes = memesByWatchId.get(w.id) || EMPTY_MEMES;
+                  return (
+                    <tr key={w.id} onClick={() => onInspectWatch(w.id)}>
+                      <td className="col-game">
+                        <div className="table-title-cell">
+                          <CoverImage
+                            title={w.title}
+                            coverUrl={w.coverUrl}
+                            className="table-thumb"
+                          />
+                          <div className="table-game-meta">
+                            <strong className="table-game-name">{w.title}</strong>
+                            <span className="table-sub-meta">{w.category}</span>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="col-orderer">
+                        {w.orderedBy && w.orderedBy !== '-' ? (
+                          <button
+                            type="button"
+                            className="link-inline"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleSelectOrderer(w.orderedBy);
+                            }}
+                          >
+                            {w.orderedBy}
+                          </button>
+                        ) : (
+                          <span>{w.orderedBy}</span>
+                        )}
+                      </td>
+                      <td
+                        className="col-status"
+                        onClick={(e) => canEdit && e.stopPropagation()}
+                      >
+                        {canEdit && onQuickUpdateWatch ? (
+                          <select
+                            className="input table-select"
+                            value={w.status}
+                            onChange={(e) =>
+                              onQuickUpdateWatch({ ...w, status: e.target.value })
+                            }
+                          >
+                            {WATCH_STATUSES.map((s) => (
+                              <option key={s} value={s}>
+                                {s}
+                              </option>
+                            ))}
+                          </select>
+                        ) : (
+                          <StatusBadge status={w.status} />
+                        )}
+                      </td>
+                      <td
+                        className="col-rating"
+                        onClick={(e) => canEdit && e.stopPropagation()}
+                      >
+                        {canEdit && onQuickUpdateWatch ? (
+                          <select
+                            className="input table-select table-select-rating"
+                            value={w.rating}
+                            onChange={(e) =>
+                              onQuickUpdateWatch({ ...w, rating: e.target.value })
+                            }
+                          >
+                            <option value="">Без оценки</option>
+                            {RATINGS_ORDER.map((r) => (
+                              <option key={r} value={r}>
+                                {r}
+                              </option>
+                            ))}
+                          </select>
+                        ) : (
+                          <RatingBadge rating={w.rating} />
+                        )}
+                      </td>
+                      <td className="col-notes table-notes-cell">
+                        {w.conditions && (
+                          <div className="conditions-inline clamp-2">
+                            <strong>Условия:</strong> {w.conditions}
+                          </div>
+                        )}
+                        {w.comment && (
+                          <div className="muted-sm clamp-2">{w.comment}</div>
+                        )}
+                        {!w.conditions && !w.comment && (
+                          <span className="muted-xs">-</span>
+                        )}
+                      </td>
+                      <td
+                        className="col-links"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <div className="table-links-wrap">
+                          {itemMemes.length > 0 ? (
+                            <button
+                              type="button"
+                              className="ext-chip"
+                              onClick={() => onViewMeme(itemMemes[0])}
+                              title="Открыть мем"
+                            >
+                              🖼 {itemMemes.length} мем{itemMemes.length > 1 ? 'а' : ''}
+                            </button>
+                          ) : (
+                            !canEdit && <span className="muted-xs">-</span>
+                          )}
+                          {canEdit && (
+                            <button
+                              type="button"
+                              className="icon-btn header-edit-btn"
+                              onClick={() => onEditWatch(w)}
+                              title="Редактировать"
+                            >
+                              <Edit3 size={14} />
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
 
         {hasMore && (
           <div ref={loadMoreRef} className="load-more-sentinel">
@@ -488,7 +673,7 @@ export const WatchlistView: React.FC<WatchlistViewProps> = memo(
               className="btn btn-secondary btn-sm"
               onClick={() =>
                 setVisibleCount((prev) =>
-                  Math.min(filtered.length, prev + WATCH_BATCH * 2)
+                  Math.min(filtered.length, prev + batchSize * 2)
                 )
               }
             >

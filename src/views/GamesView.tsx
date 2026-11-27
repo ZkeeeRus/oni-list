@@ -278,7 +278,23 @@ export const GamesView: React.FC<GamesViewProps> = memo(
     const [onlyReturned, setOnlyReturned] = useState(false);
     const [onlyMine, setOnlyMine] = useState(false);
     const [ordererFilter, setOrdererFilter] = useState(initialOrdererFilter || '');
-    const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
+    const [viewMode, setViewMode] = useState<'grid' | 'table'>(() => {
+      try {
+        return localStorage.getItem('onized_view_games') === 'table'
+          ? 'table'
+          : 'grid';
+      } catch {
+        return 'grid';
+      }
+    });
+    const changeViewMode = useCallback((mode: 'grid' | 'table') => {
+      setViewMode(mode);
+      try {
+        localStorage.setItem('onized_view_games', mode);
+      } catch {
+        // Ignore
+      }
+    }, []);
     const [sortBy, setSortBy] = useState<'default' | 'title' | 'rating'>('default');
 
     const deferredSearch = useDeferredValue(search);
@@ -476,14 +492,14 @@ export const GamesView: React.FC<GamesViewProps> = memo(
             <div className="segmented">
               <button
                 className={viewMode === 'grid' ? 'active' : ''}
-                onClick={() => setViewMode('grid')}
+                onClick={() => changeViewMode('grid')}
                 title="Карточки с портретами"
               >
                 <LayoutGrid size={16} /> Плитка
               </button>
               <button
                 className={viewMode === 'table' ? 'active' : ''}
-                onClick={() => setViewMode('table')}
+                onClick={() => changeViewMode('table')}
                 title="Компактная таблица"
               >
                 <List size={16} /> Таблица

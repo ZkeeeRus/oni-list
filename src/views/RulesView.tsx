@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import {
+  ArrowDown,
+  ArrowUp,
   Award,
   BookOpen,
   Check,
@@ -16,7 +18,7 @@ interface RulesViewProps {
   rules: RulesData;
   ratingScale: RatingScaleItem[];
   canEdit: boolean;
-  onSaveRules: (rules: RulesData) => void;
+  onSaveRules: (rules: RulesData, nextRatingScale?: RatingScaleItem[]) => void;
 }
 
 const TIER_LETTERS: Record<string, string> = {
@@ -85,15 +87,41 @@ export const RulesView: React.FC<RulesViewProps> = ({
 }) => {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState<RulesData>(rules);
+  const [scaleDraft, setScaleDraft] = useState<RatingScaleItem[]>(ratingScale);
 
   const startEdit = () => {
-    setDraft(JSON.parse(JSON.stringify(rules)));
+    const clonedRules: RulesData = JSON.parse(JSON.stringify(rules));
+    if (!Array.isArray(clonedRules.sections)) clonedRules.sections = [];
+    if (!Array.isArray(clonedRules.footnotes)) clonedRules.footnotes = [];
+    setDraft(clonedRules);
+    setScaleDraft(JSON.parse(JSON.stringify(ratingScale)));
     setEditing(true);
   };
 
   const handleSave = () => {
-    onSaveRules(draft);
+    const cleanedRules: RulesData = {
+      intro: (draft.intro || '').trim(),
+      sections: (draft.sections || []).map((sec) => ({
+        ...sec,
+        title: sec.title.trim() || 'Раздел правил',
+        items: sec.items.map((it) => it.trim()).filter(Boolean),
+      })),
+      footnotes: (draft.footnotes || []).map((fn) => fn.trim()).filter(Boolean),
+    };
+    const cleanedScale = scaleDraft.map((rs) => ({
+      ...rs,
+      description: rs.description.trim(),
+    }));
+    onSaveRules(cleanedRules, cleanedScale);
     setEditing(false);
+  };
+
+  const moveArrayItem = <T,>(arr: T[], from: number, to: number): T[] => {
+    if (to < 0 || to >= arr.length) return arr;
+    const copy = [...arr];
+    const [picked] = copy.splice(from, 1);
+    copy.splice(to, 0, picked);
+    return copy;
   };
 
   return (
@@ -110,6 +138,16 @@ export const RulesView: React.FC<RulesViewProps> = ({
             <Edit3 size={15} /> Редактировать правила
           </button>
         )}
+        {canEdit && editing && (
+          <div className="row-gap-sm wrap">
+            <button className="btn btn-primary" onClick={handleSave}>
+              <Check size={15} /> Сохранить все изменения
+            </button>
+            <button className="btn btn-ghost" onClick={() => setEditing(false)}>
+              Отмена
+            </button>
+          </div>
+        )}
       </div>
 
       {editing ? (
@@ -121,10 +159,12 @@ export const RulesView: React.FC<RulesViewProps> = ({
             }
           }}
         >
-          <div>
-            <label className="field-label">Вступление</label>
-            <input
-              className="input"
+          <div className="settings-section form-grid">
+            <label className="field-label">Вступление (верхняя плашка над разделами)</label>
+            <textarea
+              className="input textarea-sm"
+              rows={2}
+              placeholder="Вступительный текст над правилами (оставьте пустым, чтобы скрыть плашку)..."
               value={draft.intro}
               onChange={(e) => setDraft({ ...draft, intro: e.target.value })}
             />
@@ -132,19 +172,77 @@ export const RulesView: React.FC<RulesViewProps> = ({
 
           {draft.sections.map((sec, sIdx) => (
             <div key={sec.id} className="settings-section form-grid">
-              <input
-                className="input"
-                value={sec.title}
-                onChange={(e) => {
-                  const next = [...draft.sections];
-                  next[sIdx] = { ...sec, title: e.target.value };
-                  setDraft({ ...draft, sections: next });
-                }}
-              />
+              <div className="rule-sec-edit-head">
+                <span className="rule-sec-badge">Раздел {sIdx + 1}</span>
+                <input
+                  className="input"
+                  placeholder="Название раздела..."
+                  value={sec.title}
+                  onChange={(e) => {
+                    const next = [...draft.sections];
+                    next[sIdx] = { ...sec, title: e.target.value };
+                    setDraft({ ...draft, sections: next });
+                  }}
+                />
+                <div className="rule-row-actions">
+                  <button
+                    type="button"
+                    className="icon-btn"
+                    disabled={sIdx === 0}
+                    title="Поднять раздел выше"
+                    onClick={() =>
+                      setDraft({
+                        ...draft,
+                        sections: moveArrayItem(draft.sections, sIdx, sIdx - 1),
+                      })
+                    }
+                  >
+                    <ArrowUp size={15} />
+                  </button>
+                  <button
+                    type="button"
+                    className="icon-btn"
+                    disabled={sIdx === draft.sections.length - 1}
+                    title="Опустить раздел ниже"
+                    onClick={() =>
+                      setDraft({
+                        ...draft,
+                        sections: moveArrayItem(draft.sections, sIdx, sIdx + 1),
+                      })
+                    }
+                  >
+                    <ArrowDown size={15} />
+                  </button>
+                  <button
+                    type="button"
+                    className="icon-btn danger-text"
+                    title="Удалить раздел целиком"
+                    onClick={() => {
+                      if (
+                        sec.items.length === 0 ||
+                        confirm(`Удалить раздел «${sec.title || sIdx + 1}» со всеми его пунктами?`)
+                      ) {
+                        setDraft({
+                          ...draft,
+                          sections: draft.sections.filter((_, idx) => idx !== sIdx),
+                        });
+                      }
+                    }}
+                  >
+                    <Trash2 size={15} />
+                  </button>
+                </div>
+              </div>
+
               {sec.items.map((item, iIdx) => (
-                <div key={iIdx} className="inline-search-row">
-                  <input
-                    className="input input-sm"
+                <div key={iIdx} className="rule-edit-row">
+                  <span className="rule-num-pill">
+                    {String(iIdx + 1).padStart(2, '0')}
+                  </span>
+                  <textarea
+                    className="input input-sm rule-item-textarea"
+                    rows={2}
+                    placeholder="Текст пункта правил..."
                     value={item}
                     onChange={(e) => {
                       const next = [...draft.sections];
@@ -154,40 +252,233 @@ export const RulesView: React.FC<RulesViewProps> = ({
                       setDraft({ ...draft, sections: next });
                     }}
                   />
-                  <button
-                    type="button"
-                    className="icon-btn danger-text"
-                    onClick={() => {
-                      const next = [...draft.sections];
-                      next[sIdx] = {
-                        ...sec,
-                        items: sec.items.filter((_, idx) => idx !== iIdx),
-                      };
-                      setDraft({ ...draft, sections: next });
-                    }}
-                  >
-                    <Trash2 size={14} />
-                  </button>
+                  <div className="rule-row-actions">
+                    <button
+                      type="button"
+                      className="icon-btn"
+                      disabled={iIdx === 0}
+                      title="Поднять пункт выше"
+                      onClick={() => {
+                        const next = [...draft.sections];
+                        next[sIdx] = {
+                          ...sec,
+                          items: moveArrayItem(sec.items, iIdx, iIdx - 1),
+                        };
+                        setDraft({ ...draft, sections: next });
+                      }}
+                    >
+                      <ArrowUp size={14} />
+                    </button>
+                    <button
+                      type="button"
+                      className="icon-btn"
+                      disabled={iIdx === sec.items.length - 1}
+                      title="Опустить пункт ниже"
+                      onClick={() => {
+                        const next = [...draft.sections];
+                        next[sIdx] = {
+                          ...sec,
+                          items: moveArrayItem(sec.items, iIdx, iIdx + 1),
+                        };
+                        setDraft({ ...draft, sections: next });
+                      }}
+                    >
+                      <ArrowDown size={14} />
+                    </button>
+                    <button
+                      type="button"
+                      className="icon-btn danger-text"
+                      title="Удалить пункт"
+                      onClick={() => {
+                        const next = [...draft.sections];
+                        next[sIdx] = {
+                          ...sec,
+                          items: sec.items.filter((_, idx) => idx !== iIdx),
+                        };
+                        setDraft({ ...draft, sections: next });
+                      }}
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
                 </div>
               ))}
+
               <button
                 type="button"
                 className="btn btn-secondary btn-xs"
                 style={{ alignSelf: 'flex-start' }}
                 onClick={() => {
                   const next = [...draft.sections];
-                  next[sIdx] = { ...sec, items: [...sec.items, 'Новый пункт правил'] };
+                  next[sIdx] = { ...sec, items: [...sec.items, ''] };
                   setDraft({ ...draft, sections: next });
                 }}
               >
-                <Plus size={12} /> + Пункт
+                <Plus size={12} /> Добавить пункт
               </button>
             </div>
           ))}
 
+          <div>
+            <button
+              type="button"
+              className="btn btn-secondary btn-sm"
+              onClick={() =>
+                setDraft({
+                  ...draft,
+                  sections: [
+                    ...draft.sections,
+                    {
+                      id: `sec-${Date.now()}`,
+                      title: 'Новый раздел правил',
+                      items: [''],
+                    },
+                  ],
+                })
+              }
+            >
+              <Plus size={14} /> Добавить новый раздел правил
+            </button>
+          </div>
+
+          {/* Редактор примечаний и сносок */}
+          <div className="settings-section form-grid">
+            <div className="row-between wrap">
+              <div>
+                <h4>Примечания и сноски (блок внизу под правилами)</h4>
+                <p className="muted-xs">
+                  Дополнительные пояснения, исключения и примечания со звездочкой
+                </p>
+              </div>
+              <button
+                type="button"
+                className="btn btn-secondary btn-xs"
+                onClick={() =>
+                  setDraft({
+                    ...draft,
+                    footnotes: [...(draft.footnotes || []), ''],
+                  })
+                }
+              >
+                <Plus size={12} /> Добавить сноску
+              </button>
+            </div>
+
+            {(draft.footnotes || []).length === 0 ? (
+              <p className="muted-xs">
+                Сносок пока нет. Нажмите «Добавить сноску», чтобы создать примечание.
+              </p>
+            ) : (
+              (draft.footnotes || []).map((fn, fIdx) => (
+                <div key={fIdx} className="rule-edit-row">
+                  <span className="rule-num-pill">*</span>
+                  <textarea
+                    className="input input-sm rule-item-textarea"
+                    rows={2}
+                    placeholder="Текст примечания или сноски..."
+                    value={fn}
+                    onChange={(e) => {
+                      const nextFn = [...(draft.footnotes || [])];
+                      nextFn[fIdx] = e.target.value;
+                      setDraft({ ...draft, footnotes: nextFn });
+                    }}
+                  />
+                  <div className="rule-row-actions">
+                    <button
+                      type="button"
+                      className="icon-btn"
+                      disabled={fIdx === 0}
+                      title="Поднять сноску выше"
+                      onClick={() =>
+                        setDraft({
+                          ...draft,
+                          footnotes: moveArrayItem(
+                            draft.footnotes || [],
+                            fIdx,
+                            fIdx - 1
+                          ),
+                        })
+                      }
+                    >
+                      <ArrowUp size={14} />
+                    </button>
+                    <button
+                      type="button"
+                      className="icon-btn"
+                      disabled={fIdx === (draft.footnotes || []).length - 1}
+                      title="Опустить сноску ниже"
+                      onClick={() =>
+                        setDraft({
+                          ...draft,
+                          footnotes: moveArrayItem(
+                            draft.footnotes || [],
+                            fIdx,
+                            fIdx + 1
+                          ),
+                        })
+                      }
+                    >
+                      <ArrowDown size={14} />
+                    </button>
+                    <button
+                      type="button"
+                      className="icon-btn danger-text"
+                      title="Удалить сноску"
+                      onClick={() =>
+                        setDraft({
+                          ...draft,
+                          footnotes: (draft.footnotes || []).filter(
+                            (_, idx) => idx !== fIdx
+                          ),
+                        })
+                      }
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+
+          {/* Редактор описаний шкалы оценок */}
+          <div className="settings-section form-grid">
+            <div>
+              <h4>Описания шкалы оценок канала</h4>
+              <p className="muted-xs">
+                Пояснения к оценкам в правой колонке страницы правил
+              </p>
+            </div>
+            {scaleDraft.map((rs, rIdx) => (
+              <div key={rs.rating} className="rule-edit-row">
+                <span
+                  className="badge"
+                  style={{
+                    minWidth: 112,
+                    justifyContent: 'center',
+                    borderColor: `${rs.color}66`,
+                    color: rs.color,
+                  }}
+                >
+                  {rs.rating}
+                </span>
+                <textarea
+                  className="input input-sm rule-item-textarea"
+                  rows={2}
+                  value={rs.description}
+                  onChange={(e) => {
+                    const next = [...scaleDraft];
+                    next[rIdx] = { ...rs, description: e.target.value };
+                    setScaleDraft(next);
+                  }}
+                />
+              </div>
+            ))}
+          </div>
+
           <div className="row-gap-sm">
             <button className="btn btn-primary" onClick={handleSave}>
-              <Check size={15} /> Сохранить правила
+              <Check size={15} /> Сохранить все изменения
             </button>
             <button className="btn btn-ghost" onClick={() => setEditing(false)}>
               Отмена

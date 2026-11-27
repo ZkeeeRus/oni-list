@@ -123,9 +123,10 @@ export const HubView: React.FC<HubViewProps> = ({
               <div className="form-grid" style={{ marginTop: 8 }}>
                 <textarea
                   className="input textarea-sm"
+                  rows={4}
                   value={planDraft}
                   onChange={(e) => setPlanDraft(e.target.value)}
-                  placeholder="Что проходим и смотрим в ближайшее время..."
+                  placeholder="Что проходим и смотрим в ближайшее время (каждый пункт можно с новой строки)..."
                 />
                 <div className="row-gap-sm">
                   <button className="btn btn-primary btn-sm" onClick={handleSavePlan}>
