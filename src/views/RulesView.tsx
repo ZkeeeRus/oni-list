@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import {
   ArrowDown,
   ArrowUp,
@@ -6,11 +6,13 @@ import {
   BookOpen,
   Check,
   Edit3,
+  Eraser,
   Info,
   Plus,
   ShieldAlert,
   Sparkles,
   Trash2,
+  Wand2,
 } from 'lucide-react';
 import { RatingScaleItem, RulesData } from '../types';
 
@@ -30,11 +32,124 @@ const TIER_LETTERS: Record<string, string> = {
   'Нет мнения': '?',
 };
 
-const RULE_TOKEN_RE =
-  /(https?:\/\/[^\s)]+|«[^»]+»|\b\d[\d\s.,]*(?:\s?(?:₽|руб(?:лей|\.)?|р\.|ч\.|час(?:а|ов)?|%|раз(?:а)?|мин\.|дн\.))|\b[xхXХ]\d+\b|\b(?:Дроп[а-яё]*|дроп[а-яё]*|Возврат[а-яё]*|возврат[а-яё]*|Аукцион[а-яё]*|аукцион[а-яё]*|Рулетк[а-яё]*|рулетк[а-яё]*|Запрещ[а-яё]*|запрещ[а-яё]*|Важно|Внимание|СмолДик)\b)/g;
+// Автоматическое распознавание для старых правил (до первого сохранения в новом редакторе)
+const LEGACY_RULE_TOKEN_RE =
+  /(https?:\/\/[^\s)]+|==[^=\n]+==|\*\*[^*\n]+\*\*|!![^!\n]+!!|«[^»\n]+»|\b\d[\d\s.,]*(?:\s?(?:₽|руб(?:лей|\.)?|р\.|ч\.|час(?:а|ов)?|%|раз(?:а)?|мин\.|дн\.))|\b[xхXХ]\d+\b|\b(?:Дроп[а-яё]*|дроп[а-яё]*|Возврат[а-яё]*|возврат[а-яё]*|Аукцион[а-яё]*|аукцион[а-яё]*|Рулетк[а-яё]*|рулетк[а-яё]*|Запрещ[а-яё]*|запрещ[а-яё]*|Важно|Внимание|СмолДик)\b)/g;
 
-function renderFormattedRuleText(text: string): React.ReactNode {
-  const parts = text.split(RULE_TOKEN_RE);
+// Явные теги выделения, которыми управляет редактор: ==плашка==, **акцент**, !!важно!!, «кавычки» и ссылки
+const EXPLICIT_RULE_TOKEN_RE =
+  /(https?:\/\/[^\s)»*!=]+|==[^=\n]+==|\*\*[^*\n]+\*\*|!![^!\n]+!!|«[^»\n]+»)/g;
+
+const MARKER_ONLY_RE = /(==[^=\n]+==|\*\*[^*\n]+\*\*|!![^!\n]+!!|«[^»\n]+»)/g;
+
+// Переводит старые авто-выделения в явные теги, чтобы при открытии редактора они сразу были видны и редактировались
+function convertLegacyRuleHighlightsToMarkers(text: string): string {
+  if (!text) return '';
+  const parts = text.split(LEGACY_RULE_TOKEN_RE);
+  return parts
+    .map((part) => {
+      if (!part) return '';
+      if (
+        /^https?:\/\//.test(part) ||
+        (part.startsWith('==') && part.endsWith('==')) ||
+        (part.startsWith('**') && part.endsWith('**')) ||
+        (part.startsWith('!!') && part.endsWith('!!')) ||
+        (part.startsWith('«') && part.endsWith('»'))
+      ) {
+        return part;
+      }
+      if (/^(?:\d|[xхXХ]\d)/.test(part)) {
+        return `==${part}==`;
+      }
+      if (
+        /^(?:Дроп|дроп|Возврат|возврат|Аукцион|аукцион|Рулетк|рулетк|Запрещ|запрещ|Важно|Внимание|СмолДик)/.test(
+          part
+        )
+      ) {
+        return `**${part}**`;
+      }
+      return part;
+    })
+    .join('');
+}
+
+function unwrapSingleToken(tok: string): string {
+  if (
+    (tok.startsWith('==') && tok.endsWith('==')) ||
+    (tok.startsWith('**') && tok.endsWith('**')) ||
+    (tok.startsWith('!!') && tok.endsWith('!!'))
+  ) {
+    return tok.slice(2, -2);
+  }
+  if (tok.startsWith('«') && tok.endsWith('»')) {
+    return tok.slice(1, -1);
+  }
+  return tok;
+}
+
+function renderExplicitRuleText(text: string): React.ReactNode {
+  const parts = text.split(EXPLICIT_RULE_TOKEN_RE);
+  return parts.map((part, idx) => {
+    if (!part) return null;
+    if (/^https?:\/\//.test(part)) {
+      return (
+        <a
+          key={idx}
+          href={part}
+          target="_blank"
+          rel="noreferrer"
+          className="link-inline"
+        >
+          {part}
+        </a>
+      );
+    }
+    if (part.startsWith('==') && part.endsWith('==') && part.length > 4) {
+      return (
+        <span key={idx} className="rule-accent-num">
+          {part.slice(2, -2)}
+        </span>
+      );
+    }
+    if (part.startsWith('**') && part.endsWith('**') && part.length > 4) {
+      return (
+        <strong key={idx} className="rule-accent-term">
+          {part.slice(2, -2)}
+        </strong>
+      );
+    }
+    if (part.startsWith('!!') && part.endsWith('!!') && part.length > 4) {
+      return (
+        <span key={idx} className="rule-accent-danger">
+          {part.slice(2, -2)}
+        </span>
+      );
+    }
+    if (part.startsWith('«') && part.endsWith('»') && part.length > 2) {
+      return (
+        <span key={idx} className="rule-accent-quote">
+          {part}
+        </span>
+      );
+    }
+    return <React.Fragment key={idx}>{part}</React.Fragment>;
+  });
+}
+
+function renderFormattedRuleText(
+  text: string,
+  manualFormatting?: boolean
+): React.ReactNode {
+  if (
+    manualFormatting ||
+    text.includes('==') ||
+    text.includes('**') ||
+    text.includes('!!')
+  ) {
+    return renderExplicitRuleText(text);
+  }
+
+  const parts = text.split(LEGACY_RULE_TOKEN_RE);
   return parts.map((part, idx) => {
     if (!part) return null;
     if (/^https?:\/\//.test(part)) {
@@ -79,6 +194,338 @@ function renderFormattedRuleText(text: string): React.ReactNode {
   });
 }
 
+// Подсветка прямо внутри текстового поля с 100% сохранением ширины символов (курсор не съезжает)
+function renderEditorBackdropTokens(text: string): React.ReactNode {
+  const parts = text.split(EXPLICIT_RULE_TOKEN_RE);
+  return parts.map((part, idx) => {
+    if (!part) return null;
+    if (/^https?:\/\//.test(part)) {
+      return (
+        <span key={idx} className="hl-tok-link">
+          {part}
+        </span>
+      );
+    }
+    if (part.startsWith('==') && part.endsWith('==') && part.length > 4) {
+      return (
+        <span key={idx} className="hl-tok-amber">
+          <span className="hl-delim">==</span>
+          {part.slice(2, -2)}
+          <span className="hl-delim">==</span>
+        </span>
+      );
+    }
+    if (part.startsWith('**') && part.endsWith('**') && part.length > 4) {
+      return (
+        <span key={idx} className="hl-tok-purple">
+          <span className="hl-delim">**</span>
+          {part.slice(2, -2)}
+          <span className="hl-delim">**</span>
+        </span>
+      );
+    }
+    if (part.startsWith('!!') && part.endsWith('!!') && part.length > 4) {
+      return (
+        <span key={idx} className="hl-tok-red">
+          <span className="hl-delim">!!</span>
+          {part.slice(2, -2)}
+          <span className="hl-delim">!!</span>
+        </span>
+      );
+    }
+    if (part.startsWith('«') && part.endsWith('»') && part.length > 2) {
+      return (
+        <span key={idx} className="hl-tok-cyan">
+          {part}
+        </span>
+      );
+    }
+    return <React.Fragment key={idx}>{part}</React.Fragment>;
+  });
+}
+
+interface RuleRichInputProps {
+  value: string;
+  placeholder?: string;
+  onChange: (next: string) => void;
+}
+
+const RuleRichInput: React.FC<RuleRichInputProps> = ({
+  value,
+  placeholder,
+  onChange,
+}) => {
+  const taRef = useRef<HTMLTextAreaElement | null>(null);
+  const [focused, setFocused] = useState(false);
+
+  const applyMarker = (open: string, close: string) => {
+    const ta = taRef.current;
+    if (!ta) return;
+    const start = ta.selectionStart ?? 0;
+    const end = ta.selectionEnd ?? 0;
+
+    // Если текст не выделен - проверяем, не стоит ли курсор уже внутри такого тега
+    if (start === end) {
+      const matches = Array.from(value.matchAll(MARKER_ONLY_RE));
+      for (const m of matches) {
+        const mIdx = m.index ?? 0;
+        const tok = m[0];
+        if (start >= mIdx && start <= mIdx + tok.length) {
+          const inner = unwrapSingleToken(tok);
+          if (tok.startsWith(open) && tok.endsWith(close)) {
+            const next = value.slice(0, mIdx) + inner + value.slice(mIdx + tok.length);
+            onChange(next);
+            const pos = Math.max(mIdx, Math.min(mIdx + inner.length, start - open.length));
+            requestAnimationFrame(() => {
+              ta.focus();
+              ta.setSelectionRange(pos, pos);
+            });
+            return;
+          }
+          const replaced = `${open}${inner}${close}`;
+          const next = value.slice(0, mIdx) + replaced + value.slice(mIdx + tok.length);
+          onChange(next);
+          requestAnimationFrame(() => {
+            ta.focus();
+            ta.setSelectionRange(mIdx + open.length, mIdx + open.length + inner.length);
+          });
+          return;
+        }
+      }
+
+      const sample = 'текст';
+      const inserted = `${open}${sample}${close}`;
+      const next = value.slice(0, start) + inserted + value.slice(end);
+      onChange(next);
+      requestAnimationFrame(() => {
+        ta.focus();
+        ta.setSelectionRange(start + open.length, start + open.length + sample.length);
+      });
+      return;
+    }
+
+    const selected = value.slice(start, end);
+
+    // Повторное нажатие на тот же тип выделения снимает его
+    if (
+      selected.startsWith(open) &&
+      selected.endsWith(close) &&
+      selected.length > open.length + close.length
+    ) {
+      const inner = selected.slice(open.length, selected.length - close.length);
+      const next = value.slice(0, start) + inner + value.slice(end);
+      onChange(next);
+      requestAnimationFrame(() => {
+        ta.focus();
+        ta.setSelectionRange(start, start + inner.length);
+      });
+      return;
+    }
+
+    if (
+      start >= open.length &&
+      value.slice(start - open.length, start) === open &&
+      value.slice(end, end + close.length) === close
+    ) {
+      const next =
+        value.slice(0, start - open.length) +
+        selected +
+        value.slice(end + close.length);
+      onChange(next);
+      requestAnimationFrame(() => {
+        ta.focus();
+        ta.setSelectionRange(
+          start - open.length,
+          start - open.length + selected.length
+        );
+      });
+      return;
+    }
+
+    // Если выделенный фрагмент уже обернут другим маркером - меняем стиль в 1 клик без вложенности
+    let cleanStart = start;
+    let cleanEnd = end;
+    let inner = selected;
+    for (const [o, c] of [
+      ['==', '=='],
+      ['**', '**'],
+      ['!!', '!!'],
+      ['«', '»'],
+    ]) {
+      if (
+        cleanStart >= o.length &&
+        value.slice(cleanStart - o.length, cleanStart) === o &&
+        value.slice(cleanEnd, cleanEnd + c.length) === c
+      ) {
+        cleanStart -= o.length;
+        cleanEnd += c.length;
+        inner = value.slice(cleanStart + o.length, cleanEnd - c.length);
+        break;
+      }
+      if (
+        inner.startsWith(o) &&
+        inner.endsWith(c) &&
+        inner.length > o.length + c.length
+      ) {
+        inner = inner.slice(o.length, inner.length - c.length);
+        break;
+      }
+    }
+
+    const wrapped = `${open}${inner}${close}`;
+    const next = value.slice(0, cleanStart) + wrapped + value.slice(cleanEnd);
+    onChange(next);
+    requestAnimationFrame(() => {
+      ta.focus();
+      ta.setSelectionRange(
+        cleanStart + open.length,
+        cleanStart + open.length + inner.length
+      );
+    });
+  };
+
+  const clearHighlight = () => {
+    const ta = taRef.current;
+    if (!ta) return;
+    const start = ta.selectionStart ?? 0;
+    const end = ta.selectionEnd ?? 0;
+
+    if (start === end) {
+      const matches = Array.from(value.matchAll(MARKER_ONLY_RE));
+      for (const m of matches) {
+        const mIdx = m.index ?? 0;
+        const tok = m[0];
+        if (start >= mIdx && start <= mIdx + tok.length) {
+          const inner = unwrapSingleToken(tok);
+          const next = value.slice(0, mIdx) + inner + value.slice(mIdx + tok.length);
+          onChange(next);
+          const pos = Math.max(mIdx, Math.min(mIdx + inner.length, start - 2));
+          requestAnimationFrame(() => {
+            ta.focus();
+            ta.setSelectionRange(pos, pos);
+          });
+          return;
+        }
+      }
+      return;
+    }
+
+    let rangeStart = start;
+    let rangeEnd = end;
+    for (const [o, c] of [
+      ['==', '=='],
+      ['**', '**'],
+      ['!!', '!!'],
+      ['«', '»'],
+    ]) {
+      if (
+        rangeStart >= o.length &&
+        value.slice(rangeStart - o.length, rangeStart) === o &&
+        value.slice(rangeEnd, rangeEnd + c.length) === c
+      ) {
+        rangeStart -= o.length;
+        rangeEnd += c.length;
+        break;
+      }
+    }
+
+    const slice = value
+      .slice(rangeStart, rangeEnd)
+      .replace(MARKER_ONLY_RE, (tok) => unwrapSingleToken(tok))
+      .replace(/==|\*\*|!!/g, '');
+    const next = value.slice(0, rangeStart) + slice + value.slice(rangeEnd);
+    onChange(next);
+    requestAnimationFrame(() => {
+      ta.focus();
+      ta.setSelectionRange(rangeStart, rangeStart + slice.length);
+    });
+  };
+
+  return (
+    <div className={`rule-hl-field ${focused ? 'is-focused' : ''}`}>
+      <div className="rule-hl-editor-wrap">
+        <div className="rule-hl-backdrop" aria-hidden="true">
+          {value ? (
+            renderEditorBackdropTokens(value)
+          ) : (
+            <span className="rule-hl-placeholder">{placeholder || ''}</span>
+          )}
+          {'\n '}
+        </div>
+        <textarea
+          ref={taRef}
+          className="rule-hl-textarea"
+          rows={1}
+          value={value}
+          onFocus={() => setFocused(true)}
+          onBlur={() => setFocused(false)}
+          onChange={(e) => onChange(e.target.value)}
+          spellCheck={false}
+        />
+      </div>
+
+      {focused && (
+        <div
+          className="rule-fmt-panel"
+          onMouseDown={(e) => e.preventDefault()}
+        >
+          <div className="rule-fmt-toolbar">
+            <span className="muted-xs">Выделить:</span>
+            <button
+              type="button"
+              className="rule-fmt-btn fmt-amber"
+              onClick={() => applyMarker('==', '==')}
+              title="Выделить золотистой плашкой (цены, часы, условия)"
+            >
+              Плашка
+            </button>
+            <button
+              type="button"
+              className="rule-fmt-btn fmt-purple"
+              onClick={() => applyMarker('**', '**')}
+              title="Выделить жирным фиолетовым акцентом"
+            >
+              Акцент
+            </button>
+            <button
+              type="button"
+              className="rule-fmt-btn fmt-cyan"
+              onClick={() => applyMarker('«', '»')}
+              title="Обернуть в голубые кавычки «...»"
+            >
+              «Кавычки»
+            </button>
+            <button
+              type="button"
+              className="rule-fmt-btn fmt-red"
+              onClick={() => applyMarker('!!', '!!')}
+              title="Выделить красной плашкой (запреты и важное)"
+            >
+              Важно
+            </button>
+            <button
+              type="button"
+              className="rule-fmt-btn fmt-clear"
+              onClick={clearHighlight}
+              title="Убрать выделение у выбранного слова или под курсором"
+            >
+              <Eraser size={12} /> Снять цвет
+            </button>
+          </div>
+          {value.trim() && (
+            <div className="rule-live-preview">
+              <span className="rule-live-preview-label">На сайте:</span>
+              <div className="rule-live-preview-body">
+                {renderExplicitRuleText(value)}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
+
 export const RulesView: React.FC<RulesViewProps> = ({
   rules,
   ratingScale,
@@ -93,9 +540,42 @@ export const RulesView: React.FC<RulesViewProps> = ({
     const clonedRules: RulesData = JSON.parse(JSON.stringify(rules));
     if (!Array.isArray(clonedRules.sections)) clonedRules.sections = [];
     if (!Array.isArray(clonedRules.footnotes)) clonedRules.footnotes = [];
+
+    // Если правила еще ни разу не сохранялись с ручной разметкой - автоматически переносим текущие подсветки в редактируемые теги
+    if (!clonedRules.manualFormatting) {
+      clonedRules.intro = convertLegacyRuleHighlightsToMarkers(
+        clonedRules.intro || ''
+      );
+      clonedRules.sections = clonedRules.sections.map((sec) => ({
+        ...sec,
+        items: (sec.items || []).map((it) =>
+          convertLegacyRuleHighlightsToMarkers(it)
+        ),
+      }));
+      clonedRules.footnotes = clonedRules.footnotes.map((fn) =>
+        convertLegacyRuleHighlightsToMarkers(fn)
+      );
+      clonedRules.manualFormatting = true;
+    }
+
     setDraft(clonedRules);
     setScaleDraft(JSON.parse(JSON.stringify(ratingScale)));
     setEditing(true);
+  };
+
+  const handleAutoHighlightAll = () => {
+    setDraft((prev) => ({
+      ...prev,
+      manualFormatting: true,
+      intro: convertLegacyRuleHighlightsToMarkers(prev.intro || ''),
+      sections: (prev.sections || []).map((sec) => ({
+        ...sec,
+        items: sec.items.map((it) => convertLegacyRuleHighlightsToMarkers(it)),
+      })),
+      footnotes: (prev.footnotes || []).map((fn) =>
+        convertLegacyRuleHighlightsToMarkers(fn)
+      ),
+    }));
   };
 
   const handleSave = () => {
@@ -107,6 +587,7 @@ export const RulesView: React.FC<RulesViewProps> = ({
         items: sec.items.map((it) => it.trim()).filter(Boolean),
       })),
       footnotes: (draft.footnotes || []).map((fn) => fn.trim()).filter(Boolean),
+      manualFormatting: true,
     };
     const cleanedScale = scaleDraft.map((rs) => ({
       ...rs,
@@ -159,14 +640,33 @@ export const RulesView: React.FC<RulesViewProps> = ({
             }
           }}
         >
+          <div className="rule-fmt-guide-bar">
+            <div className="rule-fmt-guide-items">
+              <span className="muted-xs">Подсветка текста в правилах:</span>
+              <span className="rule-accent-num">==плашка==</span>
+              <strong className="rule-accent-term">**акцент**</strong>
+              <span className="rule-accent-quote">«кавычки»</span>
+              <span className="rule-accent-danger">!!важно!!</span>
+              <span className="muted-xs">
+                (выделите любой кусок текста мышкой и нажмите кнопку цвета под полем)
+              </span>
+            </div>
+            <button
+              type="button"
+              className="btn btn-secondary btn-xs"
+              onClick={handleAutoHighlightAll}
+              title="Автоматически подсветить цены, часы и ключевые слова в новом тексте"
+            >
+              <Wand2 size={13} /> Авто-разметить цены и термины
+            </button>
+          </div>
+
           <div className="settings-section form-grid">
             <label className="field-label">Вступление (верхняя плашка над разделами)</label>
-            <textarea
-              className="input textarea-sm"
-              rows={2}
+            <RuleRichInput
               placeholder="Вступительный текст над правилами (оставьте пустым, чтобы скрыть плашку)..."
               value={draft.intro}
-              onChange={(e) => setDraft({ ...draft, intro: e.target.value })}
+              onChange={(val) => setDraft({ ...draft, intro: val })}
             />
           </div>
 
@@ -220,7 +720,9 @@ export const RulesView: React.FC<RulesViewProps> = ({
                     onClick={() => {
                       if (
                         sec.items.length === 0 ||
-                        confirm(`Удалить раздел «${sec.title || sIdx + 1}» со всеми его пунктами?`)
+                        confirm(
+                          `Удалить раздел «${sec.title || sIdx + 1}» со всеми его пунктами?`
+                        )
                       ) {
                         setDraft({
                           ...draft,
@@ -239,15 +741,13 @@ export const RulesView: React.FC<RulesViewProps> = ({
                   <span className="rule-num-pill">
                     {String(iIdx + 1).padStart(2, '0')}
                   </span>
-                  <textarea
-                    className="input input-sm rule-item-textarea"
-                    rows={2}
+                  <RuleRichInput
                     placeholder="Текст пункта правил..."
                     value={item}
-                    onChange={(e) => {
+                    onChange={(val) => {
                       const next = [...draft.sections];
                       const items = [...sec.items];
-                      items[iIdx] = e.target.value;
+                      items[iIdx] = val;
                       next[sIdx] = { ...sec, items };
                       setDraft({ ...draft, sections: next });
                     }}
@@ -372,14 +872,12 @@ export const RulesView: React.FC<RulesViewProps> = ({
               (draft.footnotes || []).map((fn, fIdx) => (
                 <div key={fIdx} className="rule-edit-row">
                   <span className="rule-num-pill">*</span>
-                  <textarea
-                    className="input input-sm rule-item-textarea"
-                    rows={2}
+                  <RuleRichInput
                     placeholder="Текст примечания или сноски..."
                     value={fn}
-                    onChange={(e) => {
+                    onChange={(val) => {
                       const nextFn = [...(draft.footnotes || [])];
-                      nextFn[fIdx] = e.target.value;
+                      nextFn[fIdx] = val;
                       setDraft({ ...draft, footnotes: nextFn });
                     }}
                   />
@@ -494,14 +992,16 @@ export const RulesView: React.FC<RulesViewProps> = ({
               </span>
               <div>
                 <h2>Свод правил заказа</h2>
-                <span className="muted-xs">Основные условия заказов, дропов и возвратов</span>
+                <span className="muted-xs">
+                  Основные условия заказов, дропов и возвратов
+                </span>
               </div>
             </div>
 
             {rules.intro && (
               <div className="rules-intro-banner">
                 <Sparkles size={16} className="rules-intro-icon" />
-                <p>{renderFormattedRuleText(rules.intro)}</p>
+                <p>{renderFormattedRuleText(rules.intro, rules.manualFormatting)}</p>
               </div>
             )}
 
@@ -519,7 +1019,7 @@ export const RulesView: React.FC<RulesViewProps> = ({
                           {String(i + 1).padStart(2, '0')}
                         </span>
                         <div className="rule-item-text">
-                          {renderFormattedRuleText(it)}
+                          {renderFormattedRuleText(it, rules.manualFormatting)}
                         </div>
                       </div>
                     ))}
@@ -536,7 +1036,7 @@ export const RulesView: React.FC<RulesViewProps> = ({
                 {rules.footnotes.map((fn, i) => (
                   <div key={i} className="footnote-row">
                     <Info size={13} className="footnote-icon" />
-                    <span>{renderFormattedRuleText(fn)}</span>
+                    <span>{renderFormattedRuleText(fn, rules.manualFormatting)}</span>
                   </div>
                 ))}
               </div>

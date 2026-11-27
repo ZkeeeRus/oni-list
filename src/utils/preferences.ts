@@ -1,4 +1,4 @@
-export const APP_VERSION = '2.6.3';
+export const APP_VERSION = '2.6.4';
 
 export type ThemeId = 'default' | 'winter' | 'ruby' | 'emerald';
 export type ColorMode = 'dark' | 'light';

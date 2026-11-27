@@ -135,6 +135,7 @@ export interface RulesData {
   intro: string;
   sections: RuleSection[];
   footnotes: string[];
+  manualFormatting?: boolean;
 }
 
 export interface SiteData {
